@@ -1,0 +1,14 @@
+node_modules/
+.DS_Store
+*.DS_Store
+beru-workspace/2-Coding/
+.venv/
+__pycache__/
+*.pyc
+dist/
+build/
+.env
+.tldr/
+.workflow/
+.claude/skills/*-workspace/
+.claude/intent-detector-log.jsonl

@@ -1,0 +1,208 @@
+{
+  "skill_name": "contact",
+  "evals": [
+    {
+      "id": "trigger-positive-explicit-slash",
+      "name": "explicit-slash-command-triggers-and-displays-profile",
+      "prompt": "/contact omar",
+      "expected_output": "Skill triggers, fuzzy-matches 'omar' to omar-zennadi.md (slug-stem-match tier 2 — slug-stem 'omar' equals query). Displays profile block with Name=Omar Zennadi, role/team/relationship from frontmatter, last_interaction surfaced, About paragraph trimmed, Recurring topics bullets, Open commitments counts, source path footer. Read-only — no mutation.",
+      "files": [],
+      "preconditions": [
+        "Real state on Sid's machine (2026-05-06): beru-workspace/3-Resources/contacts/omar-zennadi.md exists with frontmatter name=Omar Zennadi, legal_name=Michael Zennadi, role=SVP Engineering, team=AI Task Force."
+      ],
+      "assertions": [
+        {"text": "Output identifies Omar Zennadi as the matched contact (name appears verbatim)", "weight": 1, "critical": true},
+        {"text": "Output references the source path beru-workspace/3-Resources/contacts/omar-zennadi.md (or token-resolved equivalent)", "weight": 1, "critical": true},
+        {"text": "Output surfaces Omar's role and team (SVP Engineering, AI Task Force)", "weight": 1, "critical": false},
+        {"text": "Output surfaces last_interaction value (or 'no logged interactions yet' if value is 'unknown')", "weight": 1, "critical": true},
+        {"text": "Output does NOT mutate any file under beru-workspace/3-Resources/contacts/ (read-only invariant)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-positive-natural",
+      "name": "natural-language-entity-recall-triggers-skill",
+      "prompt": "who is omar again?",
+      "expected_output": "Natural-language entity recall pattern. Skill triggers (entity-keyed recall over /find), matches Omar Zennadi, displays profile.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists in contacts/."
+      ],
+      "assertions": [
+        {"text": "/contact skill triggers (NOT /find), because the query target is a name in contacts/", "weight": 1, "critical": true},
+        {"text": "Output identifies Omar Zennadi as the matched contact", "weight": 1, "critical": true},
+        {"text": "Output does not redirect to /find (precedence: /contact wins for entity-keyed recall)", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-negative-unrelated",
+      "name": "unrelated-prompt-does-not-trigger",
+      "prompt": "what's the weather today?",
+      "expected_output": "/contact does NOT trigger. The prompt is not entity-keyed recall about a person in contacts/ — it's a topic question with no contact relevance.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "/contact skill does NOT trigger for this prompt", "weight": 1, "critical": true},
+        {"text": "No file under beru-workspace/3-Resources/contacts/ is read or referenced", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "fuzzy-michael-finds-omar",
+      "name": "legal-name-exact-tier-4-finds-omar",
+      "prompt": "/contact michael",
+      "expected_output": "Tier 4 match: query 'michael' is an exact case-insensitive match against frontmatter legal_name='Michael Zennadi' on omar-zennadi.md (legal_name first-token equals query when normalized — implementation may match either full legal_name or the first whitespace token; either way Omar is the unique tier-4 hit). NOT a multi-match — Michela Fitten is NOT a tier-4 match (her legal_name is unset; her name='Michela Fitten' does not exact-equal 'michael'). Result: single Omar profile.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md has frontmatter legal_name: Michael Zennadi.",
+        "michela-fitten.md has frontmatter name: Michela Fitten and NO legal_name field."
+      ],
+      "assertions": [
+        {"text": "Output matches Omar Zennadi (via legal_name field)", "weight": 1, "critical": true},
+        {"text": "Output does NOT include Michela Fitten as a candidate (her name 'Michela' is not an exact match for 'michael')", "weight": 1, "critical": true},
+        {"text": "Output is a single-profile display (NOT a multi-match disambiguation), because tier 4 produces exactly one hit", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "fuzzy-michela-finds-michela-only",
+      "name": "michela-must-not-substring-match-omar-via-michael",
+      "prompt": "/contact michela",
+      "expected_output": "Tier 3 (frontmatter `name` exact, case-insensitive) finds 'Michela Fitten' on michela-fitten.md. Critical regression test: Omar Zennadi MUST NOT appear, because (a) tier 4 only does EXACT match on legal_name (and 'michela' is not an exact match for 'Michael Zennadi' or 'Michael'), and (b) tiers 5/6 (prefix/substring) intentionally exclude legal_name from their search surface. So Michela is the unique winner; Omar is not in the candidate set.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md has legal_name: Michael Zennadi (the regression hazard).",
+        "michela-fitten.md has name: Michela Fitten."
+      ],
+      "assertions": [
+        {"text": "Output matches Michela Fitten (single profile rendered)", "weight": 1, "critical": true},
+        {"text": "Output does NOT mention Omar Zennadi anywhere — not as match, not as candidate, not as suggestion", "weight": 1, "critical": true},
+        {"text": "Output is a single-profile display, NOT a multi-match disambiguation (because tiers 5/6 do not search legal_name as substring)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "fuzzy-mich-multi-match",
+      "name": "mich-prefix-canonical-single-match-michela-only",
+      "prompt": "/contact mich",
+      "expected_output": "TIGHTENED canonical reading: no exact tier-1/2/3/4 hits. Tier 5 (prefix on slug or `name`) — per the locked priority order, legal_name is EXCLUDED from tiers 5 and 6 (prefix/substring). The slug `omar-zennadi` does not start with `mich`; the `name` 'Omar Zennadi' does not start with `mich`. The slug `michela-fitten` starts with `mich`, AND the `name` 'Michela Fitten' starts with `mich`. So tier 5 produces exactly ONE hit: Michela Fitten. Single-match Michela rendered. Omar's `legal_name: Michael Zennadi` having prefix `mich` is IRRELEVANT — legal_name is exact-only at tier 4, not in tiers 5/6. This is the locked anti-regression rule from SKILL.md Step 3 lines 76, 80.",
+      "files": [],
+      "preconditions": [
+        "Both michela-fitten.md and omar-zennadi.md exist; the latter has legal_name: Michael Zennadi (the regression hazard that must NOT match)."
+      ],
+      "assertions": [
+        {"text": "Output matches Michela Fitten as a single-profile render (tier 5 prefix on slug 'michela-fitten' and name 'Michela Fitten')", "weight": 1, "critical": true},
+        {"text": "Omar Zennadi MUST NOT appear in the output — not as a match, not as a candidate, not as a suggestion. legal_name 'Michael Zennadi' having prefix 'mich' is excluded from tiers 5/6 by the locked priority order.", "weight": 1, "critical": true},
+        {"text": "Output is a single-profile display, NOT a multi-match AskUserQuestion disambiguation (only one candidate exists under canonical reading)", "weight": 1, "critical": true},
+        {"text": "Implementation does NOT substring-match or prefix-match legal_name in tiers 5/6 — that would re-introduce the regression the priority order explicitly forbids", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "fuzzy-no-match",
+      "name": "kevin-graceful-no-match-fallback",
+      "prompt": "/contact kevin",
+      "expected_output": "No tier produces any match — Kevin Persaud was removed from contacts/ on 2026-05-06 (per USER.md note). Skill renders the no-match fallback: states no contact named 'kevin', offers /contact-add (planned), offers /find as topic-search alternative, optionally lists ls of contacts/ for reference. NEVER fabricates a profile.",
+      "files": [],
+      "preconditions": [
+        "No contact file matches 'kevin' across all 6 priority tiers — Kevin Persaud's file was deleted from contacts/ on 2026-05-06."
+      ],
+      "assertions": [
+        {"text": "Output states no contact found / no match for 'kevin'", "weight": 1, "critical": true},
+        {"text": "Output suggests /contact-add (or equivalent scaffold path) as a next step", "weight": 1, "critical": true},
+        {"text": "Output does NOT fabricate a profile, last_interaction date, or any frontmatter field for Kevin", "weight": 1, "critical": true},
+        {"text": "Output does NOT mutate any file under contacts/", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "slug-stem-match",
+      "name": "van-toorn-slug-stem-tier-2-match",
+      "prompt": "/contact van toorn",
+      "expected_output": "Tier 2 (slug-stem-match): query 'van toorn' normalizes to 'van-toorn'; the slug 'bob-van-toorn' contains the contiguous stem 'van-toorn'. Single match, profile renders. Demonstrates last-name lookup for multi-word last names.",
+      "files": [],
+      "preconditions": [
+        "bob-van-toorn.md exists with frontmatter name: Bob van Toorn."
+      ],
+      "assertions": [
+        {"text": "Output matches Bob van Toorn (single profile rendered)", "weight": 1, "critical": true},
+        {"text": "Output references the source path beru-workspace/3-Resources/contacts/bob-van-toorn.md (or token-resolved equivalent)", "weight": 1, "critical": false},
+        {"text": "Output does NOT prompt for disambiguation — slug-stem-match produces one unique hit", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-precedence-vs-find",
+      "name": "contact-wins-over-find-for-entity-keyed-recall",
+      "prompt": "who is omar?",
+      "expected_output": "Precedence test: 'omar' is a name with a matching contact file (omar-zennadi.md). Even though /find could also handle this query (it greps content + filenames across resources/projects/archive/memory), /contact wins because the target is an entity in contacts/. Skill renders Omar's profile, NOT a /find-style ranked list.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists in contacts/."
+      ],
+      "assertions": [
+        {"text": "/contact triggers (NOT /find) — output is a contact profile block, not a /find ranked-list with breakdown line", "weight": 1, "critical": true},
+        {"text": "Output identifies Omar Zennadi as the matched contact", "weight": 1, "critical": true},
+        {"text": "Output does NOT include the /find breakdown line ('K resources · L projects · M archive · P memory')", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "fuzzy-al-multi-match-genuine",
+      "name": "al-prefix-genuine-two-way-multi-match-disambiguation",
+      "prompt": "/contact al",
+      "expected_output": "Genuine multi-match case (vs `mich` which single-matches under canonical reading). No exact tier-1/2/3/4 hits. Tier 5 (prefix on slug or `name`) produces TWO hits: (a) slug 'alvir-navin' / name 'Alvir Navin' (prefix 'al' on both slug and name), and (b) slug 'alyson-sprague' / name 'Alyson Sprague' (prefix 'al' on both slug and name). No other contact slug starts with 'al' — verified: aden-zaman starts with 'ad'; anthony-livreri / andy-shiels / ankitha-ananda all start with 'an'. Per Step 6, AskUserQuestion fires (multiSelect: false) with these two candidates labeled `<name> — <role>, <team> · <relationship>`. Skill MUST NOT auto-pick either — waits for user input.",
+      "files": [],
+      "preconditions": [
+        "alvir-navin.md and alyson-sprague.md both exist in contacts/.",
+        "No other contact file has slug or `name` with prefix 'al' (verified against the current 20-contact directory: aden-zaman, andy-shiels, ankitha-ananda, anthony-livreri all start with 'a' but not 'al')."
+      ],
+      "assertions": [
+        {"text": "Skill fires AskUserQuestion (multiSelect: false) for disambiguation — does NOT auto-pick either candidate", "weight": 1, "critical": true},
+        {"text": "AskUserQuestion is invoked with EXACTLY 2 options: Alvir Navin and Alyson Sprague (no additional candidates)", "weight": 1, "critical": true},
+        {"text": "Each option label includes name + role + relationship (or name + role + team + relationship per SKILL.md Step 6 line 130) — not bare names", "weight": 1, "critical": true},
+        {"text": "Skill does NOT silently pick one match — it stops and waits for user selection", "weight": 1, "critical": true},
+        {"text": "No file under beru-workspace/3-Resources/contacts/ is mutated (read-only)", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "case-insensitive-coverage",
+      "name": "uppercase-and-mixedcase-queries-match-correctly",
+      "prompt": "/contact OMAR",
+      "expected_output": "Case-insensitive matching across the priority order. Per SKILL.md Step 1 line 57 ('Normalize the query: lowercase, trim') and Step 3 (each tier specifies 'case-insensitive'), uppercase 'OMAR' normalizes to 'omar' which then hits tier 2 (slug-stem-match: 'omar' equals slug-token of 'omar-zennadi'). Same single-match outcome as lowercase `/contact omar`. The matched contact is Omar Zennadi regardless of input case. Equivalently `/contact Michela` or `/contact MICHELA` should match Michela Fitten.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists with name: Omar Zennadi."
+      ],
+      "assertions": [
+        {"text": "Skill matches Omar Zennadi (single profile rendered) regardless of input case ('OMAR' vs 'omar' vs 'Omar')", "weight": 1, "critical": true},
+        {"text": "Skill normalizes the query to lowercase before matching (per SKILL.md Step 1 line 57)", "weight": 1, "critical": true},
+        {"text": "Output is a single-profile display, NOT a no-match fallback caused by literal case-sensitive comparison", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "empty-query-graceful",
+      "name": "empty-or-whitespace-only-query-asks-for-clarification",
+      "prompt": "/contact",
+      "expected_output": "Empty query (or whitespace-only `/contact   `). Per SKILL.md Step 1 lines 53-55, when the invocation has no name, the skill asks in plain chat: 'Which contact? I'll look across <workspace.root>/<workspace.resources>/contacts/.' Per SKILL.md failure-modes table (line 184) 'Query is empty after normalization' → re-prompt. Critical invariant: NO fuzzy-match attempted on empty input — the skill does not enumerate contacts and try to match against ''; it asks for clarification first. NO contact file is opened or read for matching purposes.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "Skill recognizes empty / whitespace-only query and asks the user for a name (plain-chat clarification per Step 1 line 55, or the failure-mode re-prompt per line 184)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT attempt fuzzy-match on empty input (no tier evaluation against empty string)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT open or display any contact file (no profile rendered, no candidate list)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT mutate any file under beru-workspace/3-Resources/contacts/ (read-only invariant holds even on empty input)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "askuserquestion-unavailable-subagent-fallback",
+      "name": "subagent-context-multi-match-falls-back-to-inline-list",
+      "prompt": "/contact al",
+      "expected_output": "Subagent / worker context where the AskUserQuestion tool is unavailable. Multi-match query 'al' produces two candidates (alvir-navin, alyson-sprague). Per SKILL.md Step 6 last paragraph (line 141: 'If AskUserQuestion is unavailable (subagent context), surface all candidates inline as a list and stop — let the caller re-invoke with a more specific query'), the skill MUST NOT auto-pick either match. Instead it lists both candidates inline (e.g., 'Multiple matches: Alvir Navin (CFO) and Alyson Sprague (VP, MSCI AI Office Hours organizer) — re-invoke with full slug to disambiguate') and stops. Caller is expected to re-invoke with `/contact alvir` or `/contact alyson`.",
+      "files": [],
+      "preconditions": [
+        "Invocation context is a subagent / worker where the AskUserQuestion tool is not provided.",
+        "Both alvir-navin.md and alyson-sprague.md exist (same precondition as fuzzy-al-multi-match-genuine)."
+      ],
+      "assertions": [
+        {"text": "Skill does NOT silently pick one match (no Alvir-only or Alyson-only profile rendered)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT attempt to invoke AskUserQuestion in a subagent context (would error)", "weight": 1, "critical": true},
+        {"text": "Skill lists both candidates inline as text (Alvir Navin AND Alyson Sprague both named in output) and stops", "weight": 1, "critical": true},
+        {"text": "Output instructs the caller to re-invoke with a more specific query (e.g., full slug or explicit name)", "weight": 1, "critical": false},
+        {"text": "No file under beru-workspace/3-Resources/contacts/ is mutated", "weight": 1, "critical": false}
+      ]
+    }
+  ]
+}

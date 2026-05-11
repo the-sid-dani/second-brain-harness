@@ -1,0 +1,147 @@
+{
+  "skill_name": "thinking-partner",
+  "evals": [
+    {
+      "id": "T1",
+      "layer": "trigger-detection",
+      "name": "ambiguous-decision-triggers-exploration",
+      "type": "positive",
+      "prompt": "should we keep building Beru as a personal tool or open-source it more aggressively? i'm not sure",
+      "expected_with_skill": "Enters exploration mode. Mode acknowledgment ('let's think through it' or similar). 3-5 clarifying questions about goals/audience/constraints. Mentions exit signal phrasing ('ok solve it' / 'I'm ready'). Does NOT generate a recommendation, pros/cons list, or comparison table.",
+      "expected_baseline": "Likely jumps to a pros/cons comparison or recommendation. Possibly a structured table. No mode acknowledgment, no exit signal phrasing.",
+      "assertions": [
+        {"text": "Output explicitly enters exploration mode (e.g., 'let's think through it', 'I'll ask first, solve later')", "weight": 1, "critical": true},
+        {"text": "Output contains at least 3 clarifying questions", "weight": 1, "critical": true},
+        {"text": "Output mentions an exit signal phrase the user can use ('ok solve it', 'I'm ready', 'let's go')", "weight": 1, "critical": true},
+        {"text": "Output does NOT contain a recommendation, ranked list of options, or pros/cons table", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "T2",
+      "layer": "trigger-detection",
+      "name": "noodle-phrase-triggers-exploration",
+      "type": "positive",
+      "prompt": "let me noodle on what should go in tool-inventory.md before i commit anything",
+      "expected_with_skill": "Enters exploration mode. References that tool-inventory.md already has substantial content (system-design.md §6 item 15f, ~270 lines). Asks scope-clarifying questions about what specifically he wants to noodle on (the structure? the per-tool depth? the gaps?).",
+      "expected_baseline": "Likely starts proposing structure or writing content for the doc, treating 'noodle' as soft permission to draft.",
+      "assertions": [
+        {"text": "Output explicitly enters exploration mode", "weight": 1, "critical": true},
+        {"text": "Output asks at least 3 clarifying questions", "weight": 1, "critical": true},
+        {"text": "Output references existing context (acknowledges tool-inventory.md already exists OR asks what's already there)", "weight": 1, "critical": false},
+        {"text": "Output does NOT generate doc structure or content directly", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "T3",
+      "layer": "trigger-detection",
+      "name": "decisive-request-skips-exploration",
+      "type": "negative",
+      "prompt": "tell me what to do — should we build /briefing now in this session or save it for a fresh one? i want a direct recommendation, not a discussion",
+      "expected_with_skill": "SKIPS exploration mode. Recognizes decisiveness signals ('tell me what to do', 'I want a direct recommendation', 'not a discussion'). Provides a direct recommendation with brief reasoning.",
+      "expected_baseline": "Provides a direct recommendation with brief reasoning. Should match with-skill output.",
+      "assertions": [
+        {"text": "Output gives a direct recommendation (a specific 'do X' answer)", "weight": 1, "critical": true},
+        {"text": "Output does NOT contain 3+ clarifying questions to the user", "weight": 1, "critical": true},
+        {"text": "Output does NOT enter exploration mode (no 'let's think through it' framing)", "weight": 1, "critical": true},
+        {"text": "Output includes brief reasoning for the recommendation", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "T4",
+      "layer": "trigger-detection",
+      "name": "factual-question-skips-exploration",
+      "type": "negative",
+      "prompt": "what's the difference between Atlassian's searchJiraIssuesUsingJql and search tools?",
+      "expected_with_skill": "Factual answer. SKIPS exploration mode (this is a clear factual question, not a decision-noodling moment).",
+      "expected_baseline": "Factual answer. Should match with-skill output.",
+      "assertions": [
+        {"text": "Output gives a factual answer about the difference between the two tools", "weight": 1, "critical": true},
+        {"text": "Output does NOT contain 3+ clarifying questions", "weight": 1, "critical": true},
+        {"text": "Output does NOT enter exploration mode", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "Q1",
+      "layer": "first-turn-quality",
+      "name": "vault-aware-question-on-existing-topic",
+      "type": "positive",
+      "prompt": "help me think through whether /briefing v1 should include Slack signals or defer them to v2",
+      "expected_with_skill": "Enters exploration mode. References that decision #20 just locked Slack into v1 scope (or that tool-inventory.md §10 has the v1 spec). Asks WHY he wants to revisit, what changed, what's the new constraint. Tailored to the prompt, not generic boilerplate.",
+      "expected_baseline": "Likely gives pros/cons of including Slack vs deferring, possibly a recommendation. No reference to existing decision #20.",
+      "assertions": [
+        {"text": "Output enters exploration mode", "weight": 1, "critical": true},
+        {"text": "Output references existing context (decision #20, Slack already in v1, or tool-inventory.md), showing it's vault-aware", "weight": 1, "critical": true},
+        {"text": "Output asks 3-5 clarifying questions tailored to THIS specific decision (not generic 'what's the constraint?' boilerplate)", "weight": 1, "critical": true},
+        {"text": "Output does NOT generate a recommendation about whether to include Slack", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "Q2",
+      "layer": "first-turn-quality",
+      "name": "cold-start-no-vault-context",
+      "type": "positive",
+      "prompt": "i want to think through how to handle a colleague being repeatedly late to our 1:1s",
+      "expected_with_skill": "Enters exploration mode. Acknowledges no prior notes on this (cold start). Asks questions tailored to interpersonal/management context (frequency, history, what he's tried, what 'better' looks like). Does NOT fabricate prior context that doesn't exist.",
+      "expected_baseline": "Likely gives generic 'crucial conversations' style advice, list of approaches.",
+      "assertions": [
+        {"text": "Output enters exploration mode", "weight": 1, "critical": true},
+        {"text": "Output asks 3-5 clarifying questions tailored to interpersonal/management dynamics", "weight": 1, "critical": true},
+        {"text": "Output does NOT fabricate vault context that doesn't exist (no false claims about prior notes)", "weight": 1, "critical": true},
+        {"text": "Output does NOT immediately generate management advice or scripts", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "M1",
+      "layer": "multi-turn",
+      "name": "exit-signal-recognition",
+      "type": "positive",
+      "prompt": "Below is a conversation transcript. The user invoked the thinking-partner skill at the start. We're now at turn 4 — the user is signaling they want to exit exploration mode. Produce the assistant's NEXT response.\n\n---\nUSER: should we keep beru personal or open-source it more aggressively? not sure\n\nASSISTANT: Let's think through it. I'll ask first, solve later — say 'ok solve it' when you want me to switch.\n\nFew quick questions:\n1. What's prompting this question now — is something specific making you reconsider?\n2. Who would 'open-source aggressively' mean for — the broader Claude Code community, the AI/automation builder crowd, or your YouTube audience?\n3. What's the failure mode you're worried about with each direction?\n\nUSER: it's actually because i've been getting some interest from people who want to build their own, and i think the concepts are useful broadly. failure mode of open-sourcing is that it becomes a distraction from my actual day job + samba work. failure mode of keeping personal is i miss out on community feedback that would make beru better.\n\nASSISTANT: OK so the core tension is: distraction risk vs. community-feedback flywheel. Two follow-ups:\n4. How much of beru's current value is private/sensitive (USER.md, memory.md content) vs. generic patterns (skills, structure, conventions)?\n5. If you imagine 6 months from now and you've open-sourced — what would 'this was worth it' look like? People starring? People contributing back? People DMing you with usage stories?\n\nUSER: ok give me your recommendation now",
+      "expected_with_skill": "Model SHOULD exit exploration mode and provide a recommendation. Cites the exploration ('given what just emerged — distraction is the bigger risk than missed feedback...'). Concrete recommendation. Does NOT keep asking more questions.",
+      "assertions": [
+        {"text": "Output provides a concrete recommendation (specific direction: open source, stay private, or a middle path)", "weight": 1, "critical": true},
+        {"text": "Output cites the exploration (references at least one thing the user said in the conversation)", "weight": 1, "critical": true},
+        {"text": "Output does NOT contain additional clarifying questions (mode is exited)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "M2",
+      "layer": "multi-turn",
+      "name": "contradiction-surfacing",
+      "type": "positive",
+      "prompt": "Below is a conversation transcript. The user invoked the thinking-partner skill. We're at turn 3 — the user has just said something that contradicts what they said in turn 1. Produce the assistant's NEXT response.\n\n---\nUSER: i'm thinking about whether to add Slack monitoring to /briefing v1. i really want it because Slack is where most of my coordination happens — it's the highest-value signal i'd add.\n\nASSISTANT: Let's think through it. A few quick questions:\n1. What 'Slack signal' specifically — DMs needing reply, channel digests, @-mentions, or all three?\n2. How often per day do you currently miss something on Slack that bites you later?\n3. What's making this a v1 question vs just adding it later?\n\nUSER: mostly @-mentions and DMs needing reply. honestly i don't miss things on slack that often — i'm pretty good at staying on top of it.\n\nASSISTANT: Got it. Quick check-in:\n- The signal is @-mentions + DMs (not channel digests)\n- You're already pretty on top of Slack\n- You called Slack the highest-value signal earlier\n\nThose last two seem in tension — if you're not missing things, what makes Slack the highest-value signal to add to /briefing? Or is the value in something else (consolidation, time savings, peace of mind)?\n\nUSER: hmm yeah i guess i was overstating it. honestly gmail is the bigger pain point — i miss emails way more than slack messages.",
+      "expected_with_skill": "Model should acknowledge the user surfaced their own contradiction (correctly), then refine the question — maybe 'so the actual question is whether email triage in /briefing is sufficient or whether Slack adds marginal value beyond it' or similar. Stays in mode (still exploring), doesn't immediately recommend.",
+      "assertions": [
+        {"text": "Output acknowledges the user has shifted/refined their position (the original 'highest-value' framing is no longer holding)", "weight": 1, "critical": true},
+        {"text": "Output stays in exploration mode (does NOT immediately recommend a path)", "weight": 1, "critical": true},
+        {"text": "Output reframes the question based on the new info (e.g., now it's about whether Slack is marginal-value vs gmail-value)", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "T5",
+      "layer": "trigger-detection",
+      "name": "ambiguous-decisiveness-edge-case",
+      "type": "borderline",
+      "prompt": "what do you think about renaming our memory folder structure?",
+      "expected_with_skill": "Borderline case — 'what do you think' is decisiveness-leaning ('give me your opinion') but the topic is open enough to invite exploration. Acceptable behaviors: (a) brief opinion + offer to explore deeper, OR (b) enter exploration mode with light framing ('happy to share my read or think it through with you — which is more useful?'). NOT acceptable: ignore the question and just ask 5 questions, OR give a 500-word recommendation without surfacing it's unclear what user wants.",
+      "expected_baseline": "Likely gives a direct opinion/recommendation about renaming.",
+      "assertions": [
+        {"text": "Output either offers to clarify mode (opinion vs exploration) OR gives a brief opinion + invites further exploration", "weight": 1, "critical": false},
+        {"text": "Output does NOT bury the user in 5+ questions without first acknowledging they may want a quick opinion", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "T6",
+      "layer": "trigger-detection",
+      "name": "code-generation-skips-exploration",
+      "type": "negative",
+      "prompt": "write me a bash script that lists all files in 0-Inbox older than 7 days",
+      "expected_with_skill": "Generates the bash script directly. SKIPS exploration mode (this is a clear code-generation request).",
+      "expected_baseline": "Generates the bash script directly. Should match.",
+      "assertions": [
+        {"text": "Output contains a bash script (or commands) to do the requested task", "weight": 1, "critical": true},
+        {"text": "Output does NOT enter exploration mode", "weight": 1, "critical": true},
+        {"text": "Output does NOT contain 3+ clarifying questions before generating", "weight": 1, "critical": true}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "skill_name": "inbox-process",
+  "evals": [
+    {
+      "id": 1,
+      "name": "promote-archive-keep",
+      "prompt": "process inbox — promote test-inbox-1-w to research with topic 'test-topic-1', archive test-inbox-2-w, keep test-inbox-3-w",
+      "expected_output": "test-inbox-1-w → research/2026-05-test-topic-1-research/; test-inbox-2-w → 4-Archive/inbox-YYYY-MM-DD/; test-inbox-3-w stays in 0-Inbox/.",
+      "files": [],
+      "assertions": [
+        {"text": "test-inbox-1-w.md is in 3-Resources/research/2026-05-test-topic-1-research/"},
+        {"text": "test-inbox-2-w.md is in 4-Archive/inbox-2026-05-05/"},
+        {"text": "test-inbox-3-w.md is still in 0-Inbox/"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "project-and-archive",
+      "prompt": "Friday inbox review — make test-inbox-4-w into a project called 'test-inbox-project-w' (execution type), archive test-inbox-5-w",
+      "expected_output": "test-inbox-4-w content moved into 1-Projects/2026-05-test-inbox-project-w/; test-inbox-5-w → 4-Archive/inbox-YYYY-MM-DD/.",
+      "files": [],
+      "assertions": [
+        {"text": "Project folder 1-Projects/2026-05-test-inbox-project-w/ exists with CLAUDE.md and memory.md"},
+        {"text": "test-inbox-4-w.md content is inside 1-Projects/2026-05-test-inbox-project-w/"},
+        {"text": "test-inbox-5-w.md is in 4-Archive/inbox-2026-05-05/"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "delete-and-promote",
+      "prompt": "clear my inbox — delete test-inbox-6-w (yes confirm), promote test-inbox-7-w to reference as 'test-inbox-7-w.md'",
+      "expected_output": "test-inbox-6-w deleted entirely; test-inbox-7-w → 3-Resources/reference/test-inbox-7-w.md.",
+      "files": [],
+      "assertions": [
+        {"text": "test-inbox-6-w.md no longer exists anywhere (deleted)"},
+        {"text": "test-inbox-7-w.md is in 3-Resources/reference/"},
+        {"text": "test-inbox-6-w.md is NOT in 4-Archive (would be wrong — it was supposed to be deleted)"}
+      ]
+    }
+  ]
+}

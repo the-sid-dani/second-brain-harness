@@ -1,0 +1,48 @@
+{
+  "skill_name": "prune-projects",
+  "evals": [
+    {
+      "id": 1,
+      "name": "explicit-stale-question",
+      "prompt": "what's stale right now?",
+      "expected_output": "Skill triggers, lists stale projects, asks Sid which to archive, chains to /archive-project for approved.",
+      "files": [],
+      "assertions": [
+        {"text": "Skill ran the project-query.sh script (or equivalent staleness scan)"},
+        {"text": "Skill identified the stale-test-1-* projects as stale candidates"},
+        {"text": "stale-test-1-a was moved to 4-Archive/ with status: done"},
+        {"text": "stale-test-1-b was moved to 4-Archive/ with status: done"},
+        {"text": "stale-test-1-c was moved to 4-Archive/ with status: done"},
+        {"text": "Real active projects (second-brain-design, all-hands-prep) were NOT touched"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "friday-review-phrase",
+      "prompt": "Friday review please",
+      "expected_output": "Same flow triggered by a different phrase.",
+      "files": [],
+      "assertions": [
+        {"text": "Skill triggered on 'Friday review' phrase"},
+        {"text": "stale-test-2-a was moved to 4-Archive/ with status: done"},
+        {"text": "stale-test-2-b was moved to 4-Archive/ with status: done"},
+        {"text": "stale-test-2-c was moved to 4-Archive/ with status: done"},
+        {"text": "Real active projects were NOT touched"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "soft-trigger",
+      "prompt": "any projects I should archive?",
+      "expected_output": "Skill should still trigger and identify candidates.",
+      "files": [],
+      "assertions": [
+        {"text": "Skill triggered on the soft 'any projects I should archive?' phrase"},
+        {"text": "stale-test-3-a was moved to 4-Archive/ with status: done"},
+        {"text": "stale-test-3-b was moved to 4-Archive/ with status: done"},
+        {"text": "stale-test-3-c was moved to 4-Archive/ with status: done"},
+        {"text": "Real active projects were NOT touched"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "skill_name": "find",
+  "evals": [
+    {
+      "id": 1,
+      "name": "recall-existing-research-topic",
+      "prompt": "do I have anything on prediction markets?",
+      "expected_output": "Lists matches from <workspace.resources>/research/2026-01-prediction-markets/ as the top hit, with file paths, breakdown line showing K resources / 0 projects, and either a synthesis (since it's a single topic folder) or an offer to read/synthesize.",
+      "files": [],
+      "assertions": [
+        {"text": "Output references the path beru-workspace/3-Resources/research/2026-01-prediction-markets/ at least once"},
+        {"text": "Output includes a breakdown line counting matches per location (resources/projects/archive/memory)"},
+        {"text": "Output does not contain hardcoded paths from other users (no '/Users/' absolute paths in user-facing output)"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "recall-active-project",
+      "prompt": "is there a project related to second brain design?",
+      "expected_output": "Surfaces beru-workspace/1-Projects/2026-05-second-brain-design/ with its CLAUDE.md and memory.md as top matches. Project-path matches rank above any other location due to the +2 weight. Breakdown shows ≥1 in projects.",
+      "files": [],
+      "assertions": [
+        {"text": "Output references the path beru-workspace/1-Projects/2026-05-second-brain-design/ at least once"},
+        {"text": "Output's breakdown line shows at least 1 project match"},
+        {"text": "Output does NOT propose mutations (no /new-project, /save-resource, /archive-project chained calls — find is read-only)"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "empty-result-suggests-next-steps",
+      "prompt": "do I have anything on quantum cryptography zk-snarks bls12-381 curves?",
+      "expected_output": "Zero matches. Output uses the empty-result template from Step 7: states no matches, suggests starting a research note via /save-resource, or starting a project via /new-project, plus 1-2 related-term variants.",
+      "files": [],
+      "assertions": [
+        {"text": "Output states zero or no matches were found"},
+        {"text": "Output suggests at least one of: starting a research note via /save-resource, starting a project via /new-project, or trying a related term"},
+        {"text": "Output does NOT fabricate or hallucinate file paths (no claims that files exist when they don't)"}
+      ]
+    }
+  ]
+}

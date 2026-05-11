@@ -77,7 +77,11 @@ For each entry in `.mcp.json.mcpServers`, capture:
 - `mcp.<name>.url` (or `command` for stdio)
 - `mcp.<name>.type` (http/stdio)
 - `mcp.<name>.notes` (from `_notes` block if any)
-- `mcp.<name>.connected`: **CANNOT probe from Bash** — OAuth state is per-Claude-Code-session, not exposed. Mark as `⏳ — run /mcp to verify` for any HTTP MCP.
+- `mcp.<name>.connected`: **DO an actual in-session probe — don't assume ⏳ for everything.** Bootstrap runs inside a Claude Code session, so you can see which MCPs are loaded. Use this procedure:
+  1. **Check the session's deferred-tools list** (visible in the system prompt at session start) for any tools named `mcp__<name>__*`. If ≥1 such tool exists → the MCP server is loaded and connected for this workspace → mark `✅ connected`.
+  2. **If no `mcp__<name>__*` tools exist** → the MCP is configured in `.mcp.json` but not authorized in this workspace (per-project OAuth state). Mark `⏳ configured — run /mcp to authorize for this workspace`. NEVER write "unauthorized" as if it's a global state — Claude Code isolates auth per project root, so this fork may simply need its own `/mcp` flow even if the user has the same MCP authorized elsewhere.
+  3. **For stdio MCPs** (e.g., `gemini-vision`): also verify the required env vars are present. For gemini-vision, run `[[ -n "${GEMINI_API_KEY:-}" ]]` via Bash. If unset → mark `⚠️ stdio MCP needs $GEMINI_API_KEY in shell env`. If set + tools present → `✅ connected`.
+  4. **Honesty rule:** if you genuinely can't determine connection state for a given MCP (e.g., the deferred-tools list isn't accessible), say `ℹ️ configured — status unverified; run /mcp to check` rather than fabricating ⏳ or ✅.
 
 **Pipeline tools probe:**
 ```bash
@@ -342,38 +346,87 @@ If verification FAILS (e.g., `<user.name>` literal still appears):
 - Surface: "⚠️ Smoke test FAILED — placeholder resolution didn't work. Inspect: <path>. Configuration section may need manual review."
 - DO NOT proceed to Phase 10's "you're set up" message — instead, surface the failure.
 
-### Phase 10: Surface "you're set up"
+### Phase 10: Surface "you're set up" — with real status, not assumptions
 
-Construct the closing message from `detection_report` + Phase 8 values. Use the `<assistant.name>` voice (per SOUL.md):
+Construct the closing message from `detection_report` + Phase 8 values. Use the `<assistant.name>` voice (per SOUL.md). **Critical: every status (✅/⏳/⚠️/❌) must correspond to a real Phase 1 probe result. Don't fabricate ⏳ for MCPs you can see are connected via `mcp__<name>__*` tools in the deferred-tools list.**
+
+The closing message has four sections in this order:
+
+**Section 1 — confirmation + smoke test result.** One line.
+
+**Section 2 — "What needs your attention right now".** Only list items that genuinely need user action. Filter from `detection_report`:
+- Skip MCPs marked `✅ connected` — they don't need attention
+- Surface only `⏳ configured — needs /mcp authorize`, `⚠️ stdio MCP needs env var`, `❌ tool not installed`, `⚠️ CLI auth broken`, etc.
+- If nothing needs attention: say "Everything's authed and ready — no MCP or CLI followups required." and skip to Section 3.
+- For per-workspace OAuth items, include the disclaimer line **once** at the top of the section: *"(MCP OAuth is per-project in Claude Code — even if you've authorized these elsewhere, this workspace needs its own grants.)"*
+
+**Section 3 — "Day 1 — start here (in this order)".** Numbered walkthrough. Skip steps that aren't relevant (e.g., skip "authorize MCPs" if Section 2 had nothing in it).
 
 ```
-<assistant.emoji> <assistant.name> is configured.
+Day 1 — start here:
 
-What you can do now:
-- /briefing → morning brief composing Gmail+Calendar+Slack+Jira+contacts+projects
-- /find <topic> → recall existing knowledge across your second brain
-- /new-project → scaffold a new project (or code repo)
-- /contact <name> → look up someone in your contacts/
-- /help → full skill list
+1. Authorize any MCPs flagged above
+   Run /mcp → walk through the OAuth flow for any ⏳ entries. Standard browser
+   OAuth, no clientId or app registration needed. Skip this step if Section 2
+   was empty.
 
-What needs your attention right now:
-[Surface from detection_report — e.g.:]
-- ⏳ Slack MCP configured but not OAuth'd — run /mcp now
-- ⏳ Atlassian MCP configured but not OAuth'd — run /mcp
-- ❌ yt-dlp not installed — `brew install yt-dlp` if you want YouTube transcript extraction
-- ⚠️ Salesforce CLI auth broken — `sf org login web -a <alias>` if you use SF in daily flow
-[Or "All tools authed and ready ✅" if no issues.]
+2. Fill in USER.md
+   Phase 5 left <TBD> placeholders for your team, priority signals, and Slack
+   channels. /briefing reads these — without them the brief still works but
+   surfaces less. 5 minutes to do roughly.
 
-Manual follow-up before /briefing works fully:
-- Edit USER.md to fill in your team / collaborators / priority signals (Phase 5 left these as <TBD> scaffolds)
-- Add a `## Priority Slack Channels` section to USER.md if you want pinned channels in /briefing's Slack digest
-- Drop your meeting Drive folder IDs into TOOLS.md "Google Drive" section if applicable
+3. Try /briefing
+   First run will be sparse (empty contacts, empty projects, USER.md half-full)
+   — that's expected on a fresh fork. The point of running it is to see the
+   shape and confirm your MCPs are returning data. Writes to
+   docs/briefings/morning-briefing-YYYY-MM-DD.md.
 
-Active design system: <brand title> (set via /use-design <brand> if you want to swap)
+4. Scaffold your first project
+   /new-project Q3-strategy (or whatever you're actually working on)
+   Creates workspace/1-Projects/YYYY-MM-q3-strategy/ with its own CLAUDE.md +
+   memory.md. This is the pattern for every project from here.
 
-Review the diff and commit when you're ready. /bootstrap does not auto-commit (T3).
+5. Add one contact
+   Drop a teammate at workspace/3-Resources/contacts/<slug>.md following the
+   schema in workspace/3-Resources/contacts/README.md. Then /contact <name>
+   should fuzzy-match. Repeat for your inner circle over time.
 
-To re-run: delete the `setup_completed: <date>` line in CLAUDE.md, then invoke /bootstrap.
+Day 2+ — natural rhythms:
+
+- /find <topic> when you're not sure if you've already noted something
+- /contact-log <name> after every meaningful call or 1:1
+- /thinking-partner when you want to explore before solving
+- /save-resource to stash a link / doc for later
+- /prune-projects every Friday to clean up stale work
+- /use-design <brand> to swap the active design system (73 brands shipped)
+
+For everything else, just talk naturally — Claude routes to the right skill via
+the description field. /help for the full skill list if you want to browse.
+```
+
+**Section 4 — manifest + commit instructions.** Files written, diff/commit pointer, re-run note.
+
+```
+Files written or modified:
+- SOUL.md, IDENTITY.md, USER.md, README.md — regenerated from persona templates
+- TOOLS.md — regenerated from live probes
+- CLAUDE.md — Configuration section + project-context prose tokenized
+- DESIGN.md — swapped to <brand> (previous backed up to .DESIGN.md.previous)
+- workspace/2-Coding/{work,personal,forks,archive}/ — created
+- memory/<YYYY-MM-DD>.md — new daily log entry
+
+Active design system: <brand title> — swap with /use-design <brand>
+
+/bootstrap did NOT auto-commit (T3 invariant). Review the diff and commit when
+you're ready:
+
+  git status
+  git diff
+  git add SOUL.md IDENTITY.md USER.md README.md TOOLS.md CLAUDE.md DESIGN.md memory/<YYYY-MM-DD>.md workspace/2-Coding/
+  git commit -m "fork bootstrap: configure as <user.name> / <assistant.name> / <brand>"
+
+To re-run /bootstrap later: delete the `setup_completed: <date>` line in
+CLAUDE.md, then invoke /bootstrap again.
 
 That's the lay of the land. Where do you want to start?
 ```

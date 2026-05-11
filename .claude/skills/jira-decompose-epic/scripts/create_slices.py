@@ -28,7 +28,7 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-JIRA_BASE = "https://sambatv.atlassian.net"
+JIRA_BASE = os.environ.get("ATLASSIAN_BASE_URL", "https://your-org.atlassian.net")
 TIMEOUT_SEC = 30
 RETRY_DELAY_SEC = 2
 

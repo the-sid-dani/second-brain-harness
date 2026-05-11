@@ -1,0 +1,5 @@
+# Required for exa_search.py and nia_docs.py
+aiohttp>=3.9
+
+# Optional: ouros REPL for /research and /autonomous-research
+# pip install ouros

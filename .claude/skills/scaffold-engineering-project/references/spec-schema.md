@@ -54,9 +54,9 @@ All required unless noted.
 
 | Field | Type | Required? | Description |
 |---|---|---|---|
-| `slices` | list | yes | Array of slice specs — same schema as `/jira-create-vertical-slices`'s `slices` field |
+| `slices` | list | yes | Array of slice specs — same schema as `/jira-decompose-epic`'s `slices` field |
 
-See `/jira-create-vertical-slices` `references/spec-schema.md` for the slice item schema (letter, summary, sd_sections, what_to_build, ac_items, blocked_by_letter, slice_type, notes, extra_refs).
+See `/jira-decompose-epic` `references/spec-schema.md` for the slice item schema (letter, summary, sd_sections, what_to_build, ac_items, blocked_by_letter, slice_type, notes, extra_refs).
 
 The wrapper's slice-spec materialization step **automatically fills in** `confluence_hub_url` and `confluence_design_url` from the just-created Confluence pages — the user does NOT need to provide those at the wrapper-spec level.
 
@@ -104,6 +104,6 @@ This validates:
 3. Confluence parent exists (REST GET)
 4. design_doc + each extra_children path resolves to a real file
 5. Each markdown's mermaid blocks compile (via mermaid.ink)
-6. Slice spec validates via `/jira-create-vertical-slices` validator (Epic exists, blocked_by_letter chain resolves)
+6. Slice spec validates via `/jira-decompose-epic` validator (Epic exists, blocked_by_letter chain resolves)
 
 Costs zero mutations.

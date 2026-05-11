@@ -142,7 +142,7 @@ You can also type `/skill-name` directly if you know it — both work.
 | Chief-of-staff (everyday workflows) | `archive-project`, `briefing`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `prune-projects`, `save-resource`, `sync-indexes`, `thinking-partner` |
 | Setup & meta | `bootstrap`, `skill-creator` |
 | Research | `company-research`, `people-research` |
-| Project tracking | `confluence-publish-markdown`, `jira-create-vertical-slices`, `scaffold-engineering-project` |
+| Project tracking | `confluence-publish-markdown`, `jira-decompose-epic`, `scaffold-engineering-project` |
 | Design (26 skills) | landing pages, dashboards, decks, mobile apps, blog posts, social carousels, videos, posters, wireframes, OKR trackers, and more |
 | Persona templates (10) | `persona-exec-assistant`, `persona-sales-ops`, `persona-researcher`, `persona-project-manager`, `persona-team-lead`, `persona-content-creator`, `persona-customer-support`, `persona-event-coordinator`, `persona-hr-coordinator`, `persona-it-admin` |
 | Reference (with adapt-before-fork disclaimer) | `samba-publish` — internal-company URL deployment via Cloudflare Pages |

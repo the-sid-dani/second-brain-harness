@@ -12,6 +12,7 @@ Kept in v0.1.0 as a reference for SSO-gated static-site publishing. Genericized 
 ---
 name: samba-publish
 description: Deploys an HTML file or static site folder to Cloudflare Pages with @samba.com / @samba.tv SSO gating by default. Use this skill when the user wants to share an HTML artifact (briefing, dashboard, prototype, deck, exec snapshot, project page) as an internal URL with Samba employees only. Triggers on phrases like "publish this", "deploy this page", "share this with the team", "put this on a URL", "make this internal-only", "samba publish", "/samba:publish", or any request to create a shareable internal-company URL from a static HTML/site asset.
+allowed-tools: Bash AskUserQuestion
 ---
 
 # Samba Publish

@@ -1,6 +1,7 @@
 ---
 name: sync-indexes
 description: Repairs drift between the on-disk state of `<workspace.root>/<workspace.coding>/{work,personal,forks,archive}/` and `<indexes.code_projects>` (the canonical code-repos index file). Scans the actual code folders, parses the index, computes a three-way diff (repos present on disk but missing from index → propose ADD; rows in index but folder gone from disk → propose FLAG/remove; matches → ok), shows the diff to the user via `AskUserQuestion`, applies only the approved changes. Read-only by default; mutates `<indexes.code_projects>` only after explicit approval. Use this whenever the user wants to audit code-repo bookkeeping — phrases like "sync indexes", "repair code-projects", "check for orphan repos", "what's in 2-Coding that's not in the index", "audit code repos", "is my index up to date?", "/sync-indexes". Trigger broadly on audit/sync/drift/orphan language about code repos. The index matters because `<workspace.coding>/` is gitignored — without a maintained index, no fork-portable record of what code lives where exists. Sister skill to `/prune-projects` (same iterator-multiselect-act shape, different domain).
+allowed-tools: Read Edit Bash AskUserQuestion
 ---
 
 # sync-indexes

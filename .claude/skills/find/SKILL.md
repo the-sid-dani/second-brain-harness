@@ -1,6 +1,7 @@
 ---
 name: find
 description: Recall layer for the second brain. Searches across `<workspace.root>/<workspace.resources>/`, `<workspace.root>/<workspace.projects>/`, `<workspace.root>/<workspace.archive>/`, and `memory/` for a topic — by filename and by content — then ranks matches and optionally synthesizes them into a structured summary with file citations. All paths come from the Configuration section in root CLAUDE.md — read those first. Use this whenever the user asks <assistant.name> to recall existing knowledge before generating new content — phrases like "do I have anything on X", "what do I know about Y", "search my notes for Z", "find research on W", "is there a project for V", "what did I save about U", "/find <topic>". Trigger broadly on recall language even when the user doesn't say "find" explicitly — recall is the pattern, not the literal command. Replaces manual `ls` + `grep` flailing across four organizational locations. Layer 3 skills (briefing, meeting-prep) will compose `/find` so they can say "you already have a relevant note on this" before generating new content. Inspired by claudesidian's `research-assistant` skill but adapted to our PARA layout, frontmatter conventions, and decision #16 (Resources two-level structure).
+allowed-tools: Read Bash AskUserQuestion
 ---
 
 # find

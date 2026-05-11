@@ -31,7 +31,10 @@ from urllib.parse import quote
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-CONF_BASE = "https://sambatv.atlassian.net/wiki"
+ATLASSIAN_BASE_URL = os.environ.get("ATLASSIAN_BASE_URL", "https://your-org.atlassian.net")
+JIRA_BASE = ATLASSIAN_BASE_URL
+CONF_BASE = f"{ATLASSIAN_BASE_URL}/wiki"
+SPACE_KEY = os.environ.get("ATLASSIAN_CONF_SPACE", "YOUR_SPACE_KEY")
 TIMEOUT_SEC = 30
 
 
@@ -449,7 +452,7 @@ def build_header_panel(cfg: dict) -> dict:
         pairs.append(("Confluence hub", cfg["confluence_hub"]))
     if cfg.get("jira_epic"):
         epic = cfg["jira_epic"]
-        url = f"https://sambatv.atlassian.net/browse/{epic}"
+        url = f"{JIRA_BASE}/browse/{epic}"
         pairs.append((f"Jira Epic ({epic})", url))
     for extra in cfg.get("extra_links", []):
         pairs.append((extra["label"], extra["url"]))
@@ -579,7 +582,7 @@ def main() -> None:
         page_id = update_page(args.page_id, adf_doc, title)
 
     print(f"\n{'─'*60}")
-    print(f"Published: https://sambatv.atlassian.net/wiki/spaces/ATF/pages/{page_id}")
+    print(f"Published: {CONF_BASE}/spaces/{SPACE_KEY}/pages/{page_id}")
     print(f"  Title:    {title}")
     print(f"  Page ID:  {page_id}")
 

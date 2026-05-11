@@ -2,7 +2,7 @@
 """End-to-end engineering project scaffold:
   1. Publish design doc + optional extras to Confluence (via /confluence-publish-markdown)
   2. Generate + create the project hub page (this script's unique logic)
-  3. Bulk-create vertical-slice Stories under the Epic (via /jira-create-vertical-slices)
+  3. Bulk-create vertical-slice Stories under the Epic (via /jira-decompose-epic)
 
 Usage:
     python scaffold.py --spec <path>                # full run
@@ -13,7 +13,7 @@ Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain
 
 This script delegates to two sibling skills:
 - /confluence-publish-markdown
-- /jira-create-vertical-slices
+- /jira-decompose-epic
 Both must be installed at sibling paths under .claude/skills/.
 """
 
@@ -30,7 +30,9 @@ from typing import Any
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-CONF_BASE = "https://sambatv.atlassian.net/wiki"
+ATLASSIAN_BASE_URL = os.environ.get("ATLASSIAN_BASE_URL", "https://your-org.atlassian.net")
+JIRA_BASE = ATLASSIAN_BASE_URL
+CONF_BASE = f"{ATLASSIAN_BASE_URL}/wiki"
 TIMEOUT_SEC = 30
 
 # ============================================================================
@@ -41,14 +43,14 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 SKILLS_ROOT = SKILL_DIR.parent
 
 PUBLISH_MD_SCRIPT = SKILLS_ROOT / "confluence-publish-markdown" / "scripts" / "publish_markdown.py"
-CREATE_SLICES_SCRIPT = SKILLS_ROOT / "jira-create-vertical-slices" / "scripts" / "create_slices.py"
+CREATE_SLICES_SCRIPT = SKILLS_ROOT / "jira-decompose-epic" / "scripts" / "create_slices.py"
 
 
 def assert_sibling_skills_present() -> None:
     missing = []
     for label, path in [
         ("/confluence-publish-markdown", PUBLISH_MD_SCRIPT),
-        ("/jira-create-vertical-slices", CREATE_SLICES_SCRIPT),
+        ("/jira-decompose-epic", CREATE_SLICES_SCRIPT),
     ]:
         if not path.is_file():
             missing.append(f"  {label} → expected at {path}")
@@ -120,7 +122,7 @@ def validate_spec(spec: dict[str, Any], spec_path: Path) -> list[str]:
             if not full_path.is_file():
                 errors.append(f"extra_children[{i}].path not found: {full_path}")
 
-    # Slices basic shape (delegates fuller validation to /jira-create-vertical-slices)
+    # Slices basic shape (delegates fuller validation to /jira-decompose-epic)
     slices = spec.get("slices", [])
     if not isinstance(slices, list) or not slices:
         errors.append("`slices` must be a non-empty list")
@@ -314,7 +316,7 @@ def build_hub_adf(spec: dict, design_url: str, design_title: str,
     content.append(_heading(2, _t("Active links")))
     rows = [_tr(_th(_strong("Resource")), _th(_strong("Link")))]
     rows.append(_tr(_td(_t(f"Jira Epic ({epic_key})")),
-                    _td(_link(epic_key, f"https://sambatv.atlassian.net/browse/{epic_key}"))))
+                    _td(_link(epic_key, f"{JIRA_BASE}/browse/{epic_key}"))))
     rows.append(_tr(_td(_t("System Design")), _td(_link(design_title, design_url))))
     for title, url in extra_pages:
         rows.append(_tr(_td(_t(title)), _td(_link(title, url))))
@@ -416,7 +418,7 @@ def run_create_slices(spec_path: Path, validate_only: bool = False) -> None:
     proc = subprocess.run(cmd, capture_output=True, text=True)
     if proc.returncode != 0:
         sys.exit(
-            f"Atomic skill /jira-create-vertical-slices failed:\n"
+            f"Atomic skill /jira-decompose-epic failed:\n"
             f"  stdout: {proc.stdout}\n"
             f"  stderr: {proc.stderr}"
         )
@@ -446,7 +448,7 @@ def write_header_config(spec: dict, jira_epic: str, confluence_hub: str | None,
 
 def materialize_slice_spec(spec: dict, hub_url: str, design_url: str,
                            out_path: Path) -> None:
-    """Build the per-/jira-create-vertical-slices/ spec from the wrapper spec.
+    """Build the per-/jira-decompose-epic/ spec from the wrapper spec.
 
     Inserts the just-created Confluence URLs into the slice spec block."""
     slice_spec = {
@@ -506,7 +508,7 @@ def main() -> None:
     print(f"OK — {body.get('title', '?')!r}")
     print(f"  GET Jira epic {spec['epic_key']} ...", end=" ", flush=True)
     auth = get_basic_auth()
-    req = Request(f"https://sambatv.atlassian.net/rest/api/3/issue/{spec['epic_key']}",
+    req = Request(f"{JIRA_BASE}/rest/api/3/issue/{spec['epic_key']}",
                   headers={"Authorization": f"Basic {auth}", "Accept": "application/json"})
     try:
         with urlopen(req, timeout=TIMEOUT_SEC) as r:
@@ -527,7 +529,7 @@ def main() -> None:
             title=spec["design_doc"]["title"],
             validate_only=True,
         )
-        # Validate slices via /jira-create-vertical-slices
+        # Validate slices via /jira-decompose-epic
         with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as tf:
             slice_spec_path = Path(tf.name)
         materialize_slice_spec(spec, "<hub-pending>", "<design-pending>", slice_spec_path)
@@ -593,7 +595,7 @@ def main() -> None:
     print(f"  Hub URL: {hub_url}")
 
     # ====== Phase 4: Create slice tickets ======
-    print(f"\n{'='*60}\nPhase 4: Create slice tickets via /jira-create-vertical-slices\n{'='*60}")
+    print(f"\n{'='*60}\nPhase 4: Create slice tickets via /jira-decompose-epic\n{'='*60}")
     slice_spec_path = Path(tempfile.mkdtemp()) / "slice-spec.yaml"
     materialize_slice_spec(spec, hub_url, design_url, slice_spec_path)
     run_create_slices(slice_spec_path)
@@ -606,7 +608,7 @@ def main() -> None:
     for title, url in extra_pages:
         print(f"  {title}: {url}")
     print(f"\nJira:")
-    print(f"  Epic:   https://sambatv.atlassian.net/browse/{spec['epic_key']}")
+    print(f"  Epic:   {JIRA_BASE}/browse/{spec['epic_key']}")
     print(f"  Slices: search via JQL: labels = \"{spec['label']}\" ORDER BY key ASC")
     print(f"\nNext step: spot-check the hub page renders correctly, then update the Epic")
     print(f"description manually to link back to the hub if desired.")

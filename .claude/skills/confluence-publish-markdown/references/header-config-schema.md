@@ -62,4 +62,4 @@ If neither `summary` nor any link is provided, the skill exits with an error. An
 
 ## Why YAML and JSON both?
 
-Same as `/jira-create-vertical-slices` — YAML for human editing, JSON for tool-generated configs. Auto-detected by extension.
+Same as `/jira-decompose-epic` — YAML for human editing, JSON for tool-generated configs. Auto-detected by extension.

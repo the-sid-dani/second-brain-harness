@@ -1,6 +1,7 @@
 ---
 name: new-project
 description: Scaffolds any new project — <assistant.name> meta-project (planning, strategy, content, research, meetings) at `<workspace.root>/<workspace.projects>/YYYY-MM-slug/`, OR a code repo at `<workspace.root>/<workspace.coding>/<scope>/<name>/` with optional GitHub integration. All paths and identity values come from the Configuration section in root CLAUDE.md — read those first. Use this whenever the user says he wants to start, kick off, scaffold, set up, or create a new project — including code projects (MCP servers, agents, libraries, CLI tools, bots, prototypes, anything that gets its own git repo). Trigger phrases — "let's start a project on X", "kick off X", "scaffold a project for Y", "set up the QBR prep", "I want to track X", "new MCP server for Z", "spin up a repo for W", "new agent for V", "create a TypeScript/Python/Rust project". The skill asks for project type — code projects branch into scope/stack/GitHub questions; non-code projects branch into the standard six-type taxonomy. ONE skill for both because the only meaningful differences are folder location, optional `git init` + `gh repo create`, and an index-row append. The shared 90% (name, CLAUDE.md, memory.md, status frontmatter, append-only memory pattern) is identical.
+allowed-tools: Read Write Bash AskUserQuestion Skill
 ---
 
 # new-project

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.11] - 2026-05-11
+
+### Changed
+
+- **SKILL.md frontmatter cleanup** — verified the spec against authoritative Claude Code docs and corrected the harness:
+  - Removed `context: fork` from 14 first-party skills. The field is real but only takes effect when paired with `agent:` — without that companion, Claude Code silently ignores it. Was vestigial.
+  - Added per-skill `allowed-tools` to 15 high-impact skills (briefing, bootstrap, find, contact, contact-log, new-project, archive-project, prune-projects, inbox-process, save-resource, sync-indexes, thinking-partner, samba-publish, company-research, people-research). `allowed-tools` is the real Claude Code field that grants no-prompt access to listed tools when a skill is active. Total skills with `allowed-tools`: 4 → 19.
+- **Trimmed top-5 SKILL.md descriptions** that were exceeding the per-entry cap and suppressing other skills from the session-start listing:
+  - `briefing` 2941 → 803 chars
+  - `bootstrap` 2921 → 897 chars
+  - `contact-log` 2006 → 658 chars
+  - `contact` 1743 → 754 chars
+  - `inbox-process` 1609 → 630 chars (was being dropped entirely)
+  - Net ~7,478 chars / ~1,870 tokens reclaimed. Trigger phrases, invariants, composition notes, and historical pointers moved out of the description into the SKILL.md body where they belong.
+- **`/briefing` v0.2.0** — output switched from `morning-briefing-YYYY-MM-DD.md` to `morning-briefing-YYYY-MM-DD.html`. Full DOM with `data-od-id` slugs follows the `design-dashboard` pattern (sidebar nav + topbar + KPI row + section panels + Tools-used footer). Self-contained: no `<script>`, no external links/fonts/CSS, no `http://` refs, inline SVG only.
+- **Atlassian skill scripts parameterized** — `jira-create-vertical-slices/scripts/create_slices.py`, `scaffold-engineering-project/scripts/scaffold.py`, and `confluence-publish-markdown/scripts/publish_markdown.py` now read `ATLASSIAN_BASE_URL` (and `ATLASSIAN_CONF_SPACE` for the latter) from env with `<your-org>` placeholder fallback. No more hardcoded `sambatv.atlassian.net` references.
+
 ## [0.1.0] - 2026-05-10
 
 First public release — the daily-agents harness extracted from Sid's private workspace.
@@ -18,7 +35,7 @@ First public release — the daily-agents harness extracted from Sid's private w
 - 74 shipped skills across 5 categories:
   - **15 first-party lifecycle**: `archive-project`, `bootstrap`, `briefing`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `prune-projects`, `save-resource`, `skill-creator`, `sync-indexes`, `thinking-partner`.
   - **2 research**: `company-research`, `people-research`.
-  - **3 Atlassian**: `confluence-publish-markdown`, `jira-create-vertical-slices`, `scaffold-engineering-project`.
+  - **3 Atlassian**: `confluence-publish-markdown`, `jira-decompose-epic`, `scaffold-engineering-project`.
   - **36 design**: `saas-landing`, `dashboard`, `blog-post`, `hyperframes`, `video`, etc.
   - **10 persona**: `exec-assistant`, `sales-ops`, `content-creator`, `project-manager`, `team-lead`, `hr-coordinator`, `it-admin`, `customer-support`, `event-coordinator`, `researcher`.
   - **1 samba-publish**: reference SSO-gated Cloudflare Pages publisher — non-Samba forks adapt domain + token.

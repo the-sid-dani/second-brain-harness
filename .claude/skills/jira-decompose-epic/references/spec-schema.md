@@ -1,4 +1,4 @@
-# jira-create-vertical-slices — spec schema
+# jira-decompose-epic — spec schema
 
 The skill consumes a YAML or JSON spec file. This doc describes every field, what
 it means, what's required, and what's optional. Use `assets/example-spec.yaml`

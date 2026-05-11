@@ -1,7 +1,7 @@
 ---
 name: company-research
 description: Company research using Exa search. Finds company info, competitors, news, financials, LinkedIn profiles, builds company lists. Use when researching companies, doing competitor analysis, market research, or building company lists.
-context: fork
+allowed-tools: Task mcp__exa__web_search_advanced_exa
 ---
 
 # Company Research

@@ -1,12 +1,12 @@
 ---
 name: briefing
-description: Morning chief-of-staff briefing — composes whatever signal sources are configured (email, calendar, messaging, issue-tracking, code-hosting) PLUS the always-on local sources (`<workspace.root>/<workspace.resources>/contacts/` + active projects via `<scripts.project_query>` + each project's `memory.md` tail + `CLAUDE.md` status) into a single structured brief and writes it to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. Detects available tools at runtime in Step 0.5 (`command -v gws` / `command -v gh` for CLIs; deferred-tools list for `mcp__<name>__*` to check MCP loadedness) and composes ONLY what's present — fork users with zero MCPs still get a useful brief from workspace state + project memory tails + USER.md priority signals. Sections backed by absent tools are skipped silently in the body and listed transparently in a `## Tools used` footer at the bottom of the brief. Surfaces a "Today's work from your projects" section that reads each active project's append-only memory log, extracts the most-recent decision/blocker/next-action signals, and recommends what to ship today — opinionated, not a flat list. Applies the user's priority signals from USER.md (direct collaborators = HIGH, calendar conflicts = URGENT, AI/technical = HIGH, generic newsletters = LOW) — read at runtime, never hardcoded. Use this whenever <user.name> asks <assistant.name> to start the day, orient them, surface what needs attention, or ask "what should I work on today" — phrases like "/briefing", "morning briefing", "brief me", "what's on my plate today", "what needs me today", "give me the rundown", "what should I do first this morning", "orient me for the day", "daily brief", "what should I work on today". Trigger broadly on day-orientation language even when the literal word "briefing" is absent — the chief-of-staff intent is the pattern. Output ALWAYS lands at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md` (never at workspace root, never inside a project folder, never in 0-Inbox/) per README §Outputs. Filters contacts where `status: personal` BEFORE generating "Open commitments by person" — work-context skill, never leaks personal-life contacts into a work brief. Does NOT fabricate signals when an MCP returns empty or is not configured — absent sections drop out of the body silently (footer documents the omission); empty-but-configured sources write "No <X> today"; never invents fake tickets, fake messages, fake meetings, or fake project recommendations. Does NOT auto-send to Slack/email/Jira — briefing is a draft `<user.name>` reads, not a message `<user.name>` sends. Does NOT invoke Exa directly (token-isolation discipline) — for external-topic enrichment, suggests `/find` or `/contact-research` instead. Composes existing skills rather than reimplementing them; references USER.md priority signals rather than restating the logic.
-context: fork
+description: Morning chief-of-staff briefing — composes available signal sources (email, calendar, messaging, issue-tracking, code-hosting) plus local sources (contacts, active projects, USER.md priorities) into one self-contained HTML brief at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Detects tool availability at runtime in Step 0.5 so fork users with zero MCPs still get a useful brief from local state. Use when <user.name> asks to start the day or surface what needs attention — phrases like "/briefing", "brief me", "what's on my plate today", "what should I work on today". Trigger broadly on day-orientation language. Filters `status: personal` contacts; never auto-sends; never fabricates absent signals (see SKILL.md body for invariants T1-T4).
+allowed-tools: Read Write Glob Bash AskUserQuestion Skill mcp__slack__slack_search_public_and_private mcp__slack__slack_search_channels mcp__atlassian__searchJiraIssuesUsingJql
 ---
 
 # briefing
 
-The chief-of-staff morning brief. Probes which signal sources are available, composes only the ones present, and assembles a single structured document at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. Applies the user's priority signals, surfaces what needs them today, and recommends what to ship from each active project. Closes with a `## Tools used` footer transparently listing what was composed vs what was not configured — fork users with zero MCPs still get a useful brief from workspace state alone.
+The chief-of-staff morning brief. Probes which signal sources are available, composes only the ones present, and assembles a single structured document at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Applies the user's priority signals, surfaces what needs them today, and recommends what to ship from each active project. Closes with a "Tools used" footer section transparently listing what was composed vs what was not configured — fork users with zero MCPs still get a useful brief from workspace state alone.
 
 **Before you begin: read the Configuration section in root CLAUDE.md.** Path tokens like `<workspace.resources>` and `<scripts.project_query>` resolve from there — don't hardcode.
 
@@ -41,7 +41,7 @@ Do NOT trigger for:
 
 ## Source of truth
 
-- **Output convention** — `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md` per README §Outputs. Briefings live next to `meetings/` (raw transcripts) in Resources, since briefings are reference material the user re-reads. Path moved here from a top-level `docs/` folder in v0.1.5 — Resources is the right PARA home for synthesis-layer outputs.
+- **Output convention** — `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html` per README §Outputs. Briefings live next to `meetings/` (raw transcripts) in Resources, since briefings are reference material the user re-reads. Path moved here from a top-level `docs/` folder in v0.1.5 — Resources is the right PARA home for synthesis-layer outputs.
 - **Priority signals** — read at runtime from USER.md "Priority Signals" section. Per fork, <user.name>'s collaborators / urgency rules differ.
 - **Contacts directory** — `<workspace.root>/<workspace.resources>/contacts/<slug>.md`. Schema documented at `<workspace.root>/<workspace.resources>/contacts/README.md`.
 - **Active projects** — `bash <scripts.project_query>` returns live tabular view (status, project-type, days-since-touched, stale flag). Each project has its own `CLAUDE.md` (status frontmatter) and `memory.md` (append-only decision log).
@@ -53,9 +53,9 @@ These four invariants protect against high-cost failure modes. They are stated m
 
 ### T1 — Output path is fixed
 
-Briefing output **always** lands at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. The date is today's date in `YYYY-MM-DD` format. Never at workspace root. Never inside a project folder. Never in `<workspace.inbox>/`. Never `morning-briefing.md` (no date suffix).
+Briefing output **always** lands at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. The date is today's date in `YYYY-MM-DD` format. Never at workspace root. Never inside a project folder. Never in `<workspace.inbox>/`. Never `morning-briefing.html` (no date suffix). Never `.md` (HTML-only output as of v0.2.0; markdown source path retired — see Step 9).
 
-If the file already exists for today (re-running the briefing same-day), append a timestamp: `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD-HHMM.md`. Do not overwrite the original — <user.name> may have read or edited it.
+If the file already exists for today (re-running the briefing same-day), append a timestamp: `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD-HHMM.html`. Do not overwrite the original — <user.name> may have read or edited it.
 
 ### T2 — Filter `status: personal` contacts BEFORE building "Open commitments by person"
 
@@ -98,7 +98,8 @@ Run these in parallel via separate tool calls (no dependencies between them):
    - LOW filters (newsletters, generic updates)
 3. **Active projects** — Bash: `bash <scripts.project_query>` (no flags = active only). Cache the rows (slug, status, project-type, days-since-touched) for Step 7's project synthesis.
 4. **Contacts list** — Bash: `ls <workspace.root>/<workspace.resources>/contacts/*.md` to get the file list (NOT the contents — those come in Step 5).
-5. **Briefing output path** — compute target file path: `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.md`. If it already exists, set the path to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}-${TIME}.md` per T1.
+5. **Briefing output path** — compute target file path: `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.html`. If it already exists, set the path to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}-${TIME}.html` per T1.
+6. **Active design tokens** — Bash: `cat DESIGN.md` (cwd-relative — resolves to the active DESIGN.md whether root-level or project-overridden). Cache the file content for Step 9 — colors, typography, spacing all come from there. Required for HTML composition. If `DESIGN.md` does not exist at cwd, fall back to the neutral defaults inlined in Step 9's CSS scaffold and surface a one-line `⚠️` in the footer ("DESIGN.md not found — used neutral defaults"); never invent tokens.
 
 ### Step 0.5: Detect available tools (probe-then-compose — T4 invariant)
 
@@ -291,78 +292,163 @@ For the top 3-5 calendar events from Step 2 with substantive topics (NOT recurri
 
 This step is **optional** — if `/find` is unavailable or returns nothing for all events, omit the section entirely. Don't error.
 
-### Step 9: Compose and write the brief
+### Step 9: Compose and write the brief as a self-contained HTML dashboard
 
-Build the markdown output following the structure below. Order is fixed (priority order matches the chief-of-staff mental model — what's urgent, then what's structured, then what to actually do):
+Output is a **single self-contained HTML file** styled with the active DESIGN.md tokens (cached in Step 0). Layout follows the `design-dashboard` pattern at `.claude/skills/design-dashboard/SKILL.md` (with `example.html` as the canonical reference), adapted for briefing-specific regions.
 
-```markdown
-# Morning brief — <YYYY-MM-DD>
+**Hard rules for the HTML file:**
+- One file, `<!doctype html>` through `</html>`. All CSS in one inline `<style>` block. NO external links (fonts, CSS, images, JS). NO `<script>`. NO `<img src="http...">`. Inline SVG only for any chart. Briefings must open offline from disk.
+- CSS custom properties at the `:root` seed from DESIGN.md tokens: `--bg`, `--fg`, `--muted`, `--border`, `--accent`, `--surface`, `--good`, `--warn`, `--bad`. If DESIGN.md is missing or omits a token, fall back to the neutral defaults inlined here — never invent hex values.
+- Semantic HTML: `<aside>`, `<header>`, `<main>`, `<section>`, `<nav>`, `<table>`. Every logical region carries `data-od-id="<slug>"` so future parsers can locate sections deterministically.
+- Density follows DS mood — airy DSes get more padding, dense DSes tighten rows. Match the design-dashboard skill's self-check criteria.
+- Accent used at most twice — sidebar active state + one hero-stat highlight. Don't accent every status pill.
+- Status indicators 🟢🟡🔴 stay as Unicode emoji inside `<span class="pill">` (per USER.md formatting prefs — OK in briefings).
 
-*Generated <HH:MM> by <assistant.name>. <One-line tagline derived from the day's signal — e.g., "Three meetings, two open Jira tickets, and Omar's waiting on you.">*
+**DOM scaffold (mandatory structure — section order fixed):**
 
-## What needs you today
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Morning brief — <YYYY-MM-DD></title>
+  <style>
+    :root { --bg: ...; --fg: ...; --muted: ...; --border: ...; --accent: ...; --surface: ...; --good: ...; --warn: ...; --bad: ...; }
+    /* All seeded from DESIGN.md tokens. See design-dashboard/example.html for the full CSS scaffold —
+       same component classes (.sidebar, .nav, .topbar, .kpis, .kpi, .panel, .panels-row, .pill, table). */
+  </style>
+</head>
+<body>
+  <aside class="sidebar" data-od-id="sidebar">
+    <div class="brand"><assistant.emoji> <assistant.name></div>
+    <nav class="nav">
+      <a href="#what-needs-you" class="active">Today's priorities</a>
+      <a href="#calendar">Calendar</a>
+      <a href="#projects">Projects</a>
+      <a href="#slack">Slack</a>          <!-- omit anchor if gate false -->
+      <a href="#jira">Jira</a>            <!-- omit anchor if gate false -->
+      <a href="#commitments">Commitments</a>
+      <a href="#shipped">Recent shipped</a> <!-- omit anchor if gate false -->
+      <a href="#notes">Notes</a>          <!-- omit anchor if Step 8 empty -->
+      <span class="group-label">Brief</span>
+      <a href="#tools-used">Tools used</a>
+    </nav>
+  </aside>
+  <main>
+    <header class="topbar" data-od-id="topbar">
+      <div>
+        <h1>Morning brief · <YYYY-MM-DD></h1>
+        <p class="tagline">Generated <HH:MM> by <assistant.name>. <One-line tagline derived from the day's signal — e.g., "Three meetings, two open Jira tickets, and Omar's waiting on you."></p>
+      </div>
+      <div class="right"><span class="pill"><day-of-week, e.g., Tuesday></span></div>
+    </header>
 
-<Top 5-7 items: urgent emails + next 3 calendar events + past-due Jira + unread Slack mentions, ranked by priority signals from USER.md.>
+    <section class="kpis" data-od-id="kpis">
+      <!-- 3-4 KPI cards. Dynamic — pick from: urgent count, meetings today, unread @-mentions,
+           past-due tickets, blocked projects, recent shipped count. Use only KPIs the detection
+           map enables; never pad with fake stats (T3). At least 2, at most 4. -->
+      <div class="kpi"><div class="label">Urgent today</div><div class="value">3</div><div class="delta"><X high-priority items></div></div>
+      <div class="kpi"><div class="label">Meetings</div><div class="value">7</div><div class="delta"><first start, last end></div></div>
+      <!-- ... -->
+    </section>
 
-## Calendar at a glance
+    <section class="panel" id="what-needs-you" data-od-id="what-needs-you">
+      <h3>What needs you today</h3>
+      <!-- Step's 1+2+3+4 cross-section: top 5-7 items, urgent emails + next 3 cal events + past-due Jira + Slack mentions. Use <ul> with status pills. -->
+    </section>
 
-<Full-day agenda from Step 2. Conflicts flagged 🔴.>
+    <section class="panel" id="calendar" data-od-id="calendar">
+      <!-- Gated on detection.cli.gws — OMIT this <section> entirely if false. -->
+      <h3>Calendar at a glance</h3>
+      <table><thead><tr><th>Time</th><th>Event</th><th>Status</th></tr></thead><tbody>...</tbody></table>
+    </section>
 
-## Today's work from your projects
+    <section class="panel" id="projects" data-od-id="projects">
+      <h3>Today's work from your projects</h3>
+      <div class="projects-grid">
+        <!-- One <article class="project"> per project from Step 7. Status emoji as <span class="pill"> in the card header. -->
+        <article class="project">
+          <header><h4><Project name></h4> <span class="pill <good|warn|bad>">🟢/🟡/🔴</span></header>
+          <p class="status"><Status one-liner></p>
+          <p class="latest"><strong>Latest move:</strong> ...</p>
+          <p class="action"><strong>Today's recommended action:</strong> ...</p>
+        </article>
+      </div>
+      <p class="synthesis"><strong>From what I'm seeing, the highest-leverage work today is: ...</strong></p>
+    </section>
 
-<Step 7 output: per-project synthesis with status emoji, latest move, recommended action, today-relevance. Closing "highest-leverage work today is X" line.>
+    <section class="panel" id="slack" data-od-id="slack">
+      <!-- Gated on detection.mcp.slack — OMIT this <section> entirely if false. -->
+      <h3>Slack digest</h3>
+      <!-- @-mentions / active channels / threads owing reply, structured as <h4> + <ul>. -->
+    </section>
 
-## Slack digest
+    <section class="panel" id="jira" data-od-id="jira">
+      <!-- Gated on detection.mcp.atlassian — OMIT entirely if false. -->
+      <h3>Jira queue</h3>
+      <table>...</table>
+    </section>
 
-<Step 3 output. Dynamic channel enumeration. With "configure priority channels" hint at section bottom.>
+    <section class="panel" id="commitments" data-od-id="commitments">
+      <h3>Open commitments by person</h3>
+      <!-- Per T2: status: personal contacts already filtered upstream in Step 5. WikiLinks render as plain <a href="../contacts/<slug>.md"><slug></a>. -->
+    </section>
 
-## Jira queue
+    <section class="panel" id="shipped" data-od-id="shipped">
+      <!-- Gated on detection.cli.gh — OMIT entirely if false. -->
+      <h3>Recent shipped</h3>
+      <ul>...</ul>
+    </section>
 
-<Step 4 output, grouped by status.>
+    <section class="panel" id="notes" data-od-id="notes">
+      <!-- Omit if Step 8 returned nothing useful. -->
+      <h3>Notes &amp; cross-references</h3>
+      <ul>...</ul>
+    </section>
 
-## Open commitments by person
+    <section class="panel footer" id="tools-used" data-od-id="tools-used">
+      <h3>Tools used</h3>
+      <p class="muted">Composed from Step 0.5's detection map. Transparency footer per T4 — never fabricated.</p>
+      <ul>
+        <li><span class="pill good">✅ Composed</span> <comma-separated list></li>
+        <li><span class="pill warn">⏳ Not configured</span> <list></li>  <!-- OMIT <li> entirely if all gated tools detected -->
+        <li><span class="pill bad">⚠️ Errored at runtime</span> <list></li>  <!-- OMIT <li> entirely if no runtime errors -->
+      </ul>
+    </section>
 
-<Step 5 output. Personal contacts filtered out per T2. WikiLinks per decision #19.>
-
-## Recent shipped
-
-<Step 6 output. PRs merged in last 7 days.>
-
-## Notes & cross-references
-
-<Step 8 output if any. Otherwise omit this section entirely.>
-
----
-
-## Tools used
-
-*Composed from Step 0.5's detection map. Transparency footer per T4 — never fabricated.*
-
-- ✅ **Composed:** <comma-separated list of signal sources used, e.g., "Project synthesis (always), Open commitments, Gmail, Calendar, Slack, Jira, GitHub recent shipped, Notes & cross-references">
-- ⏳ **Not configured:** <comma-separated list of gated steps skipped per detection map, e.g., "Slack MCP, Atlassian MCP — run `/bootstrap` or `/mcp` to configure"> (OMIT this line entirely if all gated tools were detected)
-- ⚠️ **Errored at runtime:** <comma-separated list of detected-but-failed tools with one-line causes, e.g., "Gmail (auth expired — run `gws auth login`)"> (OMIT this line entirely if no runtime errors)
-
----
-
-That's the lay of the land. Where do you want to start?
+    <p class="signoff">That's the lay of the land. Where do you want to start?</p>
+  </main>
+</body>
+</html>
 ```
 
-**Voice (per SOUL.md):**
-- Open with "Morning <user.name>!" tone (warm, direct)
-- Use phrases like "Here's what matters...", "Worth noting...", "From what I'm seeing..."
-- NEVER "Per your request...", "Please be advised...", "Actionable items include..."
-- Status indicators 🟢🟡🔴 are OK in briefings (per USER.md formatting prefs)
-- Sparing emoji use — they signal status, not decoration
-- Be opinionated in Step 7's project synthesis. "From what I'm seeing, ship X today because Y." Not "you could consider..."
+**Voice (per SOUL.md) — applies to the human-readable text rendered inside the HTML:**
+- Topbar tagline: warm + direct, like "Morning <user.name>! Three meetings, two open Jira tickets, and Omar's waiting on you." (no "Per your request..." / "Please be advised...")
+- Use phrases like "Here's what matters...", "Worth noting...", "From what I'm seeing..." in the project-synthesis closing line
+- Status indicators 🟢🟡🔴 inside `<span class="pill">` — colored by status, not decoration
+- Be opinionated in the projects section's closing synthesis line. "Ship X today because Y." Not "you could consider..."
 
-**T1 reminder: write to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.md`** (or `-${DATE}-${TIME}.md` if collision). Confirm the path before Write. The Write tool will fail if the parent directory doesn't exist — `<workspace.root>/<workspace.resources>/briefings/` should already exist (created during workflow-defect cleanup 2026-05-06); if not, `mkdir -p` first.
+**Section-omission rules (T4 — preserve order of present sections):**
+- Gated section with detection=false → OMIT the entire `<section>` AND remove its `<a href="#...">` from the sidebar nav. No empty headers, no "⚠️ not configured" body content.
+- Gated section with detection=true but runtime error → keep the `<section>` and its `<h3>`, render a single `<p class="warn">⚠️ <Tool> errored — <cause></p>` as the body.
+- Mandatory-floor sections (what-needs-you, projects, commitments, tools-used) are ALWAYS in the DOM. Tools-used is the last `<section>` before `<p class="signoff">`.
+
+**Pre-Write assertions (catch regressions):**
+- Path string ends in `.html` (not `.md`) — reject otherwise (T1).
+- Contains `<!doctype html>` opening and `</html>` closing.
+- Contains the `<section data-od-id="tools-used">` (T4 mandatory footer).
+- Does NOT contain `<script>` or `http://` / `https://` references (self-contained rule).
+- Does NOT contain any `status: personal` contact slug in commitments section (T2 sanity grep).
+
+**T1 reminder: write to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.html`** (or `-${DATE}-${TIME}.html` if collision). Confirm the path before Write. The Write tool will fail if the parent directory doesn't exist — `<workspace.root>/<workspace.resources>/briefings/` should already exist (created during workflow-defect cleanup 2026-05-06); if not, `mkdir -p` first.
 
 ### Step 10: Surface to user
 
 Don't dump the full brief into chat — that's the file's job. Instead:
 
 ```
-Morning <user.name>! Brief is ready at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<DATE>.md`.
+Morning <user.name>! Brief is ready at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<DATE>.html` — open in a browser.
 
 Top 3 from "What needs you today":
 1. <item>
@@ -383,7 +469,11 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Output written to wrong path | T1 violation | Validate path string `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<DATE>.md` BEFORE Write. Add an assertion in Step 9. |
+| Output written to wrong path | T1 violation | Validate path string `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<DATE>.html` BEFORE Write. Add an assertion in Step 9. |
+| Output written as `.md` instead of `.html` | Pre-v0.2.0 muscle memory | The skill is HTML-only as of v0.2.0. Markdown output retired. Reject any path string ending in `.md` in Step 9's pre-Write assertion. |
+| HTML opens to a blank/unstyled page | DESIGN.md not loaded or token names mismatch in CSS | Step 0 caches DESIGN.md content; Step 9's `<style>` block defines `--bg`/`--fg`/`--accent`/etc. CSS custom properties seeded from those tokens. If DESIGN.md is absent, use neutral fallbacks (do NOT skip the `<style>` block). |
+| HTML missing semantic structure (raw `<div>` soup) | Skill wrote freeform HTML instead of using the dashboard scaffold | Use `<aside>`, `<header>`, `<main>`, `<section>` per Step 9. Each region carries a `data-od-id` slug so downstream parsers (future `/weekly-digest`, etc.) can locate sections deterministically. |
+| Inline JS or external assets in the HTML | Briefing must be a single self-contained file | NO `<script>` tags, NO external CSS/font links, NO `<img src="http...">` references. Everything inline. Briefings open offline from disk. Inline SVG for any chart. |
 | Same-day re-run overwrites existing brief | T1 violation (date-only filename) | Detect existing file in Step 0, append `-HHMM` to filename. |
 | Personal contact appears in "Open commitments by person" | T2 violation (filter not applied or applied at display time) | Filter `status: personal` at READ time in Step 5. Confirm via grep: output should not contain `[[contacts/faizan]]` or any other `status: personal` slug. |
 | Fake Jira ticket in output | T3 violation (MCP returned empty, skill invented content) | If `searchJiraIssuesUsingJql` returns `[]`, write "No active Jira tickets." NOT a fake row. |
@@ -391,7 +481,7 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 | Fake project recommendation | T3 violation in Step 7 | If a project's `memory.md` has fewer than 2 entries, surface "thin memory — consider /standup" instead of inventing a Next: action. |
 | Slack section in brief but Slack MCP not configured | T4 violation (gate broken or skipped) | Step 3 MUST gate on `detection.mcp.slack`. If a section appears with no MCP backing it, the content is fabricated. Re-run Step 0.5; the gate is the contract. |
 | Body has "⚠️ Slack not configured" line | T4 violation (footer-only state leaked into body) | The body NEVER says "not configured" — that's footer-only. Body's ⚠️ lines are exclusively for *detected-but-errored* tools. Not-configured tools omit silently. |
-| `## Tools used` footer missing | Step 9 skipped the footer block | The footer is MANDATORY in every brief — single source of truth for what was composed. Even for full-stack users with all green checks, the footer states "✅ Composed: everything." |
+| `<section data-od-id="tools-used">` footer missing | Step 9 skipped the footer block | The footer is MANDATORY in every brief — single source of truth for what was composed. Even for full-stack users with all green checks, the footer lists "✅ Composed: everything." Pre-Write assertion in Step 9 should reject any HTML lacking `data-od-id="tools-used"`. |
 | Footer fabricates tool status (says "✅ Composed: Slack" when Slack wasn't detected) | T4 violation | The footer is built from the `detection` map cached in Step 0.5, not from the body content. Wire it directly from the map. |
 | Step 1-6 ran even though tool not in detection map | T4 violation (gate ignored) | Each of Steps 1, 2, 3, 4, 6 has an explicit `Gate (T4):` line. Don't run the step's body when the gate is false. |
 | Slack channels missed | Static channel list assumption | Step 3 uses DYNAMIC enumeration via `slack_search_channels`, not a hardcoded list. No maintenance required as channel membership changes. |
@@ -414,22 +504,30 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 
 ## Output format reference
 
-The brief has a stable section order so downstream tooling (eventually `/standup`, `/weekly-digest`) can parse it:
+The brief is a single self-contained HTML file with a stable DOM order so downstream tooling (eventually `/standup`, `/weekly-digest`) can parse it deterministically via `data-od-id` slugs. Section order is FIXED:
 
-1. `# Morning brief — <YYYY-MM-DD>` (H1) — always present
-2. `## What needs you today` (H2) — always present (mandatory floor — pulls from calendar IF gws, urgent emails IF gws, past-due Jira IF atlassian; falls back to project signals + commitments if nothing else)
-3. `## Calendar at a glance` (H2) — gated on `detection.cli.gws`
-4. `## Today's work from your projects` (H2) — always present (mandatory floor — load-bearing chief-of-staff section)
-5. `## Slack digest` (H2) — gated on `detection.mcp.slack`
-6. `## Jira queue` (H2) — gated on `detection.mcp.atlassian`
-7. `## Open commitments by person` (H2) — always present (file reads, no external dep); omitted if contacts dir is empty
-8. `## Recent shipped` (H2) — gated on `detection.cli.gh`
-9. `## Notes & cross-references` (H2) — always tried; omitted if `/find` returned nothing useful
-10. `## Tools used` (H2) — ALWAYS present, transparency footer per T4
-11. Closing line: `That's the lay of the land. Where do you want to start?`
+1. `<title>` — `Morning brief — <YYYY-MM-DD>`
+2. `<aside data-od-id="sidebar">` — nav anchors mirror the present sections
+3. `<header data-od-id="topbar">` — H1 + tagline + day-of-week pill
+4. `<section data-od-id="kpis">` — 2-4 KPI cards (dynamic; from detection map + signal volume)
+5. `<section data-od-id="what-needs-you">` — always present (mandatory floor — top 5-7 items merged from calendar / Gmail / Jira / Slack per priority signals)
+6. `<section data-od-id="calendar">` — gated on `detection.cli.gws`
+7. `<section data-od-id="projects">` — always present (mandatory floor — load-bearing chief-of-staff section with project-card grid + closing synthesis line)
+8. `<section data-od-id="slack">` — gated on `detection.mcp.slack`
+9. `<section data-od-id="jira">` — gated on `detection.mcp.atlassian`
+10. `<section data-od-id="commitments">` — always present (file reads, no external dep); omitted if contacts dir is empty
+11. `<section data-od-id="shipped">` — gated on `detection.cli.gh`
+12. `<section data-od-id="notes">` — always tried; omitted if `/find` returned nothing useful
+13. `<section data-od-id="tools-used">` — ALWAYS present, transparency footer per T4
+14. `<p class="signoff">That's the lay of the land. Where do you want to start?</p>`
 
 **Section behaviors:**
-- Gated sections (3, 5, 6, 8) collapse out entirely if `detection.<key>` is false — no header, no body, no ⚠️ line. The `## Tools used` footer documents the omission.
-- Gated sections that DID get detection but errored at runtime: keep the section header, write a single `⚠️ <Tool> errored — <cause>` line, also log to footer.
-- Mandatory-floor sections (2, 4, 7) always appear unless they have genuinely no content (e.g., empty contacts dir → omit section 7).
-- The footer (10) is the source of truth: if a section is present in the body, the footer should list it under ✅ Composed; if absent, it goes under ⏳ Not configured or ⚠️ Errored.
+- Gated sections (6, 8, 9, 11) collapse out entirely if `detection.<key>` is false — no `<section>`, no sidebar nav anchor, no body. The `tools-used` footer documents the omission.
+- Gated sections that DID get detection but errored at runtime: keep the `<section>` and its `<h3>`, render a single `<p class="warn">⚠️ <Tool> errored — <cause></p>` as the body, also log to footer.
+- Mandatory-floor sections (5, 7, 10) always appear unless they have genuinely no content (e.g., empty contacts dir → omit section 10).
+- The footer (13) is the source of truth: if a `<section>` is present in the DOM, the footer should list it under ✅ Composed; if absent, it goes under ⏳ Not configured or ⚠️ Errored.
+
+**Why HTML, not Markdown (v0.2.0 decision):**
+- `<user.name>` wanted a styled, scannable artifact he could open in a browser and (eventually) `/samba-publish` for share. Dashboard mood beats prose for daily orientation.
+- Parsing tradeoff: downstream skills that previously grepped `## What needs you today` now query by `data-od-id="what-needs-you"` instead. DOM slugs are stable across cosmetic CSS changes; H2 text could drift with voice tweaks.
+- Self-contained constraint (no JS, no external assets) keeps briefings portable: opens offline, archivable, no link rot.

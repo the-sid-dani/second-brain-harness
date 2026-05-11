@@ -1,6 +1,7 @@
 ---
 name: archive-project
 description: Moves a completed project from `<workspace.root>/<workspace.projects>/<slug>/` to `<workspace.root>/<workspace.archive>/<slug>/` and flips its frontmatter `status: active` → `status: done`. All paths come from the Configuration section in root CLAUDE.md — read those first. Use this whenever the user says they're done with a project, wants to wrap it up, or wants to clean up their active list — phrases like "archive the X project", "I'm done with X", "wrap up X", "move X to archive", "X is finished — clear it out", "shelve X for now". Optional one-paragraph retro gets appended to `memory.md` before the move so the decision context survives. Trigger even when the user doesn't say "archive" explicitly — finishing/wrapping/clearing language for a known project should invoke this skill rather than letting them `mv` by hand (which would skip the status flip and break `/prune-projects` later).
+allowed-tools: Read Edit Bash AskUserQuestion
 ---
 
 # archive-project

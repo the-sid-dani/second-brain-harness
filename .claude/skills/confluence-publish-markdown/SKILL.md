@@ -104,7 +104,7 @@ See `references/markdown-subset.md` for the complete list. Quick summary:
 
 ## Auth
 
-Same as `/jira-create-vertical-slices`: requires `ATLASSIAN_BASIC_AUTH` env var (auto-loaded via `~/.zshrc` → `~/.second-brain-harness.env`).
+Same as `/jira-decompose-epic`: requires `ATLASSIAN_BASIC_AUTH` env var (auto-loaded via `~/.zshrc` → `~/.second-brain-harness.env`).
 
 For Confluence specifically: the basic-auth token must support both:
 - `GET /wiki/api/v2/pages/{id}` — for parent/page validation

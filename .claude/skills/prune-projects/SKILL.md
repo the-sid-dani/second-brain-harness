@@ -1,6 +1,7 @@
 ---
 name: prune-projects
 description: Friday-batch staleness review. Runs `<scripts.project_query>`, filters stale projects (active ≥90 days untouched, paused ≥60 days, status=done that slipped through), shows them in an `AskUserQuestion` multiselect with last-memory-entry context, and chains to `/archive-project` for each one the user approves. All paths come from the Configuration section in root CLAUDE.md — read those first. Use this whenever the user wants to clean up their active project list — phrases like "what's stale?", "any stale projects?", "Friday review", "what should I archive?", "prune projects", "what can I clean up?", "review my projects", "anything I should close out?", "what's gone cold?". Trigger even when the user doesn't say "prune" — clean-up / review / staleness language for the project list should invoke this rather than a manual scan. Skips `ongoing`-type projects (recurring duties — never stale).
+allowed-tools: Read Bash AskUserQuestion Skill
 ---
 
 # prune-projects

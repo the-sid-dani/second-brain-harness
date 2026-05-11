@@ -1,6 +1,6 @@
 ---
 name: scaffold-engineering-project
-description: One-command project scaffold combining Confluence + Jira. Given an existing Jira Epic and a repo with `system-design.md` (and optionally other markdown design docs), the skill publishes the markdown docs to Confluence as a hub-and-spokes structure, then bulk-creates the vertical-slice Stories under the Epic with full cross-links. Use this whenever <user.name> wants to scaffold a new engineering project end-to-end — phrases like "scaffold this engineering project", "set up Confluence + Jira for X", "land this design across both wikis", "boot the project tracking for X", "wire up Confluence and Jira for the new initiative", "publish the design doc and create the slices", or any intent to spin up project-tracking infrastructure all at once. Trigger broadly on combined-publish-and-ticket intent. The skill is a thin orchestration wrapper around `/confluence-publish-markdown` and `/jira-create-vertical-slices` plus its own hub-page generation. Use the atomic skills directly when you only need one half of the workflow.
+description: One-command project scaffold combining Confluence + Jira. Given an existing Jira Epic and a repo with `system-design.md` (and optionally other markdown design docs), the skill publishes the markdown docs to Confluence as a hub-and-spokes structure, then bulk-creates the vertical-slice Stories under the Epic with full cross-links. Use this whenever <user.name> wants to scaffold a new engineering project end-to-end — phrases like "scaffold this engineering project", "set up Confluence + Jira for X", "land this design across both wikis", "boot the project tracking for X", "wire up Confluence and Jira for the new initiative", "publish the design doc and create the slices", or any intent to spin up project-tracking infrastructure all at once. Trigger broadly on combined-publish-and-ticket intent. The skill is a thin orchestration wrapper around `/confluence-publish-markdown` and `/jira-decompose-epic` plus its own hub-page generation. Use the atomic skills directly when you only need one half of the workflow.
 ---
 
 # scaffold-engineering-project
@@ -18,7 +18,7 @@ Use this skill when:
 - You want Confluence pages (hub + design + extras) AND Jira slices created in one shot, with cross-links wired
 
 Do NOT use this skill when:
-- You only need one half — use the atomic skill (`/confluence-publish-markdown` or `/jira-create-vertical-slices`) directly
+- You only need one half — use the atomic skill (`/confluence-publish-markdown` or `/jira-decompose-epic`) directly
 - The Epic doesn't exist yet — create it first (Jira UI or single `createJiraIssue` call)
 - The project doesn't fit the hub-and-spokes pattern (e.g., it's a one-doc-no-slices effort) — use one of the atomic skills
 
@@ -47,7 +47,7 @@ The spec has three sections:
 
 1. **Project metadata** — name, prefix, owner, repo, live URL, Confluence space + parent IDs
 2. **Documents to publish** — the design doc (required) and any extras
-3. **Slices** — same shape as `/jira-create-vertical-slices` spec, just inline
+3. **Slices** — same shape as `/jira-decompose-epic` spec, just inline
 
 The user (or <assistant.name>) can write the spec from a `system-design.md` directly — most fields are obvious. Get sign-off on the spec before running; this is bulk creation across two systems.
 
@@ -56,7 +56,7 @@ The user (or <assistant.name>) can write the spec from a `system-design.md` dire
 Run `scripts/scaffold.py --spec <path> --validate-only` to:
 
 1. Validate the combined spec
-2. Validate the underlying slice spec (delegates to `/jira-create-vertical-slices` validator)
+2. Validate the underlying slice spec (delegates to `/jira-decompose-epic` validator)
 3. Confirm the Epic exists
 4. Confirm the Confluence parent page exists
 5. Confirm all referenced markdown files exist and parse
@@ -71,7 +71,7 @@ Run the same command without `--validate-only`. The script:
 2. **Publishes each extra page** the same way — captures their IDs
 3. **Builds and POSTs the hub page** (this logic lives in the wrapper, not in `/confluence-publish-markdown`) — info panel, status lozenges, active links table, architecture summary, children list, out-of-scope panel
 4. **Constructs a slice spec dict** with the just-created Confluence URLs filled in
-5. **Calls** `/jira-create-vertical-slices` (subprocess) with the materialized spec
+5. **Calls** `/jira-decompose-epic` (subprocess) with the materialized spec
 6. **Prints a final summary** — every created Confluence URL, every created Jira ticket key, the JQL to find them
 
 ### Step 4 — Verify
@@ -91,7 +91,7 @@ Then sample one slice (e.g., Slice A in the Jira board) and confirm:
 
 This skill **calls the atomic skills via subprocess**, not via Python imports. That keeps each skill independently usable.
 
-If `/confluence-publish-markdown` or `/jira-create-vertical-slices` is updated independently, this wrapper picks up the changes automatically — no shared-module versioning.
+If `/confluence-publish-markdown` or `/jira-decompose-epic` is updated independently, this wrapper picks up the changes automatically — no shared-module versioning.
 
 The hub-page generation is **unique to this wrapper** (not exposed as a separate skill). The atomic Confluence skill ports markdown 1:1; the hub page is generated from the spec metadata, not from a markdown file. If hub-page generation grows enough features, it could be promoted to its own skill — for now it's a private function inside `scripts/scaffold.py`.
 
@@ -104,7 +104,7 @@ This skill is **not idempotent at any layer**:
 
 If the script fails partway through, you have to manually clean up partial state before re-running. Plan for this:
 
-- The script publishes Confluence pages first, prints their IDs to stdout, **then** creates Jira slices. If Jira creation fails, the Confluence pages still exist. You can either re-use them (manual: pass their IDs into a follow-up run of `/jira-create-vertical-slices` directly) or delete them.
+- The script publishes Confluence pages first, prints their IDs to stdout, **then** creates Jira slices. If Jira creation fails, the Confluence pages still exist. You can either re-use them (manual: pass their IDs into a follow-up run of `/jira-decompose-epic` directly) or delete them.
 - If hub-page POST fails, the design + extra pages still exist. Same recovery — point a follow-up tool at them.
 
 For first-run safety, **always do `--validate-only` first**. The validate phase is cheap — confirms Epic + parent page + every markdown file + every mermaid block, costs zero mutations.
@@ -126,7 +126,7 @@ Same as the atomic skills:
 
 - **Already-published Confluence pages + already-created slices, just need them cross-linked** → manual edits or extend the atomic skills with an "update existing" mode. The wrapper assumes greenfield publish.
 - **One-shot single-doc-to-Confluence** → use `/confluence-publish-markdown` directly
-- **Just bulk-creating slices, no Confluence work** → use `/jira-create-vertical-slices` directly
+- **Just bulk-creating slices, no Confluence work** → use `/jira-decompose-epic` directly
 - **Creating the Epic itself** → out of scope (use `mcp__atlassian__createJiraIssue` first)
 
 ## Maturity

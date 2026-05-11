@@ -33,7 +33,7 @@ The skill uses `mistletoe` to parse markdown into an AST, then walks the AST emi
 | Footnotes `[^1]` | passes as raw text | Inline in main text, or use a "References" section |
 | Definition lists | passes as raw text | Convert to bullet list with bolded terms |
 | HTML blocks | wrapped as language=html code block | Discouraged — markdown shouldn't carry HTML |
-| Task lists `- [ ] todo` | renders as bullet list with `[ ]` literal text | Use `/jira-create-vertical-slices` or direct ADF API for true taskList |
+| Task lists `- [ ] todo` | renders as bullet list with `[ ]` literal text | Use `/jira-decompose-epic` or direct ADF API for true taskList |
 | Frontmatter (YAML between `---`) | parses as a horizontal rule + heading | Strip frontmatter from markdown before publish, or use `--title` to override |
 
 ## Mermaid diagram syntax

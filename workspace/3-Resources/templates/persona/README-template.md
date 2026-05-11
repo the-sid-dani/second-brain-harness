@@ -33,7 +33,7 @@ Pick the tier that matches what you want to do. You can upgrade later — re-run
 
 ### Minimal — chief-of-staff + design only
 
-Three commands:
+Three commands in Terminal:
 
 ```bash
 git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
@@ -41,7 +41,7 @@ cd ~/Desktop/second-brain-harness
 claude
 ```
 
-In the Claude Code session that opens, type `/bootstrap` and follow the interactive walkthrough (~10 min — sets up identity, persona, design system, workspace). When it finishes, try one of these in the same session:
+Then inside the Claude Code session that opens, type `/bootstrap` and follow the interactive walkthrough (~10 min — sets up identity, persona, design system, workspace). When it finishes, try one of these in the same session:
 
 - *"morning, what's on my plate today?"* → your first briefing
 - *"let's start a new project for [whatever]"* → your first project scaffold
@@ -50,29 +50,35 @@ You're done. Skip the rest of this section unless you want the CCv4 autonomous p
 
 ### Lite CCv4 — adds `/research`, `/autonomous`, knowledge graph
 
-After the Minimal flow above (or as a fresh start), run from the cloned folder:
+Run these in Terminal, **in this exact order** (installer first, Claude Code second — hooks and binaries need to be in place before the session starts):
 
 ```bash
+git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
+cd ~/Desktop/second-brain-harness
 ./scripts/install.sh --no-fastedit-model
+claude
 ```
 
-This installs Rust, uv, bloks, tldr-cli, Python deps for the Ouros harness, ripgrep/ffmpeg/yt-dlp — everything for the ContinuousClaude V4.7 pipeline EXCEPT the 3 GB FastEdit MLX merge model. Skips the FastEdit MCP registration (lazy — you can re-run without the flag later).
+`install.sh` installs Rust, uv, bloks, tldr-cli, Python deps for the Ouros harness, ripgrep/ffmpeg/yt-dlp — everything for the ContinuousClaude V4.7 pipeline EXCEPT the 3 GB FastEdit MLX merge model. Skips the FastEdit MCP registration (lazy — you can re-run without the flag later).
 
-API keys: the installer prompts interactively for ANTHROPIC, EXA, NIA, HF, ATLASSIAN. Pass `--skip-api-keys` to write empty `.env` stubs you fill in later.
+**API keys**: the installer prompts interactively for ANTHROPIC, EXA, NIA, HF, ATLASSIAN. Pass `--skip-api-keys` to write empty `.env` stubs you fill in later.
 
-Inside Claude Code, `/autonomous`, `/research`, `/premortem`, `/review`, `/upgrade-harness`, `/autonomous-research` are now available.
+Then inside the Claude Code session that opens, type `/bootstrap` to configure identity / persona / workspace. `/autonomous`, `/research`, `/premortem`, `/review`, `/upgrade-harness`, `/autonomous-research` are now available too.
 
 ### Full — adds FastEdit MCP
 
-For the entire pipeline including FastEdit's AST-aware code editing:
+Same order — installer first, then Claude Code:
 
 ```bash
+git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
+cd ~/Desktop/second-brain-harness
 ./scripts/install.sh
+claude
 ```
 
-This downloads the 1.7B FastEdit MLX merge model (~3 GB) and registers it as an MCP in `.mcp.json`. On Apple Silicon, fastedit runs locally with MLX. On Intel Macs, the MLX backend won't be hardware-accelerated.
+`install.sh` downloads the 1.7B FastEdit MLX merge model (~3 GB) and registers it as an MCP in `.mcp.json`. On Apple Silicon, fastedit runs locally with MLX. On Intel Macs, the MLX backend won't be hardware-accelerated.
 
-After install, open Claude Code in the cloned folder, then run `/mcp` to OAuth into Slack, Figma, and Atlassian via your browser. Run `/bootstrap` if you haven't already.
+Then inside Claude Code: `/bootstrap` for identity setup, `/mcp` to OAuth into Slack, Figma, and Atlassian via your browser.
 
 ### Re-running, upgrading, downgrading
 

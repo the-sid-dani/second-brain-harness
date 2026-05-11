@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.16] - 2026-05-11
+
+### Changed
+
+- **Install order fix in README** — v0.1.13's three-tier section accidentally documented Lite CCv4 and Full as "do the Minimal flow first (clone + cd + claude + /bootstrap), then run install.sh". That's backwards: starting `claude` BEFORE install.sh means the session boots without CCv4 tooling on PATH and without hooks registered (hooks load at session-start, not on cd). The user would have to exit and restart Claude Code after install.sh — a frustrating extra step the README implied was normal. v0.1.16 rewrites Lite + Full as complete linear flows: `git clone` → `cd` → `./scripts/install.sh [flags]` → `claude` → `/bootstrap` + `/mcp` inside. Each tier is now a self-contained recipe with no "after the previous flow" phrasing.
+
 ## [0.1.15] - 2026-05-11
 
 ### Fixed

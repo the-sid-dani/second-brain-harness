@@ -253,8 +253,7 @@ Structure (skeleton, fill with detected state):
 
 [Read .claude/skills/ — categorize by prefix:]
 - ✅ **`design-*`** (<count> skills) — HTML/visual artifact skills.
-- ✅ **`gws-*`** (<count> skills) — Google Workspace CLI wrappers (Gmail, Calendar, Drive, Docs, Sheets, Slides, Tasks, Chat, Meet, Script, Workflow). Require `gws` CLI on PATH — install via `brew install googleworkspace-cli` if not present.
-- ✅ **`recipe-*`** (<count> skills) — Composed workflows over `gws-*` primitives (e.g., `/recipe-forward-labeled-emails` chains Gmail search + forward).
+- ✅ **`gws-*`** (<count> skills) — Google Workspace CLI wrappers (Gmail, Calendar, Drive, Docs, Sheets, Slides, Meet). Require `gws` CLI on PATH — install via `brew install googleworkspace-cli` if not present.
 - ✅ **<assistant.name>-internal** — list of internal skills (archive-project, briefing, etc.)
 
 ## Standard Claude Code tools (always available)

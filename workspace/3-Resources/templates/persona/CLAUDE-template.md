@@ -124,7 +124,7 @@ Default lists active projects sorted by staleness. Useful flags:
 - `--tsv` — tab-separated, no header, for piping
 - `--stale-days 60` — adjust the staleness threshold
 
-For code projects (gitignored, not visible to the script), see `<workspace.root>/<workspace.resources>/code-projects.md`.
+For code projects (gitignored, not visible to the script), see `<workspace.root>/<workspace.resources>/code-projects.md` — this file is auto-created by `/new-project` on first code-repo scaffold; fresh forks do not ship it.
 
 ---
 

@@ -31,8 +31,9 @@ STUB
     prompt_key() {
         local name="$1" file="$2" url="$3"
         local current_val=""
+        # `|| true` guards against grep exit 1 (no match) tripping pipefail+errexit
         if [ -f "$file" ]; then
-            current_val="$(grep "^${name}=" "$file" 2>/dev/null | head -1 | cut -d= -f2-)"
+            current_val="$(grep "^${name}=" "$file" 2>/dev/null | head -1 | cut -d= -f2- || true)"
         fi
         if [ -n "$current_val" ] && [ "${RECONFIGURE:-0}" != "1" ]; then
             info "$name already set in $file (use --reconfigure to re-prompt)"

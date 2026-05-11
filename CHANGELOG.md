@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.17] - 2026-05-11
+
+### Fixed
+
+- **`api-keys.sh` silently exited at step 10 on fresh installs** — when `.env` either didn't exist or didn't yet contain a given key, the line `current_val="$(grep "^${name}=" "$file" 2>/dev/null | head -1 | cut -d= -f2-)"` returned grep's exit 1 (no match) through the pipeline. Combined with `set -o pipefail` + `set -e` in install.sh, the assignment killed the script silently — no error message, no API-key prompts, no verify step. The shell prompt came back as if the installer completed normally. Added `|| true` at the end of the pipeline so an empty `.env` is read as "no current value" instead of crashing. Caught by a live install run on a clean clone (the bug was masked on developer machines where `.env` already had stubs).
+
 ## [0.1.16] - 2026-05-11
 
 ### Changed

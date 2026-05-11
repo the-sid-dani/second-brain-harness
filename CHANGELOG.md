@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.14] - 2026-05-11
+
+### Changed
+
+- **"Chat through it with Claude" prompt now handles install.sh** — the v0.1.13 README mentioned tiers but the agent-driven walkthrough prompt still only did `git clone` + handoff to `/bootstrap`, silently skipping the CCv4 tooling install in the same way the old README did. v0.1.14 patches the prompt template so Claude (the agent) asks the user which tier they want, then runs `./scripts/install.sh --skip-api-keys` (Full) or `./scripts/install.sh --no-fastedit-model --skip-api-keys` (Lite CCv4) for them — bypassing the interactive 5-key stdin prompts that would otherwise block. After install completes, the prompt instructs the user to fill in `.env` manually + run `/mcp` for OAuth.
+- **Honest about Claude Code permission prompts** — the new prompt warns the user that install.sh fires many sub-commands (brew, npm, cargo, pip, uv) and Claude Code may prompt for each Bash type. Sets expectations so the user doesn't think the installer is broken.
+
 ## [0.1.13] - 2026-05-11
 
 ### Changed

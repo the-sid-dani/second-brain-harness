@@ -96,7 +96,7 @@ If you forget and run `claude` first, just type `exit`, then `cd` to the cloned 
 
 ### Alternative — chat through it with Claude
 
-If you'd rather have a conversation than run terminal commands, here's a prompt to paste into any Claude Code session. **Note**: Claude can clone the repo and tell you the next step, but it can't run `/bootstrap` for you — you'll need to quit Claude Code after the clone and re-open it in the cloned folder. This is a fundamental Claude Code constraint (skills load at session-start, not on `cd`), not a limitation of the prompt.
+If you'd rather have a conversation than run terminal commands, here's a prompt to paste into any Claude Code session. **Note**: Claude can clone the repo and run `install.sh` for you, but it can't invoke `/bootstrap` — that's a slash command bound to the new session you'll open after install. This is a fundamental Claude Code constraint (skills load at session-start, not on `cd`), not a limitation of the prompt.
 
 1. Open Terminal and run `claude` to start any Claude Code session.
 
@@ -111,14 +111,34 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
    1. Check what I have installed by running `git --version` and `claude --version`.
       If anything's missing, tell me how to install it on a Mac and pause until I confirm.
 
-   2. Ask me where I want to clone the repo (default: ~/Desktop/second-brain-harness).
+   2. Ask me which install tier I want — Minimal, Lite CCv4, or Full. Briefly
+      explain the trade-offs (chief-of-staff + design only vs. + /research and
+      /autonomous vs. + FastEdit MCP) and the disk/time cost of each tier.
+
+   3. Ask me where I want to clone the repo (default: ~/Desktop/second-brain-harness).
       Clone it there for me, then cd into it.
 
-   3. **Important honest handoff**: tell me you can't invoke /bootstrap from this
+   4. If I picked Lite CCv4 or Full, run the installer for me:
+        - Lite CCv4:  `./scripts/install.sh --no-fastedit-model --skip-api-keys`
+        - Full:        `./scripts/install.sh --skip-api-keys`
+
+      The `--skip-api-keys` flag writes empty `.env` stubs instead of prompting
+      interactively (you can't enter keys for me anyway). Tell me afterward
+      that I need to open `.env` and fill in the 5 keys (ANTHROPIC, EXA, NIA,
+      HF, ATLASSIAN) before running CCv4 skills like /research or /autonomous.
+
+      Heads up: install.sh may ask for my sudo password ONCE (if Homebrew isn't
+      installed yet) and will run many sub-commands (brew, npm, cargo, pip, uv).
+      Claude Code may prompt me to approve each Bash command. That's expected.
+
+   5. If I picked Minimal, skip step 4 — just hand off to step 6.
+
+   6. **Important honest handoff**: tell me you can't invoke /bootstrap from this
       session because Claude Code loads skills at session-start. Tell me to:
         - type `exit` to quit this Claude Code session
         - re-open Claude Code from the cloned folder (the path you just cloned into)
         - then type `/bootstrap` in that new session
+        - and if I picked Lite CCv4 or Full, also run `/mcp` to OAuth Slack/Figma/Atlassian
 
       Don't pretend to run /bootstrap. The skill literally isn't available here.
 
@@ -126,9 +146,11 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
    briefly, don't over-explain, and ask before doing anything destructive.
    ```
 
-3. **Follow Claude's instructions** to clone the repo. After the clone, Claude will tell you to quit and re-open Claude Code in the cloned folder.
+3. **Follow Claude's instructions** to clone the repo and (optionally) run the installer. When it's done, Claude will tell you to quit and re-open Claude Code in the cloned folder.
 
-4. **Re-open Claude Code** in the cloned folder (Terminal: `cd ~/Desktop/second-brain-harness && claude`), then type `/bootstrap`.
+4. **Re-open Claude Code** in the cloned folder (Terminal: `cd ~/Desktop/second-brain-harness && claude`), then type `/bootstrap`. If you picked Lite CCv4 or Full, also run `/mcp` to authorize Slack, Figma, and Atlassian.
+
+5. **Fill in `.env`** if you used `--skip-api-keys` — open it in your editor and paste each key. The file has comments pointing at where to get each one.
 
 ---
 

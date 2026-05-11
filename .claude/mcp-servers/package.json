@@ -1,0 +1,11 @@
+{
+  "name": "agent-mcp-servers",
+  "version": "1.0.0",
+  "description": "Local MCP servers for <agent> — vision, etc.",
+  "type": "module",
+  "private": true,
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  }
+}

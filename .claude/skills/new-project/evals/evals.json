@@ -1,0 +1,26 @@
+{
+  "skill_name": "new-project",
+  "evals": [
+    {
+      "id": 1,
+      "name": "newsletter-rollout-execution",
+      "prompt": "Create a new project for next week's AI Task Force newsletter rollout. I need to track the timeline, drafting, review cycles, and Allison's sign-off. It's an execution project — let's call it 'AI Task Force Newsletter Q2 Launch'.",
+      "expected_output": "A folder at beru-workspace/1-Projects/2026-05-ai-task-force-newsletter-q2-launch/ containing CLAUDE.md (status:active, type:execution, stakeholders:[Sid], correct heading) and memory.md (with template + one Project created entry dated 2026-05-05).",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "research-project-gemini",
+      "prompt": "start a research project on Gemini 3 Pro capabilities — I want to track everything we learn about it as we test it across different use cases at Samba",
+      "expected_output": "A folder at beru-workspace/1-Projects/2026-05-gemini-3-pro-capabilities/ (or similar slug) with CLAUDE.md (status:active, type:research) and memory.md scaffolded.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "qbr-prep-content",
+      "prompt": "new project: Q3 QBR prep",
+      "expected_output": "A folder at beru-workspace/1-Projects/2026-05-q3-qbr-prep/ with CLAUDE.md (status:active, type chosen interactively — likely content or execution) and memory.md scaffolded. Tests the skill's behavior with a terse prompt.",
+      "files": []
+    }
+  ]
+}

@@ -1,0 +1,272 @@
+{
+  "skill_name": "contact-log",
+  "evals": [
+    {
+      "id": "trigger-positive-explicit-slash",
+      "name": "explicit-slash-command-triggers-and-asks-for-details",
+      "prompt": "/contact-log omar",
+      "expected_output": "Skill triggers as the write-mode counterpart to /contact. Composes /contact-style fuzzy-match to identify omar-zennadi.md (slug-stem tier 2). Asks the user via AskUserQuestion (or plain chat) for the interaction topic + decisions/notes. After answers, performs Edit-tool insertion: (a) bumps last_interaction frontmatter to today's date (2026-05-06), (b) appends new `### YYYY-MM-DD — <topic>` block under the `## Interaction log` heading. Reports the file path so Sid can verify.",
+      "files": [],
+      "preconditions": [
+        "Real state on Sid's machine (2026-05-06): beru-workspace/3-Resources/contacts/omar-zennadi.md exists with `## Interaction log` section and last_interaction field in frontmatter."
+      ],
+      "assertions": [
+        {"text": "/contact-log skill triggers (write mode), NOT /contact (read mode), because the trigger phrase says 'log'", "weight": 1, "critical": true},
+        {"text": "Skill identifies Omar Zennadi as the matched contact", "weight": 1, "critical": true},
+        {"text": "Skill asks the user for interaction details (topic + body) before mutating — does NOT fabricate content", "weight": 1, "critical": true},
+        {"text": "Skill reports the resolved file path (beru-workspace/3-Resources/contacts/omar-zennadi.md or token-resolved equivalent) to the user after writing", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-positive-natural",
+      "name": "natural-language-log-phrase-triggers-skill",
+      "prompt": "log my 1:1 with omar",
+      "expected_output": "Natural-language entity-keyed write phrasing. Skill triggers (write mode). Matches Omar, asks for details, performs Edit-based append.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists in contacts/."
+      ],
+      "assertions": [
+        {"text": "/contact-log skill triggers on this prompt (write-mode entity recall)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT trigger /contact (read-only) — the verb 'log' is a write signal", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-positive-natural-2",
+      "name": "casual-just-talked-phrase-triggers-skill",
+      "prompt": "just talked to michela, log it",
+      "expected_output": "Casual write-mode phrasing. Skill triggers, matches Michela Fitten via tier 2 slug-stem (slug-token 'michela' of michela-fitten), asks for details, performs Edit-based append.",
+      "files": [],
+      "preconditions": [
+        "michela-fitten.md exists in contacts/."
+      ],
+      "assertions": [
+        {"text": "/contact-log skill triggers", "weight": 1, "critical": true},
+        {"text": "Skill identifies Michela Fitten as the matched contact (NOT Omar via legal_name regression)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-negative-unrelated",
+      "name": "unrelated-prompt-does-not-trigger",
+      "prompt": "what's the weather today?",
+      "expected_output": "/contact-log does NOT trigger. The prompt is unrelated to logging an interaction with anyone in contacts/.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "/contact-log skill does NOT trigger for this prompt", "weight": 1, "critical": true},
+        {"text": "No file under beru-workspace/3-Resources/contacts/ is mutated or even read", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-negative-read-vs-write",
+      "name": "read-phrasing-does-not-fire-write-skill",
+      "prompt": "who is omar?",
+      "expected_output": "Read-mode phrasing — should fire /contact (read), NOT /contact-log (write). The verb is 'is', not 'log/append/wrote/talked-to'. Critical disambiguation between the read and write skills.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists in contacts/."
+      ],
+      "assertions": [
+        {"text": "/contact-log skill does NOT trigger — this is read-mode phrasing", "weight": 1, "critical": true},
+        {"text": "No file under beru-workspace/3-Resources/contacts/ is mutated", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "uses-edit-not-write",
+      "name": "mutation-uses-edit-tool-never-write",
+      "prompt": "/contact-log omar",
+      "expected_output": "Critical mutation invariant per premortem T2: skill MUST invoke the `Edit` tool to insert the new entry and bump frontmatter. MUST NOT invoke `Write` (which would replace the entire file and could destroy prior interaction entries / About / Recurring topics / Open commitments). Two Edit calls are expected: one for last_interaction frontmatter bump, one for the new ### entry under ## Interaction log.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists with prior content in About / Recurring topics / Open commitments sections."
+      ],
+      "assertions": [
+        {"text": "Skill invokes the `Edit` tool on omar-zennadi.md", "weight": 1, "critical": true},
+        {"text": "Skill does NOT invoke the `Write` tool on omar-zennadi.md (which would replace the entire file)", "weight": 1, "critical": true},
+        {"text": "Skill performs at least two Edit operations: one for frontmatter (last_interaction bump) and one for body (new entry insertion)", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "bumps-last-interaction",
+      "name": "frontmatter-last-interaction-updated-to-today",
+      "prompt": "/contact-log omar",
+      "expected_output": "After successful append, the `last_interaction:` frontmatter field is updated to TODAY'S DATE in YYYY-MM-DD format (whichever calendar day the eval is graded — date is parameterized, not pinned to a specific value). All other frontmatter fields (name, email, role, team, company, relationship, status, first_logged, legal_name, reports_to, location, recurring_cadence, tags, etc.) are byte-identical to before the operation. NOTE FOR GRADER: assertion #1 references '<today>' as a placeholder for the calendar date on the day the eval runs. If grading on 2026-05-06, the value should be `last_interaction: 2026-05-06`; if grading on 2026-05-15, it should be `last_interaction: 2026-05-15`. Match the actual date of grading, not a hardcoded literal — the skill computes 'today' at invocation time per Step 4 line 124.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md frontmatter has last_interaction: unknown (or any prior date) before the operation."
+      ],
+      "assertions": [
+        {"text": "After write, frontmatter contains `last_interaction: <today's date in YYYY-MM-DD>` — where <today> is the actual calendar date on the day this eval is graded (parameterized; NOT a hardcoded literal). Confirm the date string matches `date +%Y-%m-%d` at grading time.", "weight": 1, "critical": true},
+        {"text": "After write, frontmatter `name`, `email`, `role`, `team`, `company`, `relationship`, `status`, `first_logged`, `legal_name` fields are byte-identical to pre-operation state", "weight": 1, "critical": true},
+        {"text": "Skill does NOT modify any optional frontmatter fields (tags, reports_to, location, recurring_cadence, etc.)", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "append-only-preserves-prior",
+      "name": "prior-interaction-entries-byte-identical-after-append",
+      "prompt": "/contact-log omar",
+      "expected_output": "Critical append-only invariant per premortem T2. If omar-zennadi.md has existing entries under ## Interaction log (e.g., '### 2026-05-04 — weekly sync' with body), those prior entries must remain byte-identical after the new entry is appended. The skill ONLY adds a new ### YYYY-MM-DD entry; it does NOT rewrite, merge, summarize, or 'improve' prior entries. Likewise About / Recurring topics / Open commitments sections are untouched.",
+      "files": [],
+      "preconditions": [
+        "A contact file exists with at least one prior ## Interaction log entry (real or synthetic test fixture per VAL-004b)."
+      ],
+      "assertions": [
+        {"text": "Prior ## Interaction log entries are byte-identical after the operation", "weight": 1, "critical": true},
+        {"text": "About section is byte-identical after the operation", "weight": 1, "critical": true},
+        {"text": "Recurring topics section is byte-identical after the operation", "weight": 1, "critical": true},
+        {"text": "Open commitments section (To/From split) is byte-identical after the operation", "weight": 1, "critical": true},
+        {"text": "New ### YYYY-MM-DD entry appears under ## Interaction log heading (or after the last existing entry — the skill picks one stable anchor)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "single-source-no-daily-log-write",
+      "name": "writes-only-to-contact-file-never-daily-log",
+      "prompt": "/contact-log omar",
+      "expected_output": "Critical single-source invariant per premortem E1. The skill writes ONLY to the contact file at <workspace.resources>/contacts/<slug>.md. It does NOT also append to memory/YYYY-MM-DD.md (the daily log). Per the design decision: daily log captures the day's narrative; per-person commitments live in contacts/. WikiLinks ([[contacts/<slug>]]) cross-reference between them, but the skill itself is single-target.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "Skill writes to beru-workspace/3-Resources/contacts/omar-zennadi.md", "weight": 1, "critical": true},
+        {"text": "Skill does NOT write to memory/2026-05-06.md (or any memory/YYYY-MM-DD.md daily log file)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT write to any other contact file (e.g., does not touch michela-fitten.md if user invoked /contact-log omar)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "graceful-no-match",
+      "name": "no-match-gracefully-suggests-contact-add",
+      "prompt": "/contact-log nobody",
+      "expected_output": "Fuzzy-match returns no hits across all 6 priority tiers. Skill must abort gracefully — surface 'no contact named nobody' message, suggest /contact-add (planned, not yet shipped) as the path forward. NEVER fabricates a profile, NEVER creates a new file, NEVER writes anything. Read-only outcome on a no-match.",
+      "files": [],
+      "preconditions": [
+        "No contact file matches 'nobody' across any priority tier."
+      ],
+      "assertions": [
+        {"text": "Skill states no contact found / no match for 'nobody'", "weight": 1, "critical": true},
+        {"text": "Skill suggests /contact-add (or equivalent scaffold path) as a next step", "weight": 1, "critical": false},
+        {"text": "Skill does NOT create a new contact file for 'nobody'", "weight": 1, "critical": true},
+        {"text": "Skill does NOT mutate any existing file under beru-workspace/3-Resources/contacts/", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "abort-if-no-interaction-log-section",
+      "name": "schema-violation-aborts-without-mutation",
+      "prompt": "/contact-log <a contact whose file lacks ## Interaction log section>",
+      "expected_output": "Skill reads the matched contact file and discovers no `## Interaction log` heading exists. This is a schema violation per beru-workspace/3-Resources/contacts/README.md (Interaction log is a required body section). Skill aborts with a clear error message instructing the user to fix the file's schema first; does NOT auto-create the section, does NOT write the entry elsewhere, does NOT bump last_interaction. Read-only outcome on schema violation.",
+      "files": [],
+      "preconditions": [
+        "A test contact file exists with valid frontmatter but missing the `## Interaction log` body section (synthetic test fixture)."
+      ],
+      "assertions": [
+        {"text": "Skill aborts with a schema-violation error message that names the missing `## Interaction log` section", "weight": 1, "critical": true},
+        {"text": "Skill does NOT mutate the contact file (no Edit, no Write)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT silently auto-create the missing section — that's a schema decision the user must make", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "cancellation-path",
+      "name": "user-declines-topic-aborts-cleanly-no-mutation",
+      "prompt": "/contact-log omar",
+      "expected_output": "Cancellation path per SKILL.md Step 2 line 104 + Output format line 250-252. After the skill matches Omar and prompts for the interaction topic via AskUserQuestion (or plain chat), the user declines / cancels / returns empty. Skill aborts cleanly with the literal output: 'Nothing logged. Run /contact-log again when you're ready.' (per SKILL.md line 251). Critical invariant: NO file mutation occurs at all. The Edit tool is NEVER invoked. last_interaction frontmatter is unchanged. No new ### entry is added. omar-zennadi.md is byte-identical to its pre-invocation state.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists with `## Interaction log` section and current last_interaction value (whether 'unknown' or a prior date).",
+        "The user-simulation will decline to provide a topic when prompted (cancel AskUserQuestion or return empty body)."
+      ],
+      "assertions": [
+        {"text": "Skill outputs the cancellation message — content equivalent to 'Nothing logged. Run /contact-log again when you're ready.' (per SKILL.md Step 2 line 104 / Output format line 251)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT invoke the Edit tool on omar-zennadi.md (zero Edit calls — both the frontmatter bump and the body append are skipped)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT invoke the Write tool on omar-zennadi.md", "weight": 1, "critical": true},
+        {"text": "omar-zennadi.md last_interaction frontmatter field is unchanged from pre-invocation value", "weight": 1, "critical": true},
+        {"text": "omar-zennadi.md `## Interaction log` section is byte-identical to pre-invocation state (no new ### entry added)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "no-fabrication-on-sparse-input",
+      "name": "sparse-input-produces-minimal-entry-no-synthesis",
+      "prompt": "/contact-log omar",
+      "expected_output": "No-fabrication invariant per SKILL.md Step 5 / Step 2 line 102: 'Sparse input → sparse entry.' User provides topic='quick chat' and body='nothing happened really, just hello'. Skill writes a MINIMAL entry — topic heading + a body line per the Step 4 line 134-136 example: `### <today> — quick chat` followed by `- (no specific decisions or commitments)` (or a similar minimal-body marker). Critical: skill MUST NOT synthesize content from omar-zennadi.md's existing Recurring topics ('MCP architecture', 'AI Task Force roadmap', etc.) or About section. The new entry contains ONLY what the user typed, nothing inferred.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md exists with About + Recurring topics sections that mention things like 'MCP architecture' / 'AI Task Force' / 'admin API' that the skill MUST NOT pull into the new entry.",
+        "User-simulation provides topic='quick chat' and body='nothing happened really, just hello' (or any other deliberately-sparse input)."
+      ],
+      "assertions": [
+        {"text": "New `### <today> — quick chat` entry is appended under `## Interaction log`", "weight": 1, "critical": true},
+        {"text": "Entry body contains the literal '(no specific decisions or commitments)' marker (or equivalent minimal-body line per SKILL.md Step 4 line 136 example) when user input was 'nothing happened'", "weight": 1, "critical": true},
+        {"text": "Entry body does NOT mention 'MCP architecture' / 'AI Task Force' / 'admin API' / 'roadmap' / any topic that appears only in About or Recurring topics — those sections must NOT be synthesized into the new entry", "weight": 1, "critical": true},
+        {"text": "Entry body does NOT invent commitments, decisions, follow-up tasks, or due dates that the user did not provide", "weight": 1, "critical": true},
+        {"text": "About / Recurring topics / Open commitments sections of omar-zennadi.md are byte-identical to pre-invocation state", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "last-interaction-unknown-to-today",
+      "name": "first-ever-log-transitions-unknown-to-today",
+      "prompt": "/contact-log omar",
+      "expected_output": "First-ever-log transition. Per SKILL.md Step 5 line 156-158, Edit #1 uses the literal current value of `last_interaction:` as the old_string anchor. omar-zennadi.md currently has `last_interaction: unknown` (per the contacts directory state on 2026-05-06 where most contacts have never been logged against). Edit #1: old_string='last_interaction: unknown' → new_string='last_interaction: <today YYYY-MM-DD>'. Critical: the Edit succeeds even when the prior value is the literal string 'unknown' — anchor handling must accept it as a valid current value, not just date strings. No Edit failure due to anchor mismatch.",
+      "files": [],
+      "preconditions": [
+        "omar-zennadi.md frontmatter has `last_interaction: unknown` (verbatim — not a date) as the current value before the operation.",
+        "User-simulation provides a valid topic + body so the operation proceeds (this eval is about the unknown→date transition, not the cancellation path)."
+      ],
+      "assertions": [
+        {"text": "Edit #1 succeeds — the literal string `last_interaction: unknown` is found and replaced (no anchor-mismatch error)", "weight": 1, "critical": true},
+        {"text": "After write, frontmatter contains `last_interaction: <today's date in YYYY-MM-DD>` (parameterized to grading day)", "weight": 1, "critical": true},
+        {"text": "After write, frontmatter no longer contains the literal string `last_interaction: unknown` (the value was replaced, not duplicated)", "weight": 1, "critical": true},
+        {"text": "Skill does NOT fall back to Write tool when handling the `unknown` value — Edit handles it directly", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "multi-match-disambiguation-write-mode",
+      "name": "ambiguous-query-fires-askuserquestion-before-write",
+      "prompt": "/contact-log al",
+      "expected_output": "Multi-match in write mode. Per SKILL.md Step 1 line 70-74: skill composes /contact-style fuzzy-match — query 'al' produces tier-5 prefix multi-match on alvir-navin and alyson-sprague (verified: only those two slugs / names start with 'al' in the current 20-contact directory). Per Step 1 line 73-74, skill fires AskUserQuestion (multiSelect: false) with one option per candidate, labeled `<name> — <role>, <team> · <relationship>`. ONLY after the user picks one slug does the write proceed. Critical: skill MUST NOT auto-pick either candidate; AskUserQuestion is invoked first, write is gated on the answer.",
+      "files": [],
+      "preconditions": [
+        "alvir-navin.md and alyson-sprague.md both exist in contacts/.",
+        "No other contact matches 'al' under tier 5 (verified — aden-zaman / andy-shiels / ankitha-ananda / anthony-livreri all start with 'a' but not 'al')."
+      ],
+      "assertions": [
+        {"text": "Skill fires AskUserQuestion (multiSelect: false) with both Alvir Navin and Alyson Sprague as options before any write", "weight": 1, "critical": true},
+        {"text": "Skill does NOT auto-pick Alvir or Alyson silently — the disambiguation prompt is mandatory", "weight": 1, "critical": true},
+        {"text": "Each AskUserQuestion option label includes name + role/team + relationship (per SKILL.md Step 1 line 74)", "weight": 1, "critical": true},
+        {"text": "If grading exits without a user pick, NO Edit operation occurs on either alvir-navin.md or alyson-sprague.md", "weight": 1, "critical": true},
+        {"text": "If the user picks one slug, the write proceeds against that slug ONLY — the other candidate's file is byte-identical post-operation", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "askuserquestion-unavailable-subagent-fallback-write",
+      "name": "subagent-context-extracts-inline-or-aborts-no-fabrication",
+      "prompt": "/contact-log omar — discussed MCP, agreed on per-server auth pattern",
+      "expected_output": "Subagent / worker context where AskUserQuestion is unavailable. Per SKILL.md failure-modes table line 205: 'Pre-extract topic + body from the invocation prompt if possible (e.g., `log my 1:1 with omar — discussed MCP, agreed on auth pattern`). If extraction fails, abort cleanly — do not invent.' For this prompt, the inline content after the em-dash provides usable topic ('discussed MCP') + body ('agreed on per-server auth pattern'); skill extracts and writes a minimal entry from those tokens. If the prompt had been bare `/contact-log omar` with no inline content, the skill would abort cleanly rather than invent. Critical invariant: skill NEVER invents content it cannot derive from the user's actual input — neither from the AskUserQuestion fallback nor from the contact file's existing About / Recurring topics.",
+      "files": [],
+      "preconditions": [
+        "Invocation context is a subagent / worker where AskUserQuestion is not provided.",
+        "omar-zennadi.md exists with `## Interaction log` section."
+      ],
+      "assertions": [
+        {"text": "Skill does NOT attempt to invoke AskUserQuestion in subagent context (would error)", "weight": 1, "critical": true},
+        {"text": "Skill extracts topic + body from the invocation prompt's inline content (after the em-dash) — uses 'discussed MCP' / 'per-server auth pattern' as the entry content", "weight": 1, "critical": true},
+        {"text": "If inline extraction succeeds, skill writes the entry using ONLY content from the prompt — does NOT pull from omar-zennadi.md's About or Recurring topics", "weight": 1, "critical": true},
+        {"text": "If extraction had failed (bare `/contact-log omar` with no inline detail in subagent context), skill aborts cleanly with no mutation — does NOT invent topic/body", "weight": 1, "critical": true},
+        {"text": "Skill does NOT silently substitute placeholder content like 'sync' / 'catch-up' when actual user input is unavailable", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "edit-failure-abort-no-write-fallback",
+      "name": "edit-anchor-mismatch-aborts-never-falls-back-to-write",
+      "prompt": "/contact-log <synthetic fixture with malformed schema>",
+      "expected_output": "Critical anti-fallback invariant per SKILL.md Step 5 line 174 ('Never fall back to `Write`. A failed Edit is a signal that the file isn\\'t in the state we expected') and failure-modes lines 202-203. Synthetic test fixture: a contact file is missing the `## Interaction log` heading (or its `last_interaction:` line has unexpected formatting like a trailing inline comment / weird whitespace that breaks the Edit anchor pattern from Step 5 line 156). When Edit #1 or Edit #2 fails due to anchor mismatch, the skill MUST abort and report the error verbatim. The skill MUST NEVER invoke the Write tool as a fallback — that would replace the entire file and destroy About / Recurring topics / Open commitments / prior log entries. The contact file remains byte-identical to its pre-invocation state.",
+      "files": [],
+      "preconditions": [
+        "A synthetic test contact fixture exists where (a) the `## Interaction log` heading is missing, OR (b) the `last_interaction:` line has an unexpected format that prevents Edit's anchor match (e.g., 'last_interaction: unknown  # placeholder' with trailing comment), OR (c) the heading-plus-next-line anchor in Step 5 Edit #2 is non-deterministic."
+      ],
+      "assertions": [
+        {"text": "Skill aborts and reports the Edit error verbatim — surfaces the literal old_string mismatch or schema-violation message per SKILL.md failure-modes lines 202-203", "weight": 1, "critical": true},
+        {"text": "Skill does NOT invoke the Write tool as a fallback — zero Write calls on the contact file", "weight": 1, "critical": true},
+        {"text": "The contact file is byte-identical to its pre-invocation state — no partial mutation, no re-written sections, no orphaned entry", "weight": 1, "critical": true},
+        {"text": "Skill does NOT silently retry with a looser anchor that could grab the wrong content — surfaces the issue to the user instead", "weight": 1, "critical": true},
+        {"text": "If Edit #1 (frontmatter) succeeded but Edit #2 (body) failed, the skill still does not fall back to Write — it surfaces the partial state and stops", "weight": 1, "critical": false}
+      ]
+    }
+  ]
+}

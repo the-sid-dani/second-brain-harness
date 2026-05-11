@@ -1,0 +1,44 @@
+{
+  "skill_name": "archive-project",
+  "evals": [
+    {
+      "id": 1,
+      "name": "with-retro",
+      "prompt": "archive the test-archive-1-w project, add a brief retro: 'Tested the archive flow end-to-end. Status flip and folder move both worked cleanly. Worth doing again next quarter.'",
+      "expected_output": "Folder moved to 4-Archive/, CLAUDE.md status flipped to 'done', memory.md has the retro entry appended.",
+      "files": [],
+      "assertions": [
+        {"text": "Folder beru-workspace/4-Archive/test-archive-1-w/ exists after run"},
+        {"text": "Folder beru-workspace/1-Projects/test-archive-1-w/ no longer exists after run"},
+        {"text": "4-Archive/test-archive-1-w/CLAUDE.md frontmatter has status: done (not active)"},
+        {"text": "4-Archive/test-archive-1-w/memory.md contains the phrase 'Retro on archive' as a heading"},
+        {"text": "4-Archive/test-archive-1-w/memory.md contains the retro text 'Status flip and folder move' (substring)"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "skip-retro",
+      "prompt": "I'm done with test-archive-2-w, just move it to archive (skip retro)",
+      "expected_output": "Folder moved to 4-Archive/, CLAUDE.md status flipped to 'done', memory.md unchanged (no retro entry).",
+      "files": [],
+      "assertions": [
+        {"text": "Folder beru-workspace/4-Archive/test-archive-2-w/ exists after run"},
+        {"text": "Folder beru-workspace/1-Projects/test-archive-2-w/ no longer exists after run"},
+        {"text": "4-Archive/test-archive-2-w/CLAUDE.md frontmatter has status: done (not active)"},
+        {"text": "4-Archive/test-archive-2-w/memory.md does NOT contain a 'Retro on archive' heading"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "minimal-trigger",
+      "prompt": "wrap up test-archive-3-w",
+      "expected_output": "Skill should still trigger and move the folder. Retro is optional (skill should ask or default to skipping in non-interactive contexts).",
+      "files": [],
+      "assertions": [
+        {"text": "Folder beru-workspace/4-Archive/test-archive-3-w/ exists after run"},
+        {"text": "Folder beru-workspace/1-Projects/test-archive-3-w/ no longer exists after run"},
+        {"text": "4-Archive/test-archive-3-w/CLAUDE.md frontmatter has status: done (not active)"}
+      ]
+    }
+  ]
+}

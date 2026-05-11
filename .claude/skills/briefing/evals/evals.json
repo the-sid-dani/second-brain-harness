@@ -1,0 +1,138 @@
+{
+  "skill_name": "briefing",
+  "evals": [
+    {
+      "id": "trigger-explicit-slash",
+      "name": "explicit-slash-command-triggers-and-writes-brief",
+      "prompt": "/briefing",
+      "expected_output": "Skill triggers. Composes 6 sources (Gmail+Calendar+Slack+Jira+Contacts+GitHub PRs). Writes a markdown file to docs/briefings/morning-briefing-YYYY-MM-DD.md (today's date). All required H2 sections present in correct order. Output filtered to exclude status:personal contacts. Closing line 'That's the lay of the land. Where do you want to start?' present. Surfaces top-3 to user inline (not full dump).",
+      "files": [],
+      "preconditions": [
+        "21 contact files exist at beru-workspace/3-Resources/contacts/ including faizan.md (status: personal)",
+        "All 5 MCPs in .mcp.json (gemini-vision, exa, slack, atlassian, figma)",
+        "GWS CLI authenticated, GitHub CLI authenticated as the-sid-dani",
+        "Output directory docs/briefings/ exists (created during workflow-defect cleanup)"
+      ],
+      "assertions": [
+        {"text": "/briefing skill triggers (NOT a different skill)", "weight": 1, "critical": true},
+        {"text": "Output file written to path matching docs/briefings/morning-briefing-YYYY-MM-DD.md (today's date) — T1 invariant", "weight": 1, "critical": true},
+        {"text": "Output contains H1 header '# Morning brief — <date>'", "weight": 1, "critical": true},
+        {"text": "Output contains all 7 required H2 sections in order: What needs you today, Calendar at a glance, Today's work from your projects, Slack digest, Jira queue, Open commitments by person, Recent shipped", "weight": 1, "critical": true},
+        {"text": "Output 'Today's work from your projects' section reads each active project's memory.md and CLAUDE.md (not just listed) and includes a closing 'highest-leverage work today is X' synthesis line", "weight": 1, "critical": true},
+        {"text": "Slack digest is generated via DYNAMIC channel enumeration (mcp__slack__slack_search_channels + slack_search_public_and_private), NOT a hardcoded channel list", "weight": 1, "critical": false},
+        {"text": "Output does NOT contain '[[contacts/faizan]]' or any reference to faizan — T2 invariant (status:personal filtered)", "weight": 1, "critical": true},
+        {"text": "Output closing line is 'That's the lay of the land. Where do you want to start?' (per SOUL.md voice)", "weight": 1, "critical": false},
+        {"text": "Output does NOT fabricate signals — empty MCP responses become 'No <X>' or section omission, never invented content — T3 invariant", "weight": 1, "critical": true},
+        {"text": "Skill surfaces top-3 to user inline rather than dumping the full file body to chat", "weight": 1, "critical": false},
+        {"text": "Skill does NOT auto-send to Slack/email/Jira (boundary rule)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-natural-plate",
+      "name": "natural-language-day-orientation-triggers",
+      "prompt": "what's on my plate today?",
+      "expected_output": "Natural-language day-orientation pattern. Skill triggers (broad trigger on day-orientation language). Same composition + output convention as the explicit slash form.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "/briefing skill triggers (NOT a different skill, despite no slash-command syntax)", "weight": 1, "critical": true},
+        {"text": "Output file written to docs/briefings/morning-briefing-YYYY-MM-DD.md", "weight": 1, "critical": true},
+        {"text": "Output contains 'What needs you today' section as the priority-ranked first H2", "weight": 1, "critical": true},
+        {"text": "Skill applies USER.md priority signals — direct collaborators (Omar, Justin, Michela, Jaya) surface higher than generic senders", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-natural-rundown",
+      "name": "give-me-the-rundown-triggers",
+      "prompt": "give me the rundown",
+      "expected_output": "Casual day-orientation phrasing. Skill triggers per the broad trigger discipline.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "/briefing skill triggers", "weight": 1, "critical": true},
+        {"text": "Output file written to docs/briefings/morning-briefing-YYYY-MM-DD.md", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-what-to-work-on",
+      "name": "what-should-i-work-on-today-triggers-with-project-synthesis",
+      "prompt": "what should I work on today?",
+      "expected_output": "Direct hit on the project-synthesis layer. Skill triggers, but more importantly the 'Today's work from your projects' section is the load-bearing answer. Each active project's memory.md tail gets read, status emoji 🟢🟡🔴 applied, and the closing 'highest-leverage work today is X' synthesis line must be present and opinionated.",
+      "files": [],
+      "preconditions": [
+        "At least 1 active project exists with a memory.md (e.g., 2026-01-ai-task-force-execution, 2026-05-second-brain-design)"
+      ],
+      "assertions": [
+        {"text": "/briefing skill triggers (recognizes day-orientation intent in project-shaped phrasing)", "weight": 1, "critical": true},
+        {"text": "Output 'Today's work from your projects' section exists and contains at least one project with status emoji (🟢/🟡/🔴) and 'Today's recommended action' line", "weight": 2, "critical": true},
+        {"text": "Output contains a closing synthesis line in the projects section starting with 'From what I'm seeing, the highest-leverage work today is' (opinionated, not a flat list)", "weight": 2, "critical": true},
+        {"text": "Project content is sourced from each project's memory.md tail (not fabricated) — at minimum, the most recent memory entry date or 'Decision:'/'Next:' content is reflected", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "t1-same-day-collision",
+      "name": "same-day-rerun-appends-timestamp-not-overwrite",
+      "prompt": "/briefing",
+      "expected_output": "When docs/briefings/morning-briefing-<DATE>.md already exists from an earlier run today, the skill must NOT overwrite it. Instead it appends -HHMM to the filename. Per T1 invariant (Sid may have read or edited the original).",
+      "files": [],
+      "preconditions": [
+        "docs/briefings/morning-briefing-<TODAY>.md already exists (pre-seeded with placeholder content for the test)"
+      ],
+      "assertions": [
+        {"text": "The pre-existing docs/briefings/morning-briefing-<TODAY>.md is NOT overwritten (file content / mtime preserved)", "weight": 1, "critical": true},
+        {"text": "A new file is written matching pattern docs/briefings/morning-briefing-<TODAY>-HHMM.md (with timestamp suffix)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "t2-personal-contact-filter",
+      "name": "personal-status-contacts-never-appear-in-brief",
+      "prompt": "/briefing",
+      "expected_output": "T2 INVARIANT TEST. faizan.md has status:personal — must be filtered at READ time in Step 5. Output 'Open commitments by person' section must not contain Faizan, even if his contact file has open commitments. Filter is at read time, not display time, to prevent context leakage via summarization.",
+      "files": [],
+      "preconditions": [
+        "beru-workspace/3-Resources/contacts/faizan.md exists with status: personal"
+      ],
+      "assertions": [
+        {"text": "Output (full file content) does NOT contain the string 'faizan' (case-insensitive)", "weight": 2, "critical": true},
+        {"text": "Output does NOT contain '[[contacts/faizan]]' WikiLink", "weight": 2, "critical": true},
+        {"text": "Output 'Open commitments by person' section is generated from non-personal contacts only (or omitted if all are personal)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-negative-template-question",
+      "name": "draft-a-briefing-template-does-not-trigger",
+      "prompt": "draft a briefing template for me",
+      "expected_output": "Negative test. 'draft a briefing template' is asking for content/template generation, NOT for the chief-of-staff briefing skill to run. /briefing should NOT trigger — skill is for invocation, not for generic content authoring.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "/briefing skill does NOT trigger for this prompt", "weight": 1, "critical": true},
+        {"text": "No file is written under docs/briefings/", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-negative-what-is",
+      "name": "what-is-a-briefing-does-not-trigger",
+      "prompt": "what is a briefing in software project management?",
+      "expected_output": "Negative test. The user is asking a definitional question about briefings as a concept — not asking the chief-of-staff skill to compose one for them. Skill should NOT trigger.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "/briefing skill does NOT trigger for this prompt", "weight": 1, "critical": true},
+        {"text": "No file is written under docs/briefings/", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-negative-meeting-prep",
+      "name": "meeting-prep-request-does-not-trigger-briefing",
+      "prompt": "prep me for my meeting with Omar at 3pm",
+      "expected_output": "Negative test. This is a per-meeting prep request — that's /meeting-prep (item 17, not yet shipped) or manual prep. /briefing is broader (whole-day orientation across 6 sources). Should NOT trigger /briefing.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "/briefing skill does NOT trigger (this is per-meeting, not day-orientation)", "weight": 1, "critical": true},
+        {"text": "No file is written to docs/briefings/", "weight": 1, "critical": false}
+      ]
+    }
+  ]
+}

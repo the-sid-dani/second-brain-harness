@@ -1,0 +1,40 @@
+{
+  "skill_name": "save-resource",
+  "evals": [
+    {
+      "id": 1,
+      "name": "save-to-reference",
+      "prompt": "save the file at 0-Inbox/test-resource-1-w.md to reference, name it test-ref-doc.md",
+      "expected_output": "File moved to <workspace.resources>/reference/test-ref-doc.md, source removed from Inbox.",
+      "files": [],
+      "assertions": [
+        {"text": "File <workspace.resources>/reference/test-ref-doc.md exists after run"},
+        {"text": "Source file 0-Inbox/test-resource-1-w.md no longer exists"},
+        {"text": "Destination file content matches the original (preserved during move)"}
+      ]
+    },
+    {
+      "id": 2,
+      "name": "save-to-research",
+      "prompt": "save the test research file at 0-Inbox/test-resource-2-w.md to research, topic is 'test-topic-prompt-caching'",
+      "expected_output": "File moved into a new research topic folder <workspace.resources>/research/2026-05-test-topic-prompt-caching-research/test-resource-2-w.md.",
+      "files": [],
+      "assertions": [
+        {"text": "Folder <workspace.resources>/research/2026-05-test-topic-prompt-caching-research/ exists"},
+        {"text": "File <workspace.resources>/research/2026-05-test-topic-prompt-caching-research/test-resource-2-w.md exists"},
+        {"text": "Source file 0-Inbox/test-resource-2-w.md no longer exists"}
+      ]
+    },
+    {
+      "id": 3,
+      "name": "save-to-meetings",
+      "prompt": "save 0-Inbox/test-meeting-3-w.md to meetings, this was a 1on1 with test-person on 2026-05-05",
+      "expected_output": "File moved (renamed) to <workspace.resources>/meetings/2026-05-05-test-person-1on1.md.",
+      "files": [],
+      "assertions": [
+        {"text": "File <workspace.resources>/meetings/2026-05-05-test-person-1on1.md exists"},
+        {"text": "Source file 0-Inbox/test-meeting-3-w.md no longer exists"}
+      ]
+    }
+  ]
+}

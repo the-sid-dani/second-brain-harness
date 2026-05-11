@@ -1,0 +1,12 @@
+{
+  "memory": {
+    "backend": "builtin",
+    "citations": "auto",
+    "builtin": {
+      "temporalDecay": true,
+      "halfLifeDays": 30,
+      "mmr": true,
+      "mmrLambda": 0.7
+    }
+  }
+}

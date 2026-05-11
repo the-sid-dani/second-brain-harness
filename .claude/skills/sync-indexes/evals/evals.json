@@ -1,0 +1,56 @@
+{
+  "skill_name": "sync-indexes",
+  "evals": [
+    {
+      "id": "add-missing-repo",
+      "name": "add-missing-repo-on-disk",
+      "prompt": "sync indexes",
+      "expected_output": "Skill scans <workspace.coding>/, finds work/samba-onboarding/ on disk but no matching row in <indexes.code_projects>. Proposes ADD via AskUserQuestion. After approval, appends a row to the index file with Path=<workspace.coding>/work/samba-onboarding, Status=active, GitHub detected from `git remote get-url origin` (the-sid-dani/samba-onboarding), Stack and Brief left as (needs review).",
+      "files": [],
+      "preconditions": [
+        "Real state on Sid's machine (2026-05-05): <workspace.coding>/work/samba-onboarding/ exists as a real git repo with origin pointing at the-sid-dani/samba-onboarding.",
+        "Index file <indexes.code_projects> has only header + separator rows (no data rows)."
+      ],
+      "assertions": [
+        {"text": "Output identifies samba-onboarding under work/ as an ADD candidate", "weight": 1, "critical": true},
+        {"text": "Output asks via AskUserQuestion before mutating the index file", "weight": 1, "critical": true},
+        {"text": "After approval, <indexes.code_projects> contains a row with the path beru-workspace/2-Coding/work/samba-onboarding (or equivalent token-resolved path)", "weight": 1, "critical": true},
+        {"text": "GitHub field on the new row is the-sid-dani/samba-onboarding (detected via git remote)", "weight": 1, "critical": false},
+        {"text": "Stack and Brief fields contain '(needs review)' literal — no fabricated values", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "flag-missing-folder",
+      "name": "flag-row-pointing-to-missing-folder",
+      "prompt": "sync indexes",
+      "expected_output": "Skill scans disk + parses index. Index has a row pointing to a folder that doesn't exist on disk (test fixture: pre-add a row with path '<workspace.coding>/personal/ghost-repo' before invoking, where personal/ghost-repo/ does NOT exist on disk). Skill proposes FLAG, asks user via AskUserQuestion (flag-with-MISSING-status vs remove-row), applies approved choice. Default action is flag (preserves audit trail).",
+      "files": [],
+      "preconditions": [
+        "Test fixture: pre-add a row '| ghost-repo | <workspace.coding>/personal/ghost-repo | TS | active | the-sid-dani/ghost-repo | A test repo | 2026-05-01 |' to <indexes.code_projects> BEFORE running the eval. The folder personal/ghost-repo/ must NOT exist on disk."
+      ],
+      "assertions": [
+        {"text": "Output identifies ghost-repo as MISSING (folder gone)", "weight": 1, "critical": true},
+        {"text": "Output asks via AskUserQuestion whether to flag (preserve row) or remove (delete row)", "weight": 1, "critical": true},
+        {"text": "Default behavior preserves the row (flagging is non-destructive)", "weight": 1, "critical": false},
+        {"text": "After 'flag' approval, the row's Status field reads 'MISSING' in <indexes.code_projects>", "weight": 1, "critical": true},
+        {"text": "Skill does NOT silently delete rows without explicit user approval", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "no-drift-clean-state",
+      "name": "no-drift-exit-cleanly",
+      "prompt": "audit code repos",
+      "expected_output": "Disk and index already match. Skill scans, finds no ADDs or MISSINGs, prints '✨ Index in sync. <N> code repos tracked, all present on disk.' and exits without asking any questions or mutating any files.",
+      "files": [],
+      "preconditions": [
+        "Disk and index are in sync — every directory under <workspace.coding>/<scope>/ has a matching row in <indexes.code_projects>, every row in the index points to an existing folder."
+      ],
+      "assertions": [
+        {"text": "Output reports 'in sync' or equivalent (no drift detected)", "weight": 1, "critical": true},
+        {"text": "Output does NOT invoke AskUserQuestion (no decisions to make)", "weight": 1, "critical": true},
+        {"text": "Output does NOT mutate <indexes.code_projects>", "weight": 1, "critical": true},
+        {"text": "Output reports a count of total tracked repos", "weight": 1, "critical": false}
+      ]
+    }
+  ]
+}

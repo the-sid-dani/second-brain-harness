@@ -1,57 +1,103 @@
 # Second-Brain Harness
 
-A Claude Code workspace harness for personal knowledge work — projects, contacts, briefings, meeting prep, design output — driven by natural-language conversation, not memorized slash commands.
+A personal AI workspace that runs on your computer. You talk to it naturally — it handles morning briefings, contacts, projects, meeting prep, research recall, design output, and more.
+
+```
+You:  "morning, what's on my plate today?"
+You:  "tell me about Sarah"
+You:  "I just spoke with Sarah about the launch"
+You:  "do I have any notes on Q3 planning?"
+You:  "let's start a new project for the product launch"
+```
+
+All routed automatically to the right pre-built workflow. No commands to memorize.
+
+---
+
+## Install in 5 minutes
+
+### What you need
+
+- A Mac (Linux and Windows also work — commands shown are for Mac)
+- **[Claude Code](https://claude.com/claude-code)** installed (free terminal app from Anthropic — install it first if you haven't)
+- **Git** — already on most Macs. Open Terminal and run `git --version` to check. If you see "command not found", run `xcode-select --install` and follow the prompts.
+
+That's it. You don't need to be a developer.
+
+### The easy way — let Claude do it for you
+
+1. **Open Terminal.app** (in Applications → Utilities, or hit ⌘-Space and type "Terminal").
+
+2. **Start Claude Code** by running:
+
+   ```bash
+   claude
+   ```
+
+3. **Paste this prompt** into Claude Code and hit Enter:
+
+   ```
+   Hi! I just opened Claude Code and want to install the second-brain-harness — a personal AI workspace.
+
+   The public template is at: https://github.com/the-sid-dani/second-brain-harness
+
+   Please help me set this up. Walk me through these steps:
+
+   1. Check what I have installed by running `git --version` and `claude --version`.
+      If anything's missing, tell me how to install it on a Mac and pause until I confirm.
+
+   2. Ask me where I want to clone the repo (default: ~/Desktop/second-brain-harness).
+
+   3. Clone the repo to that location, then cd into it.
+
+   4. Run /bootstrap — that's the interactive setup that walks me through identity,
+      persona, design system, and workspace configuration (~10 minutes).
+
+   5. After /bootstrap finishes, it suggests a Day-1 path. Help me work through
+      the first item from that list.
+
+   Treat me like a smart non-technical person — explain what each step does
+   briefly, don't over-explain, and ask before doing anything destructive.
+   ```
+
+4. **Answer Claude's questions.** It'll ask where to put the workspace, then `/bootstrap` will ask about your name, role, persona, and design preferences. Total time: ~10 minutes.
+
+5. **You're done.** When `/bootstrap` finishes, try one of these:
+   - *"morning, what's on my plate today?"* → your first briefing
+   - *"let's start a new project for [whatever you're working on]"* → your first project scaffold
+
+### The manual way — run the commands yourself
+
+If you'd rather skip the prompt and run things yourself:
+
+```bash
+git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
+cd ~/Desktop/second-brain-harness
+claude
+/bootstrap
+```
+
+Four commands. The `claude` command opens Claude Code in that directory; `/bootstrap` then walks you through identity and persona setup.
 
 ---
 
 ## What is this?
 
-A forkable workspace skeleton that turns Claude Code into your personal chief-of-staff (or research companion, or engineering co-pilot — you pick the persona during setup). You configure it once with your identity and workspace paths, then talk to the assistant normally. It routes your intent to the right skill.
-
-```
-You: "morning, what's on my plate today?"
-→ runs /briefing — composes Gmail + Calendar + Slack + Jira + GitHub + your active projects
-
-You: "do I have any notes on Q1 OKRs?"
-→ runs /find — searches resources/, projects/, archive/, memory/
-
-You: "tell me about Alex"
-→ runs /contact — surfaces Alex's profile, last interaction, open commitments
-
-You: "I just spoke with Alex about the launch"
-→ runs /contact-log — appends an interaction entry
-
-You: "let's start a new project for Q3 planning"
-→ runs /new-project — scaffolds workspace/1-Projects/YYYY-MM-q3-planning/
-```
+A workspace skeleton that turns Claude Code into your personal chief-of-staff (or research companion, engineering co-pilot, sales-ops assistant — you pick the persona during setup). You configure it once with your identity, then talk to the assistant normally. It routes your intent to the right pre-built workflow.
 
 **Three pieces make this work:**
 
-1. **Skills** — pre-built workflows under `.claude/skills/` (57 in the default install). Each has a thorough `description:` Claude reads to auto-route your prompt.
-2. **A PARA workspace** at `<workspace.root>/` — Inbox / Projects / Coding / Resources / Archive. Your work lives here; skills know how to navigate it.
-3. **Configuration tokens** in `CLAUDE.md` — your name, your role, your workspace paths. Skills reference these symbolically (`<user.name>`, `<workspace.projects>`) so the harness adapts cleanly to your fork.
+1. **Skills** — 57 pre-built workflows shipped in `.claude/skills/`. Each one has a description that tells Claude when to use it, so your natural-language prompts automatically route to the right skill.
+2. **A PARA workspace** at `workspace/` — Inbox, Projects, Coding, Resources, Archive. Your work lives here; skills know how to navigate it.
+3. **Configuration tokens** in `CLAUDE.md` — your name, your role, your workspace paths. Skills reference these symbolically so the workspace adapts to your setup.
+
+PARA is a personal-knowledge-management system invented by Tiago Forte — short for **P**rojects, **A**reas, **R**esources, **A**rchive. The workspace borrows the same idea.
 
 ---
 
-## Quick start
+## What you can ask it to do
 
-```bash
-git clone https://github.com/<your-username>/second-brain-harness
-cd second-brain-harness
-claude                       # opens Claude Code in this directory
-/bootstrap                   # interactive: walks through identity, persona, design system, workspace
-/briefing                    # try it — produces <workspace.root>/3-Resources/briefings/morning-briefing-YYYY-MM-DD.md
-```
-
-`/bootstrap` is ~10 minutes and runs only once per fork (it locks itself by writing `setup_completed: <date>` to CLAUDE.md). After that, just talk to the assistant naturally.
-
-If you prefer manual setup, see `EXAMPLE-CONFIG.md` for a worked example of the Configuration section in CLAUDE.md, fill it in by hand, and skip `/bootstrap`.
-
----
-
-## How it works — the natural-language model
-
-You don't have to memorize slash commands. Claude reads your prompt and the description of every installed skill, then picks the best match. Some examples:
+You don't have to memorize slash commands. Claude reads your prompt and the description of every installed skill, then picks the best match.
 
 | You say | Auto-routes to |
 |---|---|
@@ -69,51 +115,48 @@ You don't have to memorize slash commands. Claude reads your prompt and the desc
 | "draft a deck about the AI strategy" | `/design-simple-deck` |
 | "build a dashboard mockup" | `/design-dashboard` |
 | "be a thinking partner — I'm stuck on X" | `/thinking-partner` |
-| "scaffold an engineering project under Epic-XYZ" | `/scaffold-engineering-project` |
-| "save this for later" | `/save-resource` |
+| "save this article for later" | `/save-resource` |
 | "process my inbox" | `/inbox-process` |
 
-You can still type `/skill-name` directly if you know it — both work.
-
-A second layer, the `UserPromptSubmit` hook at `.claude/hooks/intent-detector.mjs`, logs which natural-language patterns match which skills (to `.claude/intent-detector-log.jsonl`, gitignored). Currently log-only (v1) — a future v2 will inject suggestions inline. Either way the routing above happens via Claude reading skill descriptions, not the hook.
+You can also type `/skill-name` directly if you know it — both work.
 
 ---
 
 ## What's included
 
-**Skills (57).**
+**Skills (57 total).**
 
 | Category | Skills |
 |---|---|
-| Chief-of-staff (first-party) | `archive-project`, `briefing`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `prune-projects`, `save-resource`, `sync-indexes`, `thinking-partner` |
+| Chief-of-staff (everyday workflows) | `archive-project`, `briefing`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `prune-projects`, `save-resource`, `sync-indexes`, `thinking-partner` |
 | Setup & meta | `bootstrap`, `skill-creator` |
 | Research | `company-research`, `people-research` |
-| Atlassian | `confluence-publish-markdown`, `jira-create-vertical-slices`, `scaffold-engineering-project` |
-| Design (26) | `design-blog-post`, `design-dashboard`, `design-docs-page`, `design-email-marketing`, `design-finance-report`, `design-hyperframes` (video), `design-image-poster`, `design-magazine-poster`, `design-meeting-notes`, `design-mobile-app`, `design-pm-spec`, `design-pricing-page`, `design-saas-landing`, `design-simple-deck`, `design-social-carousel`, `design-team-okrs`, `design-video-shortform`, `design-web-prototype`, `design-weekly-update`, `design-wireframe-sketch`, and others |
-| Persona (10) | `persona-exec-assistant`, `persona-sales-ops`, `persona-researcher`, `persona-project-manager`, `persona-team-lead`, `persona-content-creator`, `persona-customer-support`, `persona-event-coordinator`, `persona-hr-coordinator`, `persona-it-admin` |
-| Reference (with disclaimer) | `samba-publish` — Cloudflare Pages + SSO publishing; adapt before fork use |
+| Project tracking | `confluence-publish-markdown`, `jira-create-vertical-slices`, `scaffold-engineering-project` |
+| Design (26 skills) | landing pages, dashboards, decks, mobile apps, blog posts, social carousels, videos, posters, wireframes, OKR trackers, and more |
+| Persona templates (10) | `persona-exec-assistant`, `persona-sales-ops`, `persona-researcher`, `persona-project-manager`, `persona-team-lead`, `persona-content-creator`, `persona-customer-support`, `persona-event-coordinator`, `persona-hr-coordinator`, `persona-it-admin` |
+| Reference (with adapt-before-fork disclaimer) | `samba-publish` — internal-company URL deployment via Cloudflare Pages |
 
-Each skill has its own `.claude/skills/<name>/SKILL.md` documenting trigger phrases, inputs, invariants, and process steps. Browse them or `cat .claude/skills/*/SKILL.md | head -3` to scan headers.
+Each skill has its own `.claude/skills/<name>/SKILL.md` file documenting what it does, trigger phrases, and process steps. Browse `.claude/skills/` to look around.
 
 **MCPs (5 pre-configured in `.mcp.json`).**
 
-- `gemini-vision` (local — `.claude/mcp-servers/gemini-vision.mjs`). Requires `GEMINI_API_KEY` env var. Free tier 15 req/min.
-- `exa` (HTTP) — web search. Use only `web_search_advanced_exa`.
-- `slack` (HTTP) — read/send/search messages. **Needs your own Slack client ID** (replace `REPLACE_WITH_YOUR_SLACK_CLIENT_ID` in `.mcp.json`).
-- `atlassian` (HTTP) — Jira + Confluence. OAuth via `/mcp authorize`.
-- `figma` (HTTP) — read Figma designs into code. OAuth via `/mcp authorize`.
+These are connectors to external services. After install, run `/mcp` in Claude Code to authorize each one (standard browser OAuth — no app registration needed):
 
-After cloning, run `/mcp` to inspect status and authorize each one.
+- `gemini-vision` — local image/video/document analysis using Google's free Gemini tier. Needs `GEMINI_API_KEY` in your shell env ([get one free](https://aistudio.google.com/apikey)).
+- `exa` — web search.
+- `slack` — read, send, search Slack messages.
+- `atlassian` — Jira tickets + Confluence pages.
+- `figma` — read Figma designs and convert to code.
 
-**Brand presets (73).** Drop-in design systems at `<workspace.root>/<workspace.resources>/design-systems/` — Airbnb, Stripe, Linear, Notion, Claude, Vercel, Tesla, and 66 others. Swap the active brand with `/use-design <brand>` and every design-* skill renders in that style.
+**Brand presets (73).** Pre-built design systems at `workspace/3-Resources/design-systems/` — Airbnb, Stripe, Linear, Notion, Claude, Vercel, Tesla, BMW, Lamborghini, Spotify, and 63 others. Switch the active brand with `/use-design <brand>` and every design-* skill renders in that style.
 
-**Persona templates (6).** Generic SOUL / USER / IDENTITY / CLAUDE / README / TOOLS templates at `<workspace.root>/<workspace.resources>/templates/persona/`. `/bootstrap` fills these in with your values.
+**Persona templates (6).** Generic SOUL / USER / IDENTITY / CLAUDE / README / TOOLS templates that `/bootstrap` fills in with your values.
 
-**Workspace skeleton.** PARA-style under `<workspace.root>/`:
+**Workspace skeleton.** PARA-style under `workspace/`:
 - `0-Inbox/` — capture / undecided
-- `1-Projects/` — active projects (each with its own `CLAUDE.md` + `memory.md`)
-- `2-Coding/` — code repos (each their own git; gitignored from this repo)
-- `3-Resources/` — templates / contacts / meetings / research / reference / design-systems
+- `1-Projects/` — active projects (each gets its own folder with `CLAUDE.md` + `memory.md`)
+- `2-Coding/` — code repos (each its own git; gitignored from this repo)
+- `3-Resources/` — templates, contacts, meetings, briefings, research, reference, design-systems
 - `4-Archive/` — finished work (move, never delete)
 
 ---
@@ -158,7 +201,7 @@ second-brain-harness/
 │
 └── .claude/
     ├── skills/            ← 57 skills
-    ├── hooks/             ← intent-detector.mjs
+    ├── hooks/             ← intent-detector.mjs (logs natural-language patterns)
     ├── commands/          ← /use-design slash command
     ├── mcp-servers/       ← local gemini-vision MCP
     ├── settings.json      ← hook registration
@@ -180,7 +223,7 @@ All identity + path values live in **one place** — the `## Configuration` sect
 | `user.timezone` | Briefing date math, calendar formatting |
 | `user.email_signature` | Block appended to emails the assistant drafts |
 | `user.company` | Used in formal documents |
-| `assistant.name` | Persona name — `<agent>` by default, customize to whatever fits (Atlas, Echo, Sage, etc.) |
+| `assistant.name` | Persona name — `<agent>` by default, customize to anything (Atlas, Echo, Sage, etc.) |
 | `assistant.role` | "Chief of Staff" / "Research Companion" / "Engineering Co-Pilot" |
 | `assistant.vibe` | One-line vibe descriptor for SOUL.md voice cues |
 | `assistant.emoji` | Optional emoji for the persona |
@@ -188,7 +231,7 @@ All identity + path values live in **one place** — the `## Configuration` sect
 | `workspace.inbox / projects / coding / resources / archive` | Subfolder names — defaults are 0-Inbox, 1-Projects, etc. |
 | `setup_completed` | Date `/bootstrap` ran (presence = configured; absence = fresh fork) |
 
-Run `/bootstrap` from a fresh clone to fill these in interactively. See `EXAMPLE-CONFIG.md` for what a completed Configuration looks like.
+`/bootstrap` fills these in interactively. See `EXAMPLE-CONFIG.md` for what a completed Configuration looks like.
 
 ---
 
@@ -281,6 +324,32 @@ Plain Claude Code primitives:
 | Add a recurring task | `CronCreate` or `/schedule` |
 | Reconfigure identity / persona | `/bootstrap` (delete `setup_completed:` line in CLAUDE.md first) |
 | See what <assistant.name> did today | `memory/YYYY-MM-DD.md` |
+
+---
+
+## Want to back up your work to GitHub? (optional)
+
+The simple install instructions above just clone the public repo to your computer. Your personal data (memory logs, briefings, contacts, projects) lives only on your Mac.
+
+If you want a GitHub backup or want to use this on multiple computers, **fork** the repo instead. A fork is your own copy on GitHub that you can push to.
+
+```bash
+# Option 1: via the GitHub CLI
+gh repo fork the-sid-dani/second-brain-harness --clone --remote
+cd second-brain-harness
+claude
+/bootstrap
+
+# Option 2: via the web
+# Visit https://github.com/the-sid-dani/second-brain-harness/fork and click "Create fork"
+# Then clone YOUR fork:
+git clone https://github.com/YOUR-GITHUB-USERNAME/second-brain-harness ~/Desktop/second-brain-harness
+cd ~/Desktop/second-brain-harness
+claude
+/bootstrap
+```
+
+If you skipped this and want to add backup later, you can — just create a new private repo on GitHub and push your local copy to it.
 
 ---
 

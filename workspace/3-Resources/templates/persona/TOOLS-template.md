@@ -36,6 +36,18 @@ The full inventory of skills is at the top of every session in the available-ski
 - ✅ **`persona-*`** — Role-modeled workflows (exec-assistant, sales-ops, content-creator, etc.).
 - ✅ **<assistant.name>-internal** — `archive-project`, `new-project`, `prune-projects`, `inbox-process`, `save-resource`, `find`, `thinking-partner`, `contact`, `contact-log`, `briefing`, `bootstrap`, etc.
 
+## ContinuousClaude V4.7 bundle (in `.claude/`)
+
+The harness ships a 9-skill pipeline for autonomous agent work:
+
+- **Skills:** autonomous, autonomous-research, bootup, create-handoff, premortem, research, resume-handoff, review, upgrade-harness
+- **Hooks:** status (statusLine), pre-compact (auto-handoff), post-edit-diagnostics, tldr-read, auto-handoff-stop, plus lib/{resolve-project-root, handoff-writer}.mjs helpers
+- **Python tools:** `.claude/tools/{ouros_harness.py, exa_search.py, nia_docs.py}` + requirements.txt
+
+Run `./scripts/install.sh` to install the supporting binaries (`bloks`, `tldr`, `fastedit`, `rust`, `uv`) and prompt for API keys. See `INSTALL.md` for manual install.
+
+The pipeline keeps state under `continuum/` (per-project) and `handoffs/` (workspace-wide). Multi-project mode auto-detects the right scope; single-project repos fall back to repo root.
+
 ## Standard Claude Code tools (always available)
 
 `Read`, `Write`, `Edit`, `Bash`, `Glob`, `Grep`, `Skill`, `Agent`, `Task` family, `AskUserQuestion`, `CronCreate`/`List`/`Delete`, `WebFetch`, `WebSearch`, `Monitor`, `NotebookEdit`, `RemoteTrigger`, `PushNotification`.

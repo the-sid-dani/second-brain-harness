@@ -14,6 +14,20 @@ All routed automatically to the right pre-built workflow. No commands to memoriz
 
 ---
 
+## Quick start
+
+```bash
+git clone <this-repo>
+cd <repo-name>
+./scripts/install.sh
+```
+
+The installer is idempotent — safe to re-run. It detects existing tooling (Homebrew, Claude Code, etc.) and skips what's already present. See `INSTALL.md` for manual install steps if you prefer step-by-step control.
+
+After install, open Claude Code in the cloned folder and run `/bootstrap` to configure your identity, persona, and workspace (see the full walkthrough below).
+
+---
+
 ## Install in 5 minutes
 
 ### What you need
@@ -211,8 +225,9 @@ second-brain-harness/
 │   └── 4-Archive/
 │
 └── .claude/
-    ├── skills/            ← 57 skills
-    ├── hooks/             ← intent-detector.mjs (logs natural-language patterns)
+    ├── skills/            ← skills (chief-of-staff + design + ContinuousClaude V4.7 pipeline)
+    ├── hooks/             ← intent-detector + ContinuousClaude V4.7 hooks (status, pre-compact, etc.)
+    ├── tools/             ← ContinuousClaude V4.7 Python tools (ouros_harness, exa_search, nia_docs)
     ├── commands/          ← /use-design slash command
     ├── mcp-servers/       ← local gemini-vision MCP
     ├── settings.json      ← hook registration

@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.12] - 2026-05-11
+
+### Added
+
+- **One-command installer** — `./scripts/install.sh` orchestrates an 11-step setup for fresh forks. Detects existing tooling (Homebrew, Claude Code, samba-onboarding artifacts via `gh + gws + claude` on PATH) and skips foundation steps when already configured. Idempotent at every step — safe to re-run. Flags: `--no-fastedit-model` (skip the ~3GB FastEdit model), `--skip-api-keys` (write empty `.env` stubs), `--verbose`, `--reconfigure` (re-prompt for keys), `--help`.
+- **`scripts/lib/` — 12 installer modules.** Four copied verbatim from samba-onboarding (`ui.sh`, `detect.sh`, `prereqs.sh`, `claude.sh`). Eight new CCv4-specific modules: `sys-extras.sh` (ripgrep/ffmpeg/yt-dlp), `rust.sh`, `uv.sh`, `ccv4-bins.sh` (bloks + tldr-cli via cargo), `ccv4-python.sh` (requirements.txt + `fastedits[mlx,mcp]` via uv pip install --system, handles PEP 668), `fastedit-mcp.sh` (idempotent `.mcp.json` edit via jq), `api-keys.sh` (interactive prompts for 5 keys), `verify.sh` (binary probes + manual OAuth checklist).
+- **`scripts/lib/CONVENTIONS.md`** — codifies the installer-lib conventions: 1-arg `step()` banner form, one function per lib, idempotency via presence-check, bash-3.2 portability, env-var cross-lib comms.
+- **`INSTALL.md`** — manual install fallback for users who prefer step-by-step control over `install.sh`. ~220 lines: prerequisites, 11-step install, post-install OAuth (Slack/Figma/GWS), troubleshooting.
+- **CCv4 hooks bundled in-repo.** `.claude/settings.json` declares `statusLine` + 4 hook events using `$CLAUDE_PROJECT_DIR`: `PreToolUse:Read→tldr-read`, `PreCompact→pre-compact`, `PostToolUse:Edit|Write|MultiEdit|Update→post-edit-diagnostics`, `Stop→auto-handoff-stop`. Existing `UserPromptSubmit:intent-detector` preserved.
+- **`.env.example` rewritten** with 5 CCv4 keys (`ANTHROPIC_API_KEY`, `EXA_API_KEY`, `NIA_API_KEY`, `HF_TOKEN`, `ATLASSIAN_BASIC_AUTH`) and acquisition URLs for each.
+
+### Changed
+
+- **`extract-template.sh`** appends 9 CCv4 skills to `SHIPPED_SKILLS` (autonomous, autonomous-research, bootup, create-handoff, premortem, research, resume-handoff, review, upgrade-harness) and adds a `PHASE 2.5` block that copies hooks (5 mjs + 2 lib mjs), Python tools (4 files), `.claude/settings.json`, `scripts/install.sh`, and `scripts/lib/*.sh` into the export tree.
+- **`TOOLS.md`** new "ContinuousClaude V4.7 bundle" section listing the 9 skills, 5+2 hooks, 4 Python tools, and the installer.
+- **`README.md` project map** expanded with `.claude/{skills,hooks,tools}/` and `scripts/` lines; new Quick Reference row pointing fork users at `./scripts/install.sh`.
+
+### Fixed
+
+- **`ui.sh` exports `die` and `err`** — samba's `ui.sh` only defined `info`/`warn`, but CCv4 libs assumed all four. Calls to `die` crashed with `die: command not found` on error paths. Added one-line `err()` and `die()`.
+- **PEP 668 / externally-managed-environment** — macOS Homebrew Python now refuses `pip install` system-wide. `ccv4-python.sh` switched to `uv pip install --system` with `--break-system-packages` fallback. uv is already a hard dep (installed at step 6).
+- **`verify_all` respects `--no-fastedit-model`** — was flagging `fastedit` as MISSING and returning exit 1 even when the flag intentionally skipped its install. Now conditional on `NO_FASTEDIT_MODEL=0`.
+
 ## [0.1.11] - 2026-05-11
 
 ### Changed

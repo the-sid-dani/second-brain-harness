@@ -1,22 +1,24 @@
 ---
 name: briefing
-description: Morning chief-of-staff briefing — composes Gmail (`gws-gmail-triage`) + Calendar (`gws-calendar-agenda`) + Slack (dynamic channel enumeration via `mcp__slack__slack_search_channels` + `mcp__slack__slack_search_public_and_private`) + Jira (`mcp__atlassian__searchJiraIssuesUsingJql`) + GitHub (`gh pr list`) + Contacts (`<workspace.root>/<workspace.resources>/contacts/`) + active projects (`<scripts.project_query>` + each project's `memory.md` tail + `CLAUDE.md` status) into a single structured brief and writes it to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. Surfaces a "Today's work from your projects" section that reads each active project's append-only memory log, extracts the most-recent decision/blocker/next-action signals, and recommends what to ship today — opinionated, not a flat list. Applies the user's priority signals from USER.md (direct collaborators = HIGH, calendar conflicts = URGENT, AI/technical = HIGH, generic newsletters = LOW) — read at runtime, never hardcoded. Use this whenever <user.name> asks <assistant.name> to start the day, orient them, surface what needs attention, or ask "what should I work on today" — phrases like "/briefing", "morning briefing", "brief me", "what's on my plate today", "what needs me today", "give me the rundown", "what should I do first this morning", "orient me for the day", "daily brief", "what should I work on today". Trigger broadly on day-orientation language even when the literal word "briefing" is absent — the chief-of-staff intent is the pattern. Output ALWAYS lands at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md` (never at workspace root, never inside a project folder, never in 0-Inbox/) per README §Outputs. Filters contacts where `status: personal` BEFORE generating "Open commitments by person" — work-context skill, never leaks personal-life contacts into a work brief. Does NOT fabricate signals when an MCP returns empty — empty section either omits or writes "No <X> today"; never invents fake tickets, fake messages, fake meetings, or fake project recommendations. Does NOT auto-send to Slack/email/Jira — briefing is a draft `<user.name>` reads, not a message `<user.name>` sends. Does NOT invoke Exa directly (token-isolation discipline #23) — for external-topic enrichment, suggests `/find` or `/contact-research` instead. Composes existing skills rather than reimplementing them; references USER.md priority signals rather than restating the logic.
+description: Morning chief-of-staff briefing — composes whatever signal sources are configured (email, calendar, messaging, issue-tracking, code-hosting) PLUS the always-on local sources (`<workspace.root>/<workspace.resources>/contacts/` + active projects via `<scripts.project_query>` + each project's `memory.md` tail + `CLAUDE.md` status) into a single structured brief and writes it to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. Detects available tools at runtime in Step 0.5 (`command -v gws` / `command -v gh` for CLIs; deferred-tools list for `mcp__<name>__*` to check MCP loadedness) and composes ONLY what's present — fork users with zero MCPs still get a useful brief from workspace state + project memory tails + USER.md priority signals. Sections backed by absent tools are skipped silently in the body and listed transparently in a `## Tools used` footer at the bottom of the brief. Surfaces a "Today's work from your projects" section that reads each active project's append-only memory log, extracts the most-recent decision/blocker/next-action signals, and recommends what to ship today — opinionated, not a flat list. Applies the user's priority signals from USER.md (direct collaborators = HIGH, calendar conflicts = URGENT, AI/technical = HIGH, generic newsletters = LOW) — read at runtime, never hardcoded. Use this whenever <user.name> asks <assistant.name> to start the day, orient them, surface what needs attention, or ask "what should I work on today" — phrases like "/briefing", "morning briefing", "brief me", "what's on my plate today", "what needs me today", "give me the rundown", "what should I do first this morning", "orient me for the day", "daily brief", "what should I work on today". Trigger broadly on day-orientation language even when the literal word "briefing" is absent — the chief-of-staff intent is the pattern. Output ALWAYS lands at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md` (never at workspace root, never inside a project folder, never in 0-Inbox/) per README §Outputs. Filters contacts where `status: personal` BEFORE generating "Open commitments by person" — work-context skill, never leaks personal-life contacts into a work brief. Does NOT fabricate signals when an MCP returns empty or is not configured — absent sections drop out of the body silently (footer documents the omission); empty-but-configured sources write "No <X> today"; never invents fake tickets, fake messages, fake meetings, or fake project recommendations. Does NOT auto-send to Slack/email/Jira — briefing is a draft `<user.name>` reads, not a message `<user.name>` sends. Does NOT invoke Exa directly (token-isolation discipline) — for external-topic enrichment, suggests `/find` or `/contact-research` instead. Composes existing skills rather than reimplementing them; references USER.md priority signals rather than restating the logic.
 context: fork
 ---
 
 # briefing
 
-The chief-of-staff morning brief. Composes 7 signal sources into a single structured document at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`, applies the user's priority signals, surfaces what needs them today, and recommends what to ship from each active project.
+The chief-of-staff morning brief. Probes which signal sources are available, composes only the ones present, and assembles a single structured document at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. Applies the user's priority signals, surfaces what needs them today, and recommends what to ship from each active project. Closes with a `## Tools used` footer transparently listing what was composed vs what was not configured — fork users with zero MCPs still get a useful brief from workspace state alone.
 
 **Before you begin: read the Configuration section in root CLAUDE.md.** Path tokens like `<workspace.resources>` and `<scripts.project_query>` resolve from there — don't hardcode.
 
 ## Why this exists
 
-<user.name> wants <assistant.name> to be a chief-of-staff, not a search engine. The morning brief is the single highest-value moment of the day: cross-referencing email + calendar + Slack + Jira + GitHub + project state to surface what *actually* needs attention vs what's noise. Before this skill, that ritual was a 4-tab manual scan that took 15 minutes and missed half the signal — and worse, didn't connect it to the active projects' plans.
+<user.name> wants <assistant.name> to be a chief-of-staff, not a search engine. The morning brief is the single highest-value moment of the day: cross-referencing whatever signal sources are configured (email, calendar, messaging, issue-tracking, code-hosting) + project state to surface what *actually* needs attention vs what's noise. Before this skill, that ritual was a 4-tab manual scan that took 15 minutes and missed half the signal — and worse, didn't connect it to the active projects' plans.
 
-`/briefing` is the answer to "Morning <user.name>, here's the lay of the land — and here's what to ship today." It composes existing skills (`gws-gmail-triage`, `gws-calendar-agenda`), plugin MCPs (`mcp__slack__*`, `mcp__atlassian__*`), and CLI primitives (`gh`, `<scripts.project_query>`, `/find`) — it does not reinvent any of them. The novel piece is the **project synthesis layer**: reading each active project's `memory.md` tail and `CLAUDE.md` status to recommend today's highest-leverage work.
+`/briefing` is the answer to "Morning <user.name>, here's the lay of the land — and here's what to ship today." Its **mandatory floor** runs with zero external tools: read the active-projects index, tail each project's `memory.md`, read USER.md priority signals, read contacts. Its **optional composition layer** uses whatever's configured — `gws-gmail-triage`/`gws-calendar-agenda` (if `gws` CLI is installed), `mcp__slack__*` (if Slack MCP is authorized), `mcp__atlassian__*` (if Atlassian MCP is authorized), `gh pr list` (if `gh` CLI is installed), `/find` (always present, optional last step). Step 0.5 detects what's available at runtime; later steps gate on that map.
 
-This is the Pass 3 headliner of the second-brain project. After this ships, `/meeting-prep` (item 17), `/standup` (item 18), and `/weekly-digest` (item 19) become wrappers around the same composition pattern.
+The novel piece is the **project synthesis layer**: reading each active project's `memory.md` tail and `CLAUDE.md` status to recommend today's highest-leverage work. That layer is mandatory-floor — works whether <user.name> has a fully-configured multi-MCP stack or no MCPs at all.
+
+This is the Pass 3 headliner of the second-brain project. After this ships, `/meeting-prep` (item 17), `/standup` (item 18), and `/weekly-digest` (item 19) become wrappers around the same probe-then-compose pattern.
 
 ## When to use
 
@@ -47,7 +49,7 @@ Do NOT trigger for:
 
 ## Tiger-grade invariants (LOAD-BEARING — DO NOT VIOLATE)
 
-These three invariants protect against high-cost failure modes. They are stated multiple times throughout this skill (in description, here, in step headers, in failure modes table) by design — premortem-tier risks need redundancy.
+These four invariants protect against high-cost failure modes. They are stated multiple times throughout this skill (in description, here, in step headers, in failure modes table) by design — premortem-tier risks need redundancy.
 
 ### T1 — Output path is fixed
 
@@ -67,7 +69,20 @@ When an MCP returns empty (no Jira tickets, no Slack messages, no calendar event
 - **Omits entirely** — clean output, no awkward empty headers
 - OR writes a single line like "No active Jira tickets" / "No unread Slack mentions" / "Calendar is clear today"
 
-Never invent fake tickets, fake messages, fake meetings, fake commitments, or fake project recommendations. The "Today's work from your projects" section is especially exposed here — if a project has a thin or empty `memory.md`, surface that fact ("project X has no recent memory entries — consider a `/standup` to refresh") rather than invent next-actions. If a tool errors, surface the error in the section's place: "⚠️ Slack MCP unavailable — skipping Slack digest." Briefing accuracy is the entire value proposition; fabricated content makes it actively harmful.
+Never invent fake tickets, fake messages, fake meetings, fake commitments, or fake project recommendations. The "Today's work from your projects" section is especially exposed here — if a project has a thin or empty `memory.md`, surface that fact ("project X has no recent memory entries — consider a `/standup` to refresh") rather than invent next-actions. If a tool errors at runtime (was detected as present but failed mid-call), surface the error in the section's place: "⚠️ Slack MCP errored — skipping Slack digest." Briefing accuracy is the entire value proposition; fabricated content makes it actively harmful.
+
+### T4 — Graceful degradation when tools are absent
+
+The briefing has a **mandatory floor** that runs with zero external tools: project synthesis (Step 7), open commitments (Step 5), today's date, USER.md priority signals. Everything else is **optional composition** gated on tool detection in Step 0.5.
+
+For each gated step (Gmail, Calendar, Slack, Jira, GitHub):
+- **If the underlying tool is NOT in the detection map** (`gws` not installed, `mcp__slack__*` not in deferred-tools list, etc.): omit the section entirely from the brief body. NEVER write a "⚠️ X not configured" line into the body — that's noise for users who never wanted that tool. Footer (Step 9) documents the omission transparently.
+- **If the tool IS detected but errors at runtime** (auth expired, network failure, MCP returned an error): write a single ⚠️ line in the section's place ("⚠️ Slack MCP errored — skipping Slack digest") AND log to the footer.
+- **Never fabricate a tool call.** If `gws` is absent, do NOT invent fake Gmail entries to fill the section. If Slack MCP isn't loaded, do NOT make up Slack messages to flesh out the brief. T3 governs this; T4 codifies that absent tools are FIRST-CLASS state, not an error to paper over.
+
+The `## Tools used` footer at the bottom of every brief lists which signal sources were composed vs which were not configured vs which errored. This is the single source of truth for "what's in this brief" — never invent a section header that the footer doesn't back.
+
+Fork users with zero MCPs still get a useful brief from the mandatory floor: project memory tails, today-relevant signals, priority-ranked synthesis. That's not a degraded experience; that's the floor of the value proposition.
 
 ## Process
 
@@ -85,7 +100,44 @@ Run these in parallel via separate tool calls (no dependencies between them):
 4. **Contacts list** — Bash: `ls <workspace.root>/<workspace.resources>/contacts/*.md` to get the file list (NOT the contents — those come in Step 5).
 5. **Briefing output path** — compute target file path: `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.md`. If it already exists, set the path to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}-${TIME}.md` per T1.
 
+### Step 0.5: Detect available tools (probe-then-compose — T4 invariant)
+
+Build a `detection` map that gates Steps 1, 2, 3, 4, 6. **This step is what enables fork users with any tool stack (or none) to get a useful brief.** Pattern modeled after `/bootstrap` Phase 1's MCP probe (added in v0.1.4).
+
+Run these probes in parallel:
+
+```bash
+command -v gws 2>&1            # detection.cli.gws — gates Steps 1 (Gmail) + 2 (Calendar)
+command -v gh 2>&1             # detection.cli.gh — gates Step 6 (GitHub recent shipped)
+```
+
+For each MCP, check the **deferred-tools list at the top of the session** (the system reminder that lists `mcp__<name>__*` tools available for this workspace):
+
+- `detection.mcp.slack = true` if ≥1 `mcp__slack__*` tool appears (gates Step 3 — Slack digest)
+- `detection.mcp.atlassian = true` if ≥1 `mcp__atlassian__*` tool appears (gates Step 4 — Jira queue)
+
+**Honesty rules** (T4):
+- If `command -v gws` exits 0 → `detection.cli.gws = true`; CLI is callable, but the user's `gws auth status` may still be unauth'd. That's a runtime-error case handled in Step 1, not a not-configured case.
+- If a `mcp__<name>__*` tool is in the deferred-tools list → the MCP server is loaded and authorized for THIS workspace cwd (Claude Code isolates OAuth state per-project — see bootstrap Phase 1 §honesty rule).
+- If a tool is absent from the detection map → the section it backs is omitted silently from the brief body (no `⚠️ X not configured` line). The `## Tools used` footer in Step 9 documents the omission.
+- Never gate on a tool's CONTENT (e.g., "did Gmail return ≥1 unread") — that's a runtime concern. Step 0.5 only checks availability.
+
+**Output**: a cached `detection` map used by every subsequent step. Example shapes:
+
+```
+# A fully-configured fork:
+detection = {cli: {gws: true, gh: true}, mcp: {slack: true, atlassian: true}}
+# A partial fork (no MCPs auth'd, but gh is installed):
+detection = {cli: {gws: false, gh: true}, mcp: {slack: false, atlassian: false}}
+# Zero-tool fork (mandatory floor only):
+detection = {cli: {gws: false, gh: false}, mcp: {slack: false, atlassian: false}}
+```
+
+The zero-tool case still produces a useful brief — Steps 5 (commitments), 7 (project synthesis), 8 (find cross-refs) all run from local files. That's the floor.
+
 ### Step 1: Gmail triage — "What needs you today" inputs
+
+**Gate (T4):** runs ONLY if `detection.cli.gws == true`. If false, skip this step entirely — no section header, no `⚠️` line in the body. The `## Tools used` footer (Step 9) will list Gmail as "not configured."
 
 **Compose the `gws-gmail-triage` skill via the Skill tool** (not raw `gws` Bash). The wrapped skill normalizes the GWS CLI's `--params '{"userId": "me"}'` JSON shape — direct Bash invocation requires schema knowledge that the skill abstracts away. Returns unread inbox summary with sender, subject, date.
 
@@ -97,9 +149,11 @@ Apply USER.md priority signals to classify each unread:
 
 Output: a list of (URGENT + HIGH) entries only — no more than ~7. STANDARD goes into a count ("plus 12 standard unreads"). LOW is excluded entirely.
 
-If `gws-gmail-triage` errors or returns empty: per T3, write "No urgent unreads" or "⚠️ Gmail unavailable — <error>".
+If `gws-gmail-triage` errors at runtime (e.g., `gws` is installed but auth expired): write "⚠️ Gmail errored — <one-line cause>" in the section and note in the footer. If it returns empty (no unreads): write "No urgent unreads." Distinguish: not-detected = silent omit (Step 0.5 gate); detected-but-errored = ⚠️ line; detected-and-empty = "No urgent unreads."
 
 ### Step 2: Calendar agenda — "Calendar at a glance" + conflict detection
+
+**Gate (T4):** runs ONLY if `detection.cli.gws == true`. If false, skip this step entirely — no section in body. Footer documents "not configured."
 
 **Compose the `gws-calendar-agenda` skill via the Skill tool** (not raw `gws` Bash). Same reason as Step 1 — the skill normalizes the `--params` JSON shape. Returns today's events across all calendars.
 
@@ -109,9 +163,11 @@ Process:
 - Note any events with no description / no attendees as a tag (might need prep)
 - Pull next 3 events specifically for the "What needs you today" section
 
-If `gws-calendar-agenda` errors: per T3, "⚠️ Calendar unavailable" + skip the section. Do not invent events.
+If `gws-calendar-agenda` errors at runtime: write "⚠️ Calendar errored — <one-line cause>" + log to footer. Do not invent events. If it returns empty: "Calendar is clear today."
 
 ### Step 3: Slack digest — DYNAMIC channel enumeration
+
+**Gate (T4):** runs ONLY if `detection.mcp.slack == true` (≥1 `mcp__slack__*` tool in the deferred-tools list). If false, skip entirely — no section in body. Footer documents "not configured." Per T4, do NOT write "⚠️ Slack not configured" inline; that's noise for users who never configured Slack.
 
 No hardcoded channel list. Instead, enumerate channels at runtime and surface signal:
 
@@ -129,9 +185,11 @@ Output structure:
 
 If a USER.md "Priority Slack Channels" section exists in the future, prepend those channels to the active-channels list. Otherwise rely on dynamic enumeration. Surface a hint at section bottom: *"💡 To pin specific channels to the top of this digest, add a `## Priority Slack Channels` section to USER.md."*
 
-If Slack MCP unavailable: per T3, "⚠️ Slack MCP unavailable — skipping Slack digest." Do not invent messages.
+If Slack MCP errors at runtime (was detected but call failed): write "⚠️ Slack MCP errored — <one-line cause>" + log to footer. Do not invent messages.
 
 ### Step 4: Jira queue
+
+**Gate (T4):** runs ONLY if `detection.mcp.atlassian == true` (≥1 `mcp__atlassian__*` tool in the deferred-tools list). If false, skip entirely — no section in body. Footer documents "not configured."
 
 Compose `mcp__atlassian__searchJiraIssuesUsingJql` with query: `assignee = currentUser() AND status != Done ORDER BY duedate ASC, priority DESC`.
 
@@ -140,7 +198,7 @@ Process:
 - Flag past-due (duedate < today) with 🔴
 - Surface top ~7
 
-If Atlassian MCP unavailable: per T3, "⚠️ Jira MCP unavailable — skipping Jira queue."
+If Atlassian MCP errors at runtime: write "⚠️ Jira MCP errored — <one-line cause>" + log to footer. If it returns empty: "No active Jira tickets."
 
 ### Step 5: Open commitments by person — T2 INVARIANT (filter `status: personal`)
 
@@ -167,6 +225,8 @@ If contacts directory is empty: per T3, write "No contacts logged yet — run `/
 
 ### Step 6: GitHub recent shipped
 
+**Gate (T4):** runs ONLY if `detection.cli.gh == true`. If false, skip entirely — no section in body. Footer documents "not configured."
+
 Bash: `gh pr list --author=@me --state=merged --search "merged:>$(date -v-7d +%Y-%m-%d)" --limit 10 --json number,title,url,mergedAt,headRepository`
 
 (Note: `--json repository` is invalid — the correct field name is `headRepository`. Easy to fumble.)
@@ -176,7 +236,7 @@ Process:
 - Sort by mergedAt desc
 - Format as bullet list: `- <title> (<repo>) — <url>`
 
-If `gh` errors or returns empty: per T3, "No PRs merged in the last 7 days." or "⚠️ GitHub auth issue — skipping recent shipped."
+If `gh` errors at runtime (was detected but call failed — auth expired, network): write "⚠️ GitHub auth issue — <one-line cause>" + log to footer. If it returns empty: "No PRs merged in the last 7 days."
 
 ### Step 7: Project synthesis — "Today's work from your projects"
 
@@ -274,6 +334,16 @@ Build the markdown output following the structure below. Order is fixed (priorit
 
 ---
 
+## Tools used
+
+*Composed from Step 0.5's detection map. Transparency footer per T4 — never fabricated.*
+
+- ✅ **Composed:** <comma-separated list of signal sources used, e.g., "Project synthesis (always), Open commitments, Gmail, Calendar, Slack, Jira, GitHub recent shipped, Notes & cross-references">
+- ⏳ **Not configured:** <comma-separated list of gated steps skipped per detection map, e.g., "Slack MCP, Atlassian MCP — run `/bootstrap` or `/mcp` to configure"> (OMIT this line entirely if all gated tools were detected)
+- ⚠️ **Errored at runtime:** <comma-separated list of detected-but-failed tools with one-line causes, e.g., "Gmail (auth expired — run `gws auth login`)"> (OMIT this line entirely if no runtime errors)
+
+---
+
 That's the lay of the land. Where do you want to start?
 ```
 
@@ -301,10 +371,13 @@ Top 3 from "What needs you today":
 
 Highest-leverage work today: <one-line synthesis from Step 7's closing line>.
 
+<Optional line — INCLUDE ONLY IF Step 0.5's detection map had any `false` entries:>
+ℹ️ Composed from <N>/5 optional signal sources. <skipped tools list>. See `## Tools used` footer in the brief for setup hints.
+
 That's the lay of the land. Where do you want to start?
 ```
 
-This gives <user.name> the headline + the project synthesis + a prompt for direction without forcing him to scroll.
+This gives <user.name> the headline + the project synthesis + a prompt for direction without forcing him to scroll. For full-stack users with everything detected, omit the `ℹ️` line entirely — it's only there when degradation occurred, to flag "you could get more by configuring X."
 
 ## Failure modes
 
@@ -316,10 +389,15 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 | Fake Jira ticket in output | T3 violation (MCP returned empty, skill invented content) | If `searchJiraIssuesUsingJql` returns `[]`, write "No active Jira tickets." NOT a fake row. |
 | Fake Slack message | T3 violation | Same pattern. Empty MCP response → empty or skip. |
 | Fake project recommendation | T3 violation in Step 7 | If a project's `memory.md` has fewer than 2 entries, surface "thin memory — consider /standup" instead of inventing a Next: action. |
+| Slack section in brief but Slack MCP not configured | T4 violation (gate broken or skipped) | Step 3 MUST gate on `detection.mcp.slack`. If a section appears with no MCP backing it, the content is fabricated. Re-run Step 0.5; the gate is the contract. |
+| Body has "⚠️ Slack not configured" line | T4 violation (footer-only state leaked into body) | The body NEVER says "not configured" — that's footer-only. Body's ⚠️ lines are exclusively for *detected-but-errored* tools. Not-configured tools omit silently. |
+| `## Tools used` footer missing | Step 9 skipped the footer block | The footer is MANDATORY in every brief — single source of truth for what was composed. Even for full-stack users with all green checks, the footer states "✅ Composed: everything." |
+| Footer fabricates tool status (says "✅ Composed: Slack" when Slack wasn't detected) | T4 violation | The footer is built from the `detection` map cached in Step 0.5, not from the body content. Wire it directly from the map. |
+| Step 1-6 ran even though tool not in detection map | T4 violation (gate ignored) | Each of Steps 1, 2, 3, 4, 6 has an explicit `Gate (T4):` line. Don't run the step's body when the gate is false. |
 | Slack channels missed | Static channel list assumption | Step 3 uses DYNAMIC enumeration via `slack_search_channels`, not a hardcoded list. No maintenance required as channel membership changes. |
 | Project section flat (no opinion) | Skill defaulted to listing instead of synthesizing | Step 7 final synthesis line is mandatory: "From what I'm seeing, the highest-leverage work today is X because Y." Don't ship without it. |
 | Calendar conflict missed | Overlap detection failed | Sort events by start, scan for `event[i].end > event[i+1].start` — flag both with 🔴. |
-| Section order is wrong | Skill writer ad-libbed | Order is FIXED: What needs today → Calendar → Today's work from projects → Slack → Jira → Commitments → Recent shipped → Notes. Don't reorder per "what felt right today" — predictability matters. |
+| Section order is wrong | Skill writer ad-libbed | Order is FIXED: What needs today → Calendar → Today's work from projects → Slack → Jira → Commitments → Recent shipped → Notes → Tools used. Don't reorder per "what felt right today" — predictability matters. Absent gated sections collapse out cleanly; order of present sections is preserved. |
 | Generated artifact ends up in 0-Inbox or 1-Projects | Skill confused output convention | Briefing is an OUTPUT (lives at `<workspace.resources>/briefings/`), not an INBOX item, not a PROJECT. The output convention is hardcoded to `<workspace.root>/<workspace.resources>/briefings/` — see Step 9 validation. |
 | Briefing leaks into Slack/email | Skill auto-sent | Briefing NEVER auto-sends (boundary rule). It writes a local file. <user.name> sends manually if at all. |
 | Exa called from main context | Token-isolation violation per decision #23 | Briefing does not invoke `web_search_advanced_exa` directly. For external-topic enrichment, suggest `/find` or `/contact-research`. |
@@ -332,20 +410,26 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 - **Never call Exa directly** (decision #23 token-isolation). If a topic needs external research, suggest `/find` or `/contact-research`.
 - **Never fabricate.** T3 invariant. Empty MCP → empty section or short note. Thin project memory → surface that fact, don't invent recommendations.
 - **Never mix personal-life content into work brief.** T2 invariant. `status: personal` contacts filtered at read time.
+- **Never assume a tool is present.** T4 invariant. Step 0.5 detects availability; Steps 1-6 gate on it. Absent tools omit silently from body, footer documents. Never invent a tool call to fill a section; never write a "⚠️ X not configured" line into the body.
 
 ## Output format reference
 
 The brief has a stable section order so downstream tooling (eventually `/standup`, `/weekly-digest`) can parse it:
 
-1. `# Morning brief — <YYYY-MM-DD>` (H1)
-2. `## What needs you today` (H2)
-3. `## Calendar at a glance` (H2)
-4. `## Today's work from your projects` (H2)
-5. `## Slack digest` (H2)
-6. `## Jira queue` (H2)
-7. `## Open commitments by person` (H2)
-8. `## Recent shipped` (H2)
-9. `## Notes & cross-references` (H2, optional — omit if empty)
-10. Closing line: `That's the lay of the land. Where do you want to start?`
+1. `# Morning brief — <YYYY-MM-DD>` (H1) — always present
+2. `## What needs you today` (H2) — always present (mandatory floor — pulls from calendar IF gws, urgent emails IF gws, past-due Jira IF atlassian; falls back to project signals + commitments if nothing else)
+3. `## Calendar at a glance` (H2) — gated on `detection.cli.gws`
+4. `## Today's work from your projects` (H2) — always present (mandatory floor — load-bearing chief-of-staff section)
+5. `## Slack digest` (H2) — gated on `detection.mcp.slack`
+6. `## Jira queue` (H2) — gated on `detection.mcp.atlassian`
+7. `## Open commitments by person` (H2) — always present (file reads, no external dep); omitted if contacts dir is empty
+8. `## Recent shipped` (H2) — gated on `detection.cli.gh`
+9. `## Notes & cross-references` (H2) — always tried; omitted if `/find` returned nothing useful
+10. `## Tools used` (H2) — ALWAYS present, transparency footer per T4
+11. Closing line: `That's the lay of the land. Where do you want to start?`
 
-Sections that may collapse to a single ⚠️ line if the MCP is unavailable: 5 (Slack), 6 (Jira) — they don't disappear silently. Sections that may be omitted entirely if empty: 7 (Commitments), 9 (Notes).
+**Section behaviors:**
+- Gated sections (3, 5, 6, 8) collapse out entirely if `detection.<key>` is false — no header, no body, no ⚠️ line. The `## Tools used` footer documents the omission.
+- Gated sections that DID get detection but errored at runtime: keep the section header, write a single `⚠️ <Tool> errored — <cause>` line, also log to footer.
+- Mandatory-floor sections (2, 4, 7) always appear unless they have genuinely no content (e.g., empty contacts dir → omit section 7).
+- The footer (10) is the source of truth: if a section is present in the body, the footer should list it under ✅ Composed; if absent, it goes under ⏳ Not configured or ⚠️ Errored.

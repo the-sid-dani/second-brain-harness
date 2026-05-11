@@ -24,21 +24,46 @@ All routed automatically to the right pre-built workflow. No commands to memoriz
 
 That's it. You don't need to be a developer.
 
-### The easy way — let Claude do it for you
+### Quick start — three commands
 
-1. **Open Terminal.app** (in Applications → Utilities, or hit ⌘-Space and type "Terminal").
+Open **Terminal.app** (in Applications → Utilities, or hit ⌘-Space and type "Terminal"), then run these three commands:
 
-2. **Start Claude Code** by running:
+```bash
+git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
+cd ~/Desktop/second-brain-harness
+claude
+```
 
-   ```bash
-   claude
+That clones the harness to your Desktop and opens Claude Code in that folder. The new Claude Code session you just opened will load all the harness skills automatically.
+
+**Then, in the Claude Code session that just opened, type:**
+
+```
+/bootstrap
+```
+
+`/bootstrap` is an interactive setup that walks you through identity, persona, design system, and workspace configuration (~10 minutes). Answer its questions and you're done.
+
+When it finishes, try one of these in the same Claude Code session:
+- *"morning, what's on my plate today?"* → your first briefing
+- *"let's start a new project for [whatever you're working on]"* → your first project scaffold
+
+### Why the order matters (one technical note)
+
+Claude Code loads its skills at session-start by scanning the directory it was launched from. That's why you need to `cd` into the cloned folder **before** running `claude` — otherwise the new session won't see `/bootstrap` or the other harness skills.
+
+If you forget and run `claude` first, just type `exit`, then `cd` to the cloned folder, then `claude` again.
+
+### Alternative — chat through it with Claude
+
+If you'd rather have a conversation than run terminal commands, here's a prompt to paste into any Claude Code session. **Note**: Claude can clone the repo and tell you the next step, but it can't run `/bootstrap` for you — you'll need to quit Claude Code after the clone and re-open it in the cloned folder. This is a fundamental Claude Code constraint (skills load at session-start, not on `cd`), not a limitation of the prompt.
+
+1. Open Terminal and run `claude` to start any Claude Code session.
+
+2. Paste this into Claude Code and hit Enter:
+
    ```
-
-3. **Paste this prompt** into Claude Code and hit Enter:
-
-   ```
-   Hi! I just opened Claude Code and want to install the second-brain-harness — a personal AI workspace.
-
+   Hi! I want to install the second-brain-harness — a personal AI workspace.
    The public template is at: https://github.com/the-sid-dani/second-brain-harness
 
    Please help me set this up. Walk me through these steps:
@@ -47,37 +72,23 @@ That's it. You don't need to be a developer.
       If anything's missing, tell me how to install it on a Mac and pause until I confirm.
 
    2. Ask me where I want to clone the repo (default: ~/Desktop/second-brain-harness).
+      Clone it there for me, then cd into it.
 
-   3. Clone the repo to that location, then cd into it.
+   3. **Important honest handoff**: tell me you can't invoke /bootstrap from this
+      session because Claude Code loads skills at session-start. Tell me to:
+        - type `exit` to quit this Claude Code session
+        - re-open Claude Code from the cloned folder (the path you just cloned into)
+        - then type `/bootstrap` in that new session
 
-   4. Run /bootstrap — that's the interactive setup that walks me through identity,
-      persona, design system, and workspace configuration (~10 minutes).
-
-   5. After /bootstrap finishes, it suggests a Day-1 path. Help me work through
-      the first item from that list.
+      Don't pretend to run /bootstrap. The skill literally isn't available here.
 
    Treat me like a smart non-technical person — explain what each step does
    briefly, don't over-explain, and ask before doing anything destructive.
    ```
 
-4. **Answer Claude's questions.** It'll ask where to put the workspace, then `/bootstrap` will ask about your name, role, persona, and design preferences. Total time: ~10 minutes.
+3. **Follow Claude's instructions** to clone the repo. After the clone, Claude will tell you to quit and re-open Claude Code in the cloned folder.
 
-5. **You're done.** When `/bootstrap` finishes, try one of these:
-   - *"morning, what's on my plate today?"* → your first briefing
-   - *"let's start a new project for [whatever you're working on]"* → your first project scaffold
-
-### The manual way — run the commands yourself
-
-If you'd rather skip the prompt and run things yourself:
-
-```bash
-git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
-cd ~/Desktop/second-brain-harness
-claude
-/bootstrap
-```
-
-Four commands. The `claude` command opens Claude Code in that directory; `/bootstrap` then walks you through identity and persona setup.
+4. **Re-open Claude Code** in the cloned folder (Terminal: `cd ~/Desktop/second-brain-harness && claude`), then type `/bootstrap`.
 
 ---
 

@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.15] - 2026-05-11
+
+### Fixed
+
+- **Bundled `.claude/agents/oracle.md` and `worker.md`** — these are subagent definitions that the ContinuousClaude V4.7 skills (`/autonomous`, `/premortem`, `/research`) dispatch via `subagent_type: worker` and `subagent_type: oracle`. v0.1.12-v0.1.14 silently shipped without them — fork users invoking `/autonomous` would have hit an "unknown subagent_type" error or silently fallen back to the broader `general-purpose` subagent (which has the full tool surface, defeating the worker-isolation design). Now bundled in-repo at `.claude/agents/`. `worker.md` (40 lines) defines a focused implementation worker restricted to `Read, Edit, Write, Bash, Grep, Glob`. `oracle.md` (208 lines) defines the external-research agent using the Ouros sandbox.
+- **`extract-template.sh` PHASE 2.5 copies `.claude/agents/`** into the export tree alongside hooks/tools/settings.
+
+### Notes
+
+This was a real miss in the Day 1 bundle audit. The /autonomous skill referenced "workers" extensively in prose but Sid's session was loading the agent definitions from user-scope `~/.claude/agents/` — which fork users wouldn't have. Caught and fixed before any fork user tripped over it.
+
 ## [0.1.14] - 2026-05-11
 
 ### Changed

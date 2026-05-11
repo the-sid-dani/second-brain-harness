@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.13] - 2026-05-11
+
+### Changed
+
+- **README install section rewritten with three explicit tiers** — Minimal (chief-of-staff + design only, ~5 min, ~5 MB), Lite CCv4 (`--no-fastedit-model`, ~10-15 min, ~500 MB), Full (`./scripts/install.sh`, ~20-40 min, ~5 GB). Replaces two contradictory install sections from v0.1.12 that documented different flows on different pages. Each tier explicitly lists what tools land on disk, what skills become available, and approximate wall time. No script changes — `install.sh --no-fastedit-model` already handled the Lite tier; the fix is honesty in the docs.
+- **Skill count claim corrected** — README now says "Skills (66 total)" instead of the stale "57 total" carried over from v0.1.11. The +9 is the ContinuousClaude V4.7 pipeline bundled in v0.1.12 (autonomous, autonomous-research, bootup, create-handoff, premortem, research, resume-handoff, review, upgrade-harness).
+- **Skills category table** gains a "ContinuousClaude V4.7 pipeline (9)" row enumerating the bundled skills, so fork users can see what they get from each install tier.
+
 ## [0.1.12] - 2026-05-11
 
 ### Added

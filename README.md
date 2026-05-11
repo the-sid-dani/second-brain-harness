@@ -14,33 +14,26 @@ All routed automatically to the right pre-built workflow. No commands to memoriz
 
 ---
 
-## Quick start
+## Install
 
-```bash
-git clone <this-repo>
-cd <repo-name>
-./scripts/install.sh
-```
+Pick the tier that matches what you want to do. You can upgrade later — re-run `./scripts/install.sh` and it picks up where you left off (idempotent).
 
-The installer is idempotent — safe to re-run. It detects existing tooling (Homebrew, Claude Code, etc.) and skips what's already present. See `INSTALL.md` for manual install steps if you prefer step-by-step control.
+| Tier | What you get | What's installed beyond Claude Code + git | Disk | Wall time |
+|---|---|---|---|---|
+| **Minimal** | Chief-of-staff workflows, 26 design skills with 73 brand presets, persona templates, MCP research (Slack/Atlassian/Figma via OAuth) | nothing else | ~5 MB | ~5 min |
+| **Lite CCv4** | Above + `/research`, `/autonomous`, `/premortem`, `/review`, bloks (compact knowledge cards), tldr (structural code reads), Ouros REPL harness | + Homebrew, Node 20, jq, ripgrep, ffmpeg, yt-dlp, Rust, uv, bloks, tldr-cli, Python deps (no FastEdit model) | ~500 MB | ~10-15 min |
+| **Full** | Above + FastEdit MCP (AST-aware code edits, ~45% fewer tokens than diffs) | + fastedits[mlx,mcp] (1.7B MLX merge model) + 5 API keys | ~5 GB | ~20-40 min |
 
-After install, open Claude Code in the cloned folder and run `/bootstrap` to configure your identity, persona, and workspace (see the full walkthrough below).
+### Prerequisites (all tiers)
 
----
+- macOS 11+ (WSL2/Linux compatibility deferred; brew/mlx paths assume Darwin)
+- [Claude Code](https://claude.com/claude-code) installed
+- git on PATH (`xcode-select --install` if missing)
+- Internet access
 
-## Install in 5 minutes
+### Minimal — chief-of-staff + design only
 
-### What you need
-
-- A Mac (Linux and Windows also work — commands shown are for Mac)
-- **[Claude Code](https://claude.com/claude-code)** installed (free terminal app from Anthropic — install it first if you haven't)
-- **Git** — already on most Macs. Open Terminal and run `git --version` to check. If you see "command not found", run `xcode-select --install` and follow the prompts.
-
-That's it. You don't need to be a developer.
-
-### Quick start — three commands
-
-Open **Terminal.app** (in Applications → Utilities, or hit ⌘-Space and type "Terminal"), then run these three commands:
+Three commands:
 
 ```bash
 git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
@@ -48,23 +41,56 @@ cd ~/Desktop/second-brain-harness
 claude
 ```
 
-That clones the harness to your Desktop and opens Claude Code in that folder. The new Claude Code session you just opened will load all the harness skills automatically.
+In the Claude Code session that opens, type `/bootstrap` and follow the interactive walkthrough (~10 min — sets up identity, persona, design system, workspace). When it finishes, try one of these in the same session:
 
-**Then, in the Claude Code session that just opened, type:**
-
-```
-/bootstrap
-```
-
-`/bootstrap` is an interactive setup that walks you through identity, persona, design system, and workspace configuration (~10 minutes). Answer its questions and you're done.
-
-When it finishes, try one of these in the same Claude Code session:
 - *"morning, what's on my plate today?"* → your first briefing
-- *"let's start a new project for [whatever you're working on]"* → your first project scaffold
+- *"let's start a new project for [whatever]"* → your first project scaffold
 
-### Why the order matters (one technical note)
+You're done. Skip the rest of this section unless you want the CCv4 autonomous pipeline.
 
-Claude Code loads its skills at session-start by scanning the directory it was launched from. That's why you need to `cd` into the cloned folder **before** running `claude` — otherwise the new session won't see `/bootstrap` or the other harness skills.
+### Lite CCv4 — adds `/research`, `/autonomous`, knowledge graph
+
+After the Minimal flow above (or as a fresh start), run from the cloned folder:
+
+```bash
+./scripts/install.sh --no-fastedit-model
+```
+
+This installs Rust, uv, bloks, tldr-cli, Python deps for the Ouros harness, ripgrep/ffmpeg/yt-dlp — everything for the ContinuousClaude V4.7 pipeline EXCEPT the 3 GB FastEdit MLX merge model. Skips the FastEdit MCP registration (lazy — you can re-run without the flag later).
+
+API keys: the installer prompts interactively for ANTHROPIC, EXA, NIA, HF, ATLASSIAN. Pass `--skip-api-keys` to write empty `.env` stubs you fill in later.
+
+Inside Claude Code, `/autonomous`, `/research`, `/premortem`, `/review`, `/upgrade-harness`, `/autonomous-research` are now available.
+
+### Full — adds FastEdit MCP
+
+For the entire pipeline including FastEdit's AST-aware code editing:
+
+```bash
+./scripts/install.sh
+```
+
+This downloads the 1.7B FastEdit MLX merge model (~3 GB) and registers it as an MCP in `.mcp.json`. On Apple Silicon, fastedit runs locally with MLX. On Intel Macs, the MLX backend won't be hardware-accelerated.
+
+After install, open Claude Code in the cloned folder, then run `/mcp` to OAuth into Slack, Figma, and Atlassian via your browser. Run `/bootstrap` if you haven't already.
+
+### Re-running, upgrading, downgrading
+
+The installer is idempotent — re-run anytime, every step probes for existing tooling and skips when present.
+
+```bash
+./scripts/install.sh --reconfigure        # re-prompt API keys (rotate)
+./scripts/install.sh --no-fastedit-model  # skip the 3 GB model
+./scripts/install.sh --skip-api-keys      # write empty .env stubs
+./scripts/install.sh --verbose            # stream sub-command output
+./scripts/install.sh --help               # full flag list
+```
+
+See `INSTALL.md` for fine-grained step-by-step manual install (use if the installer fails mid-way or you maintain a non-standard toolchain).
+
+### Why the order matters
+
+Claude Code loads skills at session-start by scanning the directory it was launched from. That's why you need to `cd` into the cloned folder **before** running `claude` — otherwise the new session won't see `/bootstrap` or the other harness skills.
 
 If you forget and run `claude` first, just type `exit`, then `cd` to the cloned folder, then `claude` again.
 
@@ -112,7 +138,7 @@ A workspace skeleton that turns Claude Code into your personal chief-of-staff (o
 
 **Three pieces make this work:**
 
-1. **Skills** — 57 pre-built workflows shipped in `.claude/skills/`. Each one has a description that tells Claude when to use it, so your natural-language prompts automatically route to the right skill.
+1. **Skills** — 66 pre-built workflows shipped in `.claude/skills/` (including the 9-skill ContinuousClaude V4.7 pipeline). Each one has a description that tells Claude when to use it, so your natural-language prompts automatically route to the right skill.
 2. **A PARA workspace** at `workspace/` — Inbox, Projects, Coding, Resources, Archive. Your work lives here; skills know how to navigate it.
 3. **Configuration tokens** in `CLAUDE.md` — your name, your role, your workspace paths. Skills reference these symbolically so the workspace adapts to your setup.
 
@@ -149,12 +175,13 @@ You can also type `/skill-name` directly if you know it — both work.
 
 ## What's included
 
-**Skills (57 total).**
+**Skills (66 total).**
 
 | Category | Skills |
 |---|---|
 | Chief-of-staff (everyday workflows) | `archive-project`, `briefing`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `prune-projects`, `save-resource`, `sync-indexes`, `thinking-partner` |
 | Setup & meta | `bootstrap`, `skill-creator` |
+| ContinuousClaude V4.7 pipeline (9) | `autonomous`, `autonomous-research`, `bootup`, `create-handoff`, `premortem`, `research`, `resume-handoff`, `review`, `upgrade-harness` |
 | Research | `company-research`, `people-research` |
 | Project tracking | `confluence-publish-markdown`, `jira-decompose-epic`, `scaffold-engineering-project` |
 | Design (26 skills) | landing pages, dashboards, decks, mobile apps, blog posts, social carousels, videos, posters, wireframes, OKR trackers, and more |

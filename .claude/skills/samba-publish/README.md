@@ -114,5 +114,4 @@ See `references/architecture.md` for the full picture, IT setup steps, and gover
 ## Support
 
 - Skill maintainer: <fork as needed>
-- Pitch / strategic context: `beru-workspace/1-Projects/2026-05-publish-samba-platform/it-pitch-one-pager.md`
 - Issues / questions: ping `#ai-enablement` Slack channel

@@ -182,7 +182,7 @@ All identity + path values live in **one place** — the `## Configuration` sect
 | `user.timezone` | Briefing date math, calendar formatting |
 | `user.email_signature` | Block appended to emails the assistant drafts |
 | `user.company` | Used in formal documents |
-| `assistant.name` | Persona name — `<agent>` by default, customize to `Beru`, `Atlas`, anything |
+| `assistant.name` | Persona name — `<agent>` by default, customize to whatever fits (Atlas, Echo, Sage, etc.) |
 | `assistant.role` | "Chief of Staff" / "Research Companion" / "Engineering Co-Pilot" |
 | `assistant.vibe` | One-line vibe descriptor for SOUL.md voice cues |
 | `assistant.emoji` | Optional emoji for the persona |

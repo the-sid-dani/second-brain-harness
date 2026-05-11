@@ -185,6 +185,4 @@ wrangler pages project create samba-publish --production-branch main
 
 ## Related artifacts
 
-- IT pitch one-pager: `beru-workspace/1-Projects/2026-05-publish-samba-platform/it-pitch-one-pager.md`
-- Project status: `beru-workspace/1-Projects/2026-05-publish-samba-platform/README.md`
 - Demo deployment: `https://sid-projects.pages.dev` (the projects-overview page that started this)

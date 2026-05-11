@@ -71,11 +71,11 @@ The skills themselves shouldn't need code changes for a fork — the only hardco
 
 ## Project-Specific Context
 
-For Memory System (dual-folder), Workspace (PARA layout), and `docs/` Outputs conventions, see **README.md** — that's the canonical source. This file holds only the project-specific deltas below.
+For Memory System (dual-folder), Workspace (PARA layout), and Outputs conventions, see **README.md** — that's the canonical source. This file holds only the project-specific deltas below.
 
 ### Briefing & report outputs
 
-<assistant.name> writes to `docs/briefings/morning-briefing-<YYYY-MM-DD>.md`, `docs/meeting-prep/`, `docs/organization-reports/`. Never write outputs at the root. Never mix briefings with project files.
+<assistant.name> writes to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<YYYY-MM-DD>.md`, `<workspace.root>/<workspace.resources>/meeting-prep/`, `<workspace.root>/<workspace.resources>/organization-reports/`. Never write outputs at the workspace root. Never mix briefings with project files.
 
 ### Contacts (per-person reference directory)
 
@@ -97,7 +97,7 @@ These extend SOUL.md — do not restate SOUL guidance here, only project-specifi
 - Cross-reference email + calendar + meeting notes before writing — don't summarize one source in isolation
 - Apply <user.name>'s priority signals (see USER.md): direct collaborators, calendar conflicts, priority topics
 - Pull SPECIFIC action items from meeting transcripts — names, timelines, blockers — never "follow up generically"
-- Briefings go to `docs/briefings/`, not the conversation only
+- Briefings go to `<workspace.root>/<workspace.resources>/briefings/`, not the conversation only
 
 **For meeting prep:**
 - Always check the Recordings folder first if `<user.name>` has one configured (Gemini summaries are pre-condensed)

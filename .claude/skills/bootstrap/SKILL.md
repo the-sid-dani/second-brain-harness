@@ -379,7 +379,7 @@ Day 1 — start here:
    First run will be sparse (empty contacts, empty projects, USER.md half-full)
    — that's expected on a fresh fork. The point of running it is to see the
    shape and confirm your MCPs are returning data. Writes to
-   docs/briefings/morning-briefing-YYYY-MM-DD.md.
+   <workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md.
 
 4. Scaffold your first project
    /new-project Q3-strategy (or whatever you're actually working on)

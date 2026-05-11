@@ -29,7 +29,7 @@ Trigger phrases (intentionally broad — over-trigger rather than miss):
 Do NOT trigger for:
 - New project creation — that's `/new-project` (which has a `code-repo` branch for repos)
 - Memory updates within an existing project — append directly to that project's `memory.md`
-- Outputs <assistant.name> generates (briefings, prep docs, reports) — those go to `docs/`, not Resources. The skill is for *user-supplied* reference material, not <assistant.name> outputs.
+- Outputs <assistant.name> generates have dedicated subdirs inside Resources: briefings → `<workspace.resources>/briefings/`, meeting-prep → `<workspace.resources>/meeting-prep/`, organization-reports → `<workspace.resources>/organization-reports/`. `/save-resource` is for *user-supplied* reference material (links, articles, snippets) — those land in `<workspace.resources>/research/` or `<workspace.resources>/reference/`.
 
 ## Process
 

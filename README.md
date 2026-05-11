@@ -40,7 +40,7 @@ git clone https://github.com/<your-username>/second-brain-harness
 cd second-brain-harness
 claude                       # opens Claude Code in this directory
 /bootstrap                   # interactive: walks through identity, persona, design system, workspace
-/briefing                    # try it — produces docs/briefings/morning-briefing-YYYY-MM-DD.md
+/briefing                    # try it — produces <workspace.root>/3-Resources/briefings/morning-briefing-YYYY-MM-DD.md
 ```
 
 `/bootstrap` is ~10 minutes and runs only once per fork (it locks itself by writing `setup_completed: <date>` to CLAUDE.md). After that, just talk to the assistant naturally.
@@ -145,18 +145,16 @@ second-brain-harness/
 │   ├── 1-Projects/        ← each project: CLAUDE.md + memory.md + status frontmatter
 │   ├── 2-Coding/          ← code repos (gitignored)
 │   ├── 3-Resources/
-│   │   ├── templates/     ← project + persona templates
-│   │   ├── contacts/      ← per-person profiles (schema in README.md)
-│   │   ├── meetings/      ← transcripts, recordings
-│   │   ├── research/
-│   │   ├── reference/
-│   │   └── design-systems/ ← 73 brand presets
+│   │   ├── templates/                ← project + persona templates
+│   │   ├── contacts/                 ← per-person profiles (schema in README.md)
+│   │   ├── meetings/                 ← raw transcripts, recordings
+│   │   ├── briefings/                ← morning briefings (assistant output)
+│   │   ├── meeting-prep/             ← per-meeting prep notes (assistant output)
+│   │   ├── organization-reports/     ← workspace cleanup / audit reports
+│   │   ├── research/                 ← user-saved research
+│   │   ├── reference/                ← user-saved reference material
+│   │   └── design-systems/           ← 73 brand presets
 │   └── 4-Archive/
-│
-├── docs/                  ← assistant outputs (briefings, prep, reports)
-│   ├── briefings/
-│   ├── meeting-prep/
-│   └── organization-reports/
 │
 └── .claude/
     ├── skills/            ← 57 skills
@@ -232,14 +230,14 @@ Two memory folders, distinct roles. Both load at session start.
 - Project complete? → `/archive-project` moves it to `<workspace.archive>/` and flips status frontmatter
 - Stale projects need review? → `/prune-projects` (Friday-batch staleness review)
 
-### Outputs (`docs/`)
+### Outputs
 
-<assistant.name> writes briefings, prep docs, and reports here. Naming:
-- `docs/briefings/morning-briefing-YYYY-MM-DD.md`
-- `docs/meeting-prep/YYYY-MM-DD-<who-or-what>.md`
-- `docs/organization-reports/YYYY-MM-DD-<topic>.md`
+<assistant.name> writes briefings, meeting-prep, and organization-reports into dedicated subdirs of Resources (alongside `meetings/` raw transcripts — synthesis next to source). Naming:
+- `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`
+- `<workspace.root>/<workspace.resources>/meeting-prep/YYYY-MM-DD-<who-or-what>.md`
+- `<workspace.root>/<workspace.resources>/organization-reports/YYYY-MM-DD-<topic>.md`
 
-Never write outputs at the root.
+Never write outputs at the workspace root.
 
 ### What does NOT belong at root
 

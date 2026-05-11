@@ -34,7 +34,7 @@ Trigger phrases (broad — over-trigger rather than miss):
 Do NOT trigger for:
 - A specific known item the user wants saved now ("save 0-Inbox/X to research") → use `/save-resource` directly
 - Projects pruning (status review of `1-Projects/`) → that's `/prune-projects`
-- Outputs <assistant.name> generates (briefings, prep docs) — those go to `docs/`, not Inbox
+- Outputs <assistant.name> generates (briefings, meeting-prep, organization-reports) — those go to dedicated subdirs in `<workspace.resources>/`, not Inbox
 
 ## Process
 

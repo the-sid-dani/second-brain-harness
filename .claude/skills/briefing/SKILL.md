@@ -1,12 +1,12 @@
 ---
 name: briefing
-description: Morning chief-of-staff briefing — composes Gmail (`gws-gmail-triage`) + Calendar (`gws-calendar-agenda`) + Slack (dynamic channel enumeration via `mcp__slack__slack_search_channels` + `mcp__slack__slack_search_public_and_private`) + Jira (`mcp__atlassian__searchJiraIssuesUsingJql`) + GitHub (`gh pr list`) + Contacts (`<workspace.root>/<workspace.resources>/contacts/`) + active projects (`<scripts.project_query>` + each project's `memory.md` tail + `CLAUDE.md` status) into a single structured brief and writes it to `docs/briefings/morning-briefing-YYYY-MM-DD.md`. Surfaces a "Today's work from your projects" section that reads each active project's append-only memory log, extracts the most-recent decision/blocker/next-action signals, and recommends what to ship today — opinionated, not a flat list. Applies the user's priority signals from USER.md (direct collaborators = HIGH, calendar conflicts = URGENT, AI/technical = HIGH, generic newsletters = LOW) — read at runtime, never hardcoded. Use this whenever <user.name> asks <assistant.name> to start the day, orient them, surface what needs attention, or ask "what should I work on today" — phrases like "/briefing", "morning briefing", "brief me", "what's on my plate today", "what needs me today", "give me the rundown", "what should I do first this morning", "orient me for the day", "daily brief", "what should I work on today". Trigger broadly on day-orientation language even when the literal word "briefing" is absent — the chief-of-staff intent is the pattern. Output ALWAYS lands at `docs/briefings/morning-briefing-YYYY-MM-DD.md` (never docs/ root, never inside a project folder, never in 0-Inbox/) per README §Outputs. Filters contacts where `status: personal` BEFORE generating "Open commitments by person" — work-context skill, never leaks personal-life contacts into a work brief. Does NOT fabricate signals when an MCP returns empty — empty section either omits or writes "No <X> today"; never invents fake tickets, fake messages, fake meetings, or fake project recommendations. Does NOT auto-send to Slack/email/Jira — briefing is a draft `<user.name>` reads, not a message `<user.name>` sends. Does NOT invoke Exa directly (token-isolation discipline #23) — for external-topic enrichment, suggests `/find` or `/contact-research` instead. Composes existing skills rather than reimplementing them; references USER.md priority signals rather than restating the logic.
+description: Morning chief-of-staff briefing — composes Gmail (`gws-gmail-triage`) + Calendar (`gws-calendar-agenda`) + Slack (dynamic channel enumeration via `mcp__slack__slack_search_channels` + `mcp__slack__slack_search_public_and_private`) + Jira (`mcp__atlassian__searchJiraIssuesUsingJql`) + GitHub (`gh pr list`) + Contacts (`<workspace.root>/<workspace.resources>/contacts/`) + active projects (`<scripts.project_query>` + each project's `memory.md` tail + `CLAUDE.md` status) into a single structured brief and writes it to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. Surfaces a "Today's work from your projects" section that reads each active project's append-only memory log, extracts the most-recent decision/blocker/next-action signals, and recommends what to ship today — opinionated, not a flat list. Applies the user's priority signals from USER.md (direct collaborators = HIGH, calendar conflicts = URGENT, AI/technical = HIGH, generic newsletters = LOW) — read at runtime, never hardcoded. Use this whenever <user.name> asks <assistant.name> to start the day, orient them, surface what needs attention, or ask "what should I work on today" — phrases like "/briefing", "morning briefing", "brief me", "what's on my plate today", "what needs me today", "give me the rundown", "what should I do first this morning", "orient me for the day", "daily brief", "what should I work on today". Trigger broadly on day-orientation language even when the literal word "briefing" is absent — the chief-of-staff intent is the pattern. Output ALWAYS lands at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md` (never at workspace root, never inside a project folder, never in 0-Inbox/) per README §Outputs. Filters contacts where `status: personal` BEFORE generating "Open commitments by person" — work-context skill, never leaks personal-life contacts into a work brief. Does NOT fabricate signals when an MCP returns empty — empty section either omits or writes "No <X> today"; never invents fake tickets, fake messages, fake meetings, or fake project recommendations. Does NOT auto-send to Slack/email/Jira — briefing is a draft `<user.name>` reads, not a message `<user.name>` sends. Does NOT invoke Exa directly (token-isolation discipline #23) — for external-topic enrichment, suggests `/find` or `/contact-research` instead. Composes existing skills rather than reimplementing them; references USER.md priority signals rather than restating the logic.
 context: fork
 ---
 
 # briefing
 
-The chief-of-staff morning brief. Composes 7 signal sources into a single structured document at `docs/briefings/morning-briefing-YYYY-MM-DD.md`, applies the user's priority signals, surfaces what needs them today, and recommends what to ship from each active project.
+The chief-of-staff morning brief. Composes 7 signal sources into a single structured document at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`, applies the user's priority signals, surfaces what needs them today, and recommends what to ship from each active project.
 
 **Before you begin: read the Configuration section in root CLAUDE.md.** Path tokens like `<workspace.resources>` and `<scripts.project_query>` resolve from there — don't hardcode.
 
@@ -39,7 +39,7 @@ Do NOT trigger for:
 
 ## Source of truth
 
-- **Output convention** — `docs/briefings/morning-briefing-YYYY-MM-DD.md` per README §Outputs (docs/ = outputs only; convention restored 2026-05-06 after workflow-defect cleanup).
+- **Output convention** — `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md` per README §Outputs. Briefings live next to `meetings/` (raw transcripts) in Resources, since briefings are reference material the user re-reads. Path moved here from a top-level `docs/` folder in v0.1.5 — Resources is the right PARA home for synthesis-layer outputs.
 - **Priority signals** — read at runtime from USER.md "Priority Signals" section. Per fork, <user.name>'s collaborators / urgency rules differ.
 - **Contacts directory** — `<workspace.root>/<workspace.resources>/contacts/<slug>.md`. Schema documented at `<workspace.root>/<workspace.resources>/contacts/README.md`.
 - **Active projects** — `bash <scripts.project_query>` returns live tabular view (status, project-type, days-since-touched, stale flag). Each project has its own `CLAUDE.md` (status frontmatter) and `memory.md` (append-only decision log).
@@ -51,9 +51,9 @@ These three invariants protect against high-cost failure modes. They are stated 
 
 ### T1 — Output path is fixed
 
-Briefing output **always** lands at `docs/briefings/morning-briefing-YYYY-MM-DD.md`. The date is today's date in `YYYY-MM-DD` format. Never docs/ root. Never inside a project folder. Never in `<workspace.inbox>/`. Never `morning-briefing.md` (no date suffix).
+Briefing output **always** lands at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.md`. The date is today's date in `YYYY-MM-DD` format. Never at workspace root. Never inside a project folder. Never in `<workspace.inbox>/`. Never `morning-briefing.md` (no date suffix).
 
-If the file already exists for today (re-running the briefing same-day), append a timestamp: `docs/briefings/morning-briefing-YYYY-MM-DD-HHMM.md`. Do not overwrite the original — <user.name> may have read or edited it.
+If the file already exists for today (re-running the briefing same-day), append a timestamp: `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD-HHMM.md`. Do not overwrite the original — <user.name> may have read or edited it.
 
 ### T2 — Filter `status: personal` contacts BEFORE building "Open commitments by person"
 
@@ -83,7 +83,7 @@ Run these in parallel via separate tool calls (no dependencies between them):
    - LOW filters (newsletters, generic updates)
 3. **Active projects** — Bash: `bash <scripts.project_query>` (no flags = active only). Cache the rows (slug, status, project-type, days-since-touched) for Step 7's project synthesis.
 4. **Contacts list** — Bash: `ls <workspace.root>/<workspace.resources>/contacts/*.md` to get the file list (NOT the contents — those come in Step 5).
-5. **Briefing output path** — compute target file path: `docs/briefings/morning-briefing-${DATE}.md`. If it already exists, set the path to `docs/briefings/morning-briefing-${DATE}-${TIME}.md` per T1.
+5. **Briefing output path** — compute target file path: `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.md`. If it already exists, set the path to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}-${TIME}.md` per T1.
 
 ### Step 1: Gmail triage — "What needs you today" inputs
 
@@ -285,14 +285,14 @@ That's the lay of the land. Where do you want to start?
 - Sparing emoji use — they signal status, not decoration
 - Be opinionated in Step 7's project synthesis. "From what I'm seeing, ship X today because Y." Not "you could consider..."
 
-**T1 reminder: write to `docs/briefings/morning-briefing-${DATE}.md`** (or `-${DATE}-${TIME}.md` if collision). Confirm the path before Write. The Write tool will fail if the parent directory doesn't exist — `docs/briefings/` should already exist (created during workflow-defect cleanup 2026-05-06); if not, `mkdir -p` first.
+**T1 reminder: write to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.md`** (or `-${DATE}-${TIME}.md` if collision). Confirm the path before Write. The Write tool will fail if the parent directory doesn't exist — `<workspace.root>/<workspace.resources>/briefings/` should already exist (created during workflow-defect cleanup 2026-05-06); if not, `mkdir -p` first.
 
 ### Step 10: Surface to user
 
 Don't dump the full brief into chat — that's the file's job. Instead:
 
 ```
-Morning <user.name>! Brief is ready at `docs/briefings/morning-briefing-<DATE>.md`.
+Morning <user.name>! Brief is ready at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<DATE>.md`.
 
 Top 3 from "What needs you today":
 1. <item>
@@ -310,7 +310,7 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Output written to docs/ root or wrong path | T1 violation | Validate path string `docs/briefings/morning-briefing-<DATE>.md` BEFORE Write. Add an assertion in Step 9. |
+| Output written to wrong path | T1 violation | Validate path string `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<DATE>.md` BEFORE Write. Add an assertion in Step 9. |
 | Same-day re-run overwrites existing brief | T1 violation (date-only filename) | Detect existing file in Step 0, append `-HHMM` to filename. |
 | Personal contact appears in "Open commitments by person" | T2 violation (filter not applied or applied at display time) | Filter `status: personal` at READ time in Step 5. Confirm via grep: output should not contain `[[contacts/faizan]]` or any other `status: personal` slug. |
 | Fake Jira ticket in output | T3 violation (MCP returned empty, skill invented content) | If `searchJiraIssuesUsingJql` returns `[]`, write "No active Jira tickets." NOT a fake row. |
@@ -320,7 +320,7 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 | Project section flat (no opinion) | Skill defaulted to listing instead of synthesizing | Step 7 final synthesis line is mandatory: "From what I'm seeing, the highest-leverage work today is X because Y." Don't ship without it. |
 | Calendar conflict missed | Overlap detection failed | Sort events by start, scan for `event[i].end > event[i+1].start` — flag both with 🔴. |
 | Section order is wrong | Skill writer ad-libbed | Order is FIXED: What needs today → Calendar → Today's work from projects → Slack → Jira → Commitments → Recent shipped → Notes. Don't reorder per "what felt right today" — predictability matters. |
-| Generated artifact ends up in 0-Inbox or 1-Projects | Skill confused output convention | Briefing is an OUTPUT (docs/), not an INBOX item, not a PROJECT. The output convention is hardcoded to docs/briefings/ — see Step 9 validation. |
+| Generated artifact ends up in 0-Inbox or 1-Projects | Skill confused output convention | Briefing is an OUTPUT (lives at `<workspace.resources>/briefings/`), not an INBOX item, not a PROJECT. The output convention is hardcoded to `<workspace.root>/<workspace.resources>/briefings/` — see Step 9 validation. |
 | Briefing leaks into Slack/email | Skill auto-sent | Briefing NEVER auto-sends (boundary rule). It writes a local file. <user.name> sends manually if at all. |
 | Exa called from main context | Token-isolation violation per decision #23 | Briefing does not invoke `web_search_advanced_exa` directly. For external-topic enrichment, suggest `/find` or `/contact-research`. |
 
@@ -328,7 +328,7 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 
 - **Never auto-send.** Briefing is a draft that <user.name> reads. Sending to Slack/email/Jira requires explicit "send it" from <user.name> (per CLAUDE.md "Boundaries"). Drafts only.
 - **Never modify project files.** This skill READS `<workspace.projects>/*/CLAUDE.md` and `<workspace.projects>/*/memory.md` (via project-query.sh and tail) and `<workspace.resources>/contacts/*.md`. It does NOT write to either.
-- **Never auto-commit.** The briefing file is uncommitted by default; <user.name> commits it (or not — `docs/briefings/` may be `<user.name>`-curated).
+- **Never auto-commit.** The briefing file is uncommitted by default; <user.name> commits it (or not — `<workspace.root>/<workspace.resources>/briefings/` may be `<user.name>`-curated).
 - **Never call Exa directly** (decision #23 token-isolation). If a topic needs external research, suggest `/find` or `/contact-research`.
 - **Never fabricate.** T3 invariant. Empty MCP → empty section or short note. Thin project memory → surface that fact, don't invent recommendations.
 - **Never mix personal-life content into work brief.** T2 invariant. `status: personal` contacts filtered at read time.

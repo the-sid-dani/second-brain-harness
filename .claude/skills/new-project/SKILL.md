@@ -1,6 +1,6 @@
 ---
 name: new-project
-description: Scaffolds any new project — <assistant.name> meta-project (planning, strategy, content, research, meetings) at `<workspace.root>/<workspace.projects>/YYYY-MM-slug/`, OR a code repo at `<workspace.root>/<workspace.coding>/<scope>/<name>/` with optional GitHub integration. All paths and identity values come from the Configuration section in root CLAUDE.md — read those first. Use this whenever the user says he wants to start, kick off, scaffold, set up, or create a new project — including code projects (MCP servers, agents, libraries, CLI tools, bots, prototypes, anything that gets its own git repo). Trigger phrases — "let's start a project on X", "kick off X", "scaffold a project for Y", "set up the QBR prep", "I want to track X", "new MCP server for Z", "spin up a repo for W", "new agent for V", "create a TypeScript/Python/Rust project". The skill asks for project type — code projects branch into scope/stack/GitHub questions; non-code projects branch into the standard six-type taxonomy. ONE skill for both because the only meaningful differences are folder location, optional `git init` + `gh repo create`, and an index-row append. The shared 90% (name, CLAUDE.md, memory.md, status frontmatter, append-only memory pattern) is identical.
+description: Scaffolds a new project — either a meta-project (planning, strategy, content, research, meetings) at `<workspace.root>/<workspace.projects>/YYYY-MM-slug/` or a code repo at `<workspace.root>/<workspace.coding>/<name>/` with optional GitHub integration. Use whenever the user wants to start, kick off, scaffold, set up, or create a new project — phrases like "kick off X", "scaffold a project for Y", "set up the QBR prep", "new MCP server for Z", "spin up a repo for W", "create a TypeScript/Python/Rust project". Branches on project type; body has the full taxonomy and Configuration-token resolution.
 allowed-tools: Read Write Bash AskUserQuestion Skill
 ---
 
@@ -14,7 +14,7 @@ Scaffolds any new project — <assistant.name> meta-project OR code repo. The tw
 
 Per-project YAML frontmatter is the source of truth for project discovery (no INDEX file to drift, per system-design.md decision #15). Every new project must start with that frontmatter populated correctly, or `/prune-projects` and frontmatter queries break. Doing this by hand is error-prone — date prefix, status field, project-type enum, template selection, and (for code) GitHub remote setup all need to be right. This skill makes the happy path one command.
 
-Code projects fold into this skill rather than living in a separate `/new-code-project` because the *shape* is the same: a folder with CLAUDE.md + memory.md + status frontmatter. The genuinely-unique parts (folder under `<workspace.coding>/<scope>/`, `git init`, optional `gh repo create`, append to `<indexes.code_projects>`) are a clean branch off the project-type question, not a whole separate skill.
+Code projects fold into this skill rather than living in a separate `/new-code-project` because the *shape* is the same: a folder with CLAUDE.md + memory.md + status frontmatter. The genuinely-unique parts (folder under `<workspace.coding>/`, `git init`, optional `gh repo create`, append to `<indexes.code_projects>`) are a clean branch off the project-type question, not a whole separate skill.
 
 ## When to use
 
@@ -27,7 +27,7 @@ Trigger phrases (intentionally broad — over-trigger rather than miss):
 Do NOT trigger for:
 - Tasks the user wants done *now* without a project folder ("draft an email", "summarize this transcript") — those don't need a scaffold
 - Updates to existing projects — append to its memory.md instead
-- One-off scripts that don't deserve their own repo — put them in `<workspace.coding>/personal/scratchpad/` or similar
+- One-off scripts that don't deserve their own repo — put them in a project's `scripts/` folder, or `<workspace.inbox>/` if nothing owns them yet
 
 ## Process
 
@@ -93,19 +93,11 @@ Use `AskUserQuestion` with these choices:
 
 Why force the choice: this drives folder location, template selection, and downstream lifecycle. An `ongoing` project is never stale at 90 days; an `execution` project usually is; a `code-repo` lives under `<workspace.coding>/` and is gitignored from outer git. Misclassification breaks the lifecycle.
 
-**If type = `code-repo`, branch to Step 2a–2c. Else continue to Step 3 (non-code path).**
+**If type = `code-repo`, branch to Step 2a–2b. Else continue to Step 3 (non-code path).**
 
-### Step 2a (code-repo only): Ask for scope
+`<workspace.coding>/` is flat — one folder per repo, no scope subfolders. (Forks live separately at `<workspace.root>/<workspace.resources>/github-forks/` — they're reference material, not active development.)
 
-`AskUserQuestion` with three choices:
-
-- `work` — paid-work code repos
-- `personal` — personal projects, side projects, learning experiments
-- `forks` — open-source forks the user is contributing to
-
-Determines path: `<workspace.root>/<workspace.coding>/<scope>/<name>/`. The `archive/` scope exists but isn't a starting point — repos move there when stale.
-
-### Step 2b (code-repo only): Ask for stack
+### Step 2a (code-repo only): Ask for stack
 
 `AskUserQuestion` with options + Other:
 
@@ -118,7 +110,7 @@ Determines path: `<workspace.root>/<workspace.coding>/<scope>/<name>/`. The `arc
 
 `TBD` is intentional. Forcing a commitment at scaffold time is wrong for exploratory work. If TBD, write `stack: []` (empty YAML array) and the user fills it in once the repo's purpose firms up.
 
-### Step 2c (code-repo only): GitHub repo?
+### Step 2b (code-repo only): GitHub repo?
 
 `AskUserQuestion` with two choices:
 
@@ -135,7 +127,7 @@ date_prefix=$(date +%Y-%m)
 folder="<workspace.root>/<workspace.projects>/${date_prefix}-${slug}"
 ```
 
-For code-repos, **don't** date-prefix the folder — repo names are stable identifiers (and become GitHub identifiers). Use the name as-is, just kebab-case it lightly. Path: `<workspace.root>/<workspace.coding>/<scope>/<name>/`.
+For code-repos, **don't** date-prefix the folder — repo names are stable identifiers (and become GitHub identifiers). Use the name as-is, just kebab-case it lightly. Path: `<workspace.root>/<workspace.coding>/<name>/`.
 
 ### Step 4: Confirm the path with the user
 
@@ -151,7 +143,7 @@ Proceed?
 **Code-repo:**
 ```
 Will create:
-  Path:   <workspace.root>/<workspace.coding>/<scope>/<name>/
+  Path:   <workspace.root>/<workspace.coding>/<name>/
   Stack:  <stack or "TBD">
   GitHub: <github.com/<user.github>/<name> or "local-only">
   Index:  appends to <indexes.code_projects>
@@ -168,7 +160,7 @@ If no, ask for a corrected name and retry from Step 1.
 
 Don't auto-rename. Tell the user the path, ask for a different name.
 
-For code-repos, if the scope folder itself is missing (e.g., `<workspace.coding>/forks/` was deleted), `mkdir -p` it.
+For code-repos, if `<workspace.coding>/` itself is missing (fresh workspace), `mkdir -p` it.
 
 ### Step 6: Read the right template
 
@@ -211,12 +203,12 @@ Append an initial decision-log entry (don't replace the template's example — a
 ```markdown
 ## YYYY-MM-DD — Project created
 
-Decision: Scaffolded project folder via `/new-project` skill. <type or stack/scope summary>.
+Decision: Scaffolded project folder via `/new-project` skill. <type or stack summary>.
 Why: <leave blank for the user to fill in>
 Next: <leave blank>
 ```
 
-For code-repos, include scope+stack in the Decision line: *"Stack: Python. Scope: personal."*
+For code-repos, include the stack in the Decision line: *"Stack: Python."*
 
 Write to `<folder>/memory.md`.
 
@@ -230,7 +222,7 @@ git add CLAUDE.md memory.md
 git commit -q -m "Initial scaffold"
 ```
 
-If Step 2c was `yes`:
+If Step 2b was `yes`:
 ```bash
 gh repo create <user.github>/<name> --private --source=. --remote=origin --push
 ```
@@ -249,7 +241,7 @@ If the file is missing, create it with:
 ```markdown
 # Code Projects Index
 
-Single source of truth for code repos. Maintained by `/new-project` (creates row when type=code-repo), `/archive-code-project` (TBD — flips status), and `/sync-indexes` (TBD — repairs drift).
+Single source of truth for code repos. Maintained by `/new-project` (creates row when type=code-repo), `/archive-project` (flips status), and `/sync-indexes` (repairs drift).
 
 | Repo | Path | Stack | Status | GitHub | Brief | Last touched |
 |------|------|-------|--------|--------|-------|--------------|
@@ -258,7 +250,7 @@ Single source of truth for code repos. Maintained by `/new-project` (creates row
 Append a new row:
 
 ```
-| <name> | <workspace.root>/<workspace.coding>/<scope>/<name> | <stack or "TBD"> | active | <github or "no-remote"> | (scaffold) | <YYYY-MM-DD> |
+| <name> | <workspace.root>/<workspace.coding>/<name> | <stack or "TBD"> | active | <github or "no-remote"> | (scaffold) | <YYYY-MM-DD> |
 ```
 
 ### Step 11: Confirm to user — and tell them to switch context for code-repos
@@ -279,15 +271,15 @@ Next: edit CLAUDE.md to add the one-line summary and any project-specific rules.
 
 ```
 ✅ Code repo scaffolded: <name>
-  Path:   <workspace.root>/<workspace.coding>/<scope>/<name>/
+  Path:   <workspace.root>/<workspace.coding>/<name>/
   Stack:  <stack or "TBD">
   GitHub: <url or "local-only">
   Index:  row appended to <indexes.code_projects>
 
 Heads up: code repos work best when you open them in their own context. Recommended:
-  - Open the folder directly in VS Code: `code <workspace.root>/<workspace.coding>/<scope>/<name>`
+  - Open the folder directly in VS Code: `code <workspace.root>/<workspace.coding>/<name>`
   - Or start a fresh Claude Code session inside the repo:
-      cd <workspace.root>/<workspace.coding>/<scope>/<name> && claude
+      cd <workspace.root>/<workspace.coding>/<name> && claude
 
 Claude Code's nested CLAUDE.md inheritance means the repo's own CLAUDE.md will auto-load when you work inside it, giving you the right code-flavored context (stack, build commands, key files) without the rest of the workspace getting in the way.
 
@@ -307,7 +299,7 @@ Stop. Don't auto-open files, don't propose follow-up scaffolding (no `npm init`,
 | Slug came out empty | Name was all special chars | Re-prompt: "That name didn't slugify cleanly — try one with letters/numbers" |
 | Folder exists | Same name was used before | Don't overwrite. Suggest a `-v2` suffix or different name. |
 | Code-repo: `gh repo create` fails | Not authenticated / network / GitHub name collision | Surface stderr, suggest manual `gh repo create` |
-| Code-repo: scope folder missing | `<workspace.coding>/<scope>/` was deleted | `mkdir -p` — skeleton isn't load-bearing |
+| Code-repo: `<workspace.coding>/` missing | Fresh workspace or path misconfigured | `mkdir -p` — skeleton isn't load-bearing |
 | AskUserQuestion not available | Subagent context | Pre-extract answers from invocation prompt; skip every AskUserQuestion call |
 | Configuration values missing | Root CLAUDE.md doesn't have a Configuration section, or this is a fresh fork | Tell the user to run `/bootstrap` (TBD) or fill in the Configuration section by hand. Don't proceed with hardcoded fallbacks — that defeats the portability goal. |
 

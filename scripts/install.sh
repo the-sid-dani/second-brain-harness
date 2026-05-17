@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# scripts/install.sh — second-brain-harness installer for fork users.
+# scripts/install.sh — second-brain-os installer for fork users.
 # Idempotent. Safe to re-run. macOS-only (WSL2 deferred).
 #
 # Phases:
@@ -45,7 +45,7 @@ export NO_FASTEDIT_MODEL SKIP_API_KEYS VERBOSE RECONFIGURE
 
 if [ "$print_help" = "1" ]; then
     cat <<'HELP'
-second-brain-harness installer
+second-brain-os installer
 
 Usage: ./scripts/install.sh [flags]
 
@@ -72,7 +72,7 @@ done
 # init_log if ui.sh exposes it
 type init_log >/dev/null 2>&1 && init_log
 
-header "second-brain-harness install" 2>/dev/null || true
+header "second-brain-os install" 2>/dev/null || true
 
 # Override samba-onboarding's `step <num> <label> <cmd...>` with a CCv4-port-style
 # single-arg banner. Sibling libs (and the pipeline below) call `step "[N/11] label"`
@@ -109,4 +109,20 @@ step "[9/11]  FastEdit MCP register" && install_fastedit_mcp
 step "[10/11] API keys"              && configure_api_keys
 step "[11/11] Verify"                && verify_all
 
-info "install complete — re-run with --reconfigure to rotate API keys, --help to see options"
+cat <<'NEXT'
+
+────────────────────────────────────────────────────────────────────────
+✅ Install complete. The OS-level toolchain is ready.
+
+Next: configure your persona + workspace (in Claude Code, not the shell)
+
+   1. Open Claude Code in this folder:   claude
+   2. Run the bootstrap skill:           /bootstrap
+   3. After /bootstrap finishes, run:    /mcp   (authorize HTTP MCPs for this workspace)
+
+/bootstrap walks you through identity, persona, design system, and writes
+TOOLS.md from live probes. ~15 minutes.
+
+Re-run this installer with --reconfigure to rotate API keys, --help for flags.
+────────────────────────────────────────────────────────────────────────
+NEXT

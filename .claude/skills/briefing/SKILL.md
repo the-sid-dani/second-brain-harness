@@ -1,6 +1,6 @@
 ---
 name: briefing
-description: Morning chief-of-staff briefing — composes available signal sources (email, calendar, messaging, issue-tracking, code-hosting) plus local sources (contacts, active projects, USER.md priorities) into one self-contained HTML brief at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Detects tool availability at runtime in Step 0.5 so fork users with zero MCPs still get a useful brief from local state. Use when <user.name> asks to start the day or surface what needs attention — phrases like "/briefing", "brief me", "what's on my plate today", "what should I work on today". Trigger broadly on day-orientation language. Filters `status: personal` contacts; never auto-sends; never fabricates absent signals (see SKILL.md body for invariants T1-T4).
+description: Morning chief-of-staff briefing — composes available signal sources (email, calendar, messaging, issue-tracking, code-hosting) plus local sources (contacts, active projects, USER.md priorities) into one self-contained HTML brief at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Detects tool availability at runtime in Step 0.5 + auth-health probes each detected tool in Step 0.6, surfacing failures via AskUserQuestion BEFORE composing (so a dead Slack token doesn't get discovered after the brief is written). Fork users with zero MCPs still get a useful brief from local state. Use when <user.name> asks to start the day or surface what needs attention — phrases like "/briefing", "brief me", "what's on my plate today", "what should I work on today". Trigger broadly on day-orientation language. Filters `status: personal` contacts; never auto-sends; never fabricates absent signals (see SKILL.md body for invariants T1-T4).
 allowed-tools: Read Write Glob Bash AskUserQuestion Skill mcp__slack__slack_search_public_and_private mcp__slack__slack_search_channels mcp__atlassian__searchJiraIssuesUsingJql
 ---
 
@@ -14,7 +14,7 @@ The chief-of-staff morning brief. Probes which signal sources are available, com
 
 <user.name> wants <assistant.name> to be a chief-of-staff, not a search engine. The morning brief is the single highest-value moment of the day: cross-referencing whatever signal sources are configured (email, calendar, messaging, issue-tracking, code-hosting) + project state to surface what *actually* needs attention vs what's noise. Before this skill, that ritual was a 4-tab manual scan that took 15 minutes and missed half the signal — and worse, didn't connect it to the active projects' plans.
 
-`/briefing` is the answer to "Morning <user.name>, here's the lay of the land — and here's what to ship today." Its **mandatory floor** runs with zero external tools: read the active-projects index, tail each project's `memory.md`, read USER.md priority signals, read contacts. Its **optional composition layer** uses whatever's configured — `gws-gmail-triage`/`gws-calendar-agenda` (if `gws` CLI is installed), `mcp__slack__*` (if Slack MCP is authorized), `mcp__atlassian__*` (if Atlassian MCP is authorized), `gh pr list` (if `gh` CLI is installed), `/find` (always present, optional last step). Step 0.5 detects what's available at runtime; later steps gate on that map.
+`/briefing` is the answer to "Morning <user.name>, here's the lay of the land — and here's what to ship today." Its **mandatory floor** runs with zero external tools: read the active-projects index, tail each project's `memory.md`, read USER.md priority signals, read contacts. Its **optional composition layer** uses whatever's configured — `gws gmail +triage` / `gws calendar +agenda` via Bash (if `gws` CLI is installed), `mcp__slack__*` (if Slack MCP is authorized), `mcp__atlassian__*` (if Atlassian MCP is authorized), `gh pr list` (if `gh` CLI is installed), `/find` (always present, optional last step). Step 0.5 detects what's available at runtime; Step 0.6 probes auth health on each detected tool and pauses via AskUserQuestion if any are errored (so dead tokens are caught before the brief is composed, not after); later steps gate on the post-probe map.
 
 The novel piece is the **project synthesis layer**: reading each active project's `memory.md` tail and `CLAUDE.md` status to recommend today's highest-leverage work. That layer is mandatory-floor — works whether <user.name> has a fully-configured multi-MCP stack or no MCPs at all.
 
@@ -136,11 +136,84 @@ detection = {cli: {gws: false, gh: false}, mcp: {slack: false, atlassian: false}
 
 The zero-tool case still produces a useful brief — Steps 5 (commitments), 7 (project synthesis), 8 (find cross-refs) all run from local files. That's the floor.
 
+### Step 0.6: Verify connectivity (auth-health probe — T4 fail-fast)
+
+Detection in Step 0.5 only checks **availability** (is the binary on PATH; is the MCP loaded). It does NOT check **auth health**. A Slack MCP can be loaded but have an expired OAuth token. A `gws` CLI can be installed but unauth'd. These are silent failures if you only learn about them when a Step 1-4 call returns an error mid-compose — by then the brief is half-written and <user.name>'s only path is to re-run.
+
+**Step 0.6 catches auth death BEFORE composition starts.** For every tool that detected as `true` in Step 0.5, run a cheap probe. If any probe fails, surface ALL failures via `AskUserQuestion` and let <user.name> decide before writing a single section.
+
+**Probes (parallel, all fast):**
+
+| Tool | Probe | Pass criteria |
+|---|---|---|
+| `gws` (cli) | `gws auth status --format json` | exit 0, `auth_method` field present |
+| `gh` (cli) | `gh auth status` | exit 0 |
+| Slack MCP | `mcp__slack__slack_search_channels` with `limit=1` | no error response |
+| Atlassian MCP | `mcp__atlassian__atlassianUserInfo` | no error response |
+
+Build a `connectivity` map: `{gws: ok|errored|<cause>, slack: ok|errored|<cause>, ...}` keyed off Step 0.5's detected tools.
+
+**Decision gate:**
+
+- **All probes ok** → `connectivity` map all green; continue to Step 1 without prompting. (Most common path; ~3s overhead total.)
+- **Any probe errored** → surface via `AskUserQuestion`:
+
+  ```
+  Question: "Auth issues detected before I compose the brief. What do you want to do?"
+  Options (single-select):
+    1. "Cancel — let me re-auth, then re-run /briefing"  (recommended; first option)
+    2. "Skip the errored tools and continue"
+    3. "Continue anyway (treat as runtime errors in the brief)"
+  Question header (chip): "Auth gate"
+  ```
+
+  The question body MUST enumerate every failed tool + its cause + the fix command. Example:
+
+  ```
+  ⚠️ Slack MCP — OAuth token expired (run /mcp to refresh)
+  ⚠️ Atlassian MCP — authorization required (run /mcp to authorize)
+
+  Slack is high-value for your morning brief; skipping it leaves a hole. Up to you.
+  ```
+
+  Customize the "Slack is high-value" framing per tool — Slack and Gmail are typically high-value for chief-of-staff briefs; gh is lower-stakes. Pull the framing from USER.md "Priority signals" if available.
+
+**Handle the response:**
+
+- **"Cancel — let me re-auth"** → exit cleanly. Print:
+
+  ```
+  No brief written. Re-auth and re-run when ready:
+    • Slack MCP — run /mcp, then /briefing
+    • Atlassian MCP — run /mcp, then /briefing
+    • gws — run `gws auth login` (or check `gws auth status` for details)
+    • gh — run `gh auth login`
+  ```
+
+  List ONLY the tools that errored. Do NOT write a partial brief.
+
+- **"Skip the errored tools and continue"** → for each errored tool, flip its `detection.<tool>` flag to `false`. The Steps 1-6 gates will treat it as not-configured — silent omit from body. Footer (Step 9) routes it to a new `⏭️ Skipped (auth error, you chose to continue)` bucket — distinct from `⏳ Not configured` (genuinely absent) and `⚠️ Errored at runtime` (passed Step 0.6 but failed mid-call). Continue to Step 1.
+
+- **"Continue anyway"** → leave `detection` flags as-is. Steps 1-6 will hit the runtime errors themselves and write `⚠️ <Tool> errored — <cause>` lines per the existing T4 path. Use this option only when <user.name> wants the brief to surface the error inline for some reason (rare). Continue to Step 1.
+
+**Failure modes Step 0.6 prevents:**
+
+- "Brief written, then I find out Slack was dead" → Step 0.6 catches it first.
+- "I had to run /briefing twice today" → Cancel-and-re-auth path is one round-trip, not two.
+- "The brief has misleading empty Slack section because the call errored" → Skip path demotes to silent-omit, footer documents.
+
+**Failure modes Step 0.6 does NOT prevent:**
+
+- A tool that's healthy at 0.6 but errors at composition time (e.g., calendar fetches but rate-limits on a follow-up call). The existing T4 runtime-error path still handles this with inline `⚠️` lines.
+- A tool that returns empty results legitimately (no unreads, no events). That's not an error; T3 governs the empty case.
+
+**Cost discipline:** every probe must be free or near-free (< 500ms typical). If a probe is slow, it's the wrong probe — find a cheaper one. The whole Step 0.6 budget is ~2-3 seconds against the gain of avoiding compose-discover-recompose loops.
+
 ### Step 1: Gmail triage — "What needs you today" inputs
 
 **Gate (T4):** runs ONLY if `detection.cli.gws == true`. If false, skip this step entirely — no section header, no `⚠️` line in the body. The `## Tools used` footer (Step 9) will list Gmail as "not configured."
 
-**Compose the `gws-gmail-triage` skill via the Skill tool** (not raw `gws` Bash). The wrapped skill normalizes the GWS CLI's `--params '{"userId": "me"}'` JSON shape — direct Bash invocation requires schema knowledge that the skill abstracts away. Returns unread inbox summary with sender, subject, date.
+**Run `gws gmail +triage --max 20 --format json` via Bash** (the wrapper skill that previously normalized this was retired in the 2026-05-17 trim — call the CLI directly). Returns unread inbox summary with sender, subject, date. Pipe through `jq` if you need to reshape; the default JSON output is one object per message with `from`, `subject`, `date`, `snippet` fields.
 
 Apply USER.md priority signals to classify each unread:
 - **URGENT** — sender is in direct-collaborators list AND subject contains an urgency keyword (deadline, blocker, ASAP, urgent), OR sender is the user's manager
@@ -150,13 +223,13 @@ Apply USER.md priority signals to classify each unread:
 
 Output: a list of (URGENT + HIGH) entries only — no more than ~7. STANDARD goes into a count ("plus 12 standard unreads"). LOW is excluded entirely.
 
-If `gws-gmail-triage` errors at runtime (e.g., `gws` is installed but auth expired): write "⚠️ Gmail errored — <one-line cause>" in the section and note in the footer. If it returns empty (no unreads): write "No urgent unreads." Distinguish: not-detected = silent omit (Step 0.5 gate); detected-but-errored = ⚠️ line; detected-and-empty = "No urgent unreads."
+If `gws gmail +triage` errors at runtime (e.g., `gws` is installed but auth expired): write "⚠️ Gmail errored — <one-line cause>" in the section and note in the footer. If it returns empty (no unreads): write "No urgent unreads." Distinguish: not-detected = silent omit (Step 0.5 gate); detected-but-errored = ⚠️ line; detected-and-empty = "No urgent unreads."
 
 ### Step 2: Calendar agenda — "Calendar at a glance" + conflict detection
 
 **Gate (T4):** runs ONLY if `detection.cli.gws == true`. If false, skip this step entirely — no section in body. Footer documents "not configured."
 
-**Compose the `gws-calendar-agenda` skill via the Skill tool** (not raw `gws` Bash). Same reason as Step 1 — the skill normalizes the `--params` JSON shape. Returns today's events across all calendars.
+**Run `gws calendar +agenda --today --format json` via Bash** (the wrapper skill was retired in the 2026-05-17 trim — call the CLI directly). Returns today's events across all calendars. Each event object has `summary`, `start`, `end`, `attendees`, `description` fields.
 
 Process:
 - Sort by start time
@@ -164,7 +237,7 @@ Process:
 - Note any events with no description / no attendees as a tag (might need prep)
 - Pull next 3 events specifically for the "What needs you today" section
 
-If `gws-calendar-agenda` errors at runtime: write "⚠️ Calendar errored — <one-line cause>" + log to footer. Do not invent events. If it returns empty: "Calendar is clear today."
+If `gws calendar +agenda` errors at runtime: write "⚠️ Calendar errored — <one-line cause>" + log to footer. Do not invent events. If it returns empty: "Calendar is clear today."
 
 ### Step 3: Slack digest — DYNAMIC channel enumeration
 
@@ -413,6 +486,7 @@ Output is a **single self-contained HTML file** styled with the active DESIGN.md
       <ul>
         <li><span class="pill good">✅ Composed</span> <comma-separated list></li>
         <li><span class="pill warn">⏳ Not configured</span> <list></li>  <!-- OMIT <li> entirely if all gated tools detected -->
+        <li><span class="pill warn">⏭️ Skipped (auth error, you chose to continue)</span> <list></li>  <!-- OMIT <li> entirely if no Step 0.6 "Skip" path taken -->
         <li><span class="pill bad">⚠️ Errored at runtime</span> <list></li>  <!-- OMIT <li> entirely if no runtime errors -->
       </ul>
     </section>
@@ -484,6 +558,9 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 | `<section data-od-id="tools-used">` footer missing | Step 9 skipped the footer block | The footer is MANDATORY in every brief — single source of truth for what was composed. Even for full-stack users with all green checks, the footer lists "✅ Composed: everything." Pre-Write assertion in Step 9 should reject any HTML lacking `data-od-id="tools-used"`. |
 | Footer fabricates tool status (says "✅ Composed: Slack" when Slack wasn't detected) | T4 violation | The footer is built from the `detection` map cached in Step 0.5, not from the body content. Wire it directly from the map. |
 | Step 1-6 ran even though tool not in detection map | T4 violation (gate ignored) | Each of Steps 1, 2, 3, 4, 6 has an explicit `Gate (T4):` line. Don't run the step's body when the gate is false. |
+| Brief written before discovering a critical tool was dead | Step 0.6 skipped or probe was too lax | Step 0.6 MUST run probes against every detected tool BEFORE Step 1. If any fail, pause via `AskUserQuestion` — never silently compose a half-broken brief. Caught organically 2026-05-17 when Slack MCP token had expired and the user discovered it only at footer time. |
+| Step 0.6 false positive (probe failed but tool actually works) | Probe was too strict or hit a transient network glitch | Use the lightest possible probe (e.g., `slack_search_channels limit=1`, not a heavy search). On transient failure, "Continue anyway" lets the user override. |
+| Step 0.6 took >10 seconds | Probe too heavy | Each probe must be sub-second. If you can't find a sub-second probe for a tool, skip the probe for that tool and accept the inline runtime-error path. |
 | Slack channels missed | Static channel list assumption | Step 3 uses DYNAMIC enumeration via `slack_search_channels`, not a hardcoded list. No maintenance required as channel membership changes. |
 | Project section flat (no opinion) | Skill defaulted to listing instead of synthesizing | Step 7 final synthesis line is mandatory: "From what I'm seeing, the highest-leverage work today is X because Y." Don't ship without it. |
 | Calendar conflict missed | Overlap detection failed | Sort events by start, scan for `event[i].end > event[i+1].start` — flag both with 🔴. |
@@ -525,7 +602,7 @@ The brief is a single self-contained HTML file with a stable DOM order so downst
 - Gated sections (6, 8, 9, 11) collapse out entirely if `detection.<key>` is false — no `<section>`, no sidebar nav anchor, no body. The `tools-used` footer documents the omission.
 - Gated sections that DID get detection but errored at runtime: keep the `<section>` and its `<h3>`, render a single `<p class="warn">⚠️ <Tool> errored — <cause></p>` as the body, also log to footer.
 - Mandatory-floor sections (5, 7, 10) always appear unless they have genuinely no content (e.g., empty contacts dir → omit section 10).
-- The footer (13) is the source of truth: if a `<section>` is present in the DOM, the footer should list it under ✅ Composed; if absent, it goes under ⏳ Not configured or ⚠️ Errored.
+- The footer (13) is the source of truth: if a `<section>` is present in the DOM, the footer should list it under ✅ Composed; if absent, it goes under ⏳ Not configured, ⏭️ Skipped (Step 0.6 user demoted), or ⚠️ Errored. The four buckets are mutually exclusive — each tool appears in exactly one.
 
 **Why HTML, not Markdown (v0.2.0 decision):**
 - `<user.name>` wanted a styled, scannable artifact he could open in a browser and (eventually) `/samba-publish` for share. Dashboard mood beats prose for daily orientation.

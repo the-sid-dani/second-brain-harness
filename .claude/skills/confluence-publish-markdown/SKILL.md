@@ -1,6 +1,6 @@
 ---
 name: confluence-publish-markdown
-description: Port a local markdown file (design doc, investigation report, runbook) to a Confluence page in one command — handles the full markdown → ADF conversion, renders embedded mermaid diagrams via mermaid.ink as external media (no attachment upload required), and optionally injects a standard header info panel with Repo / Live / Jira cross-links. Use this whenever <user.name> wants to publish a markdown file to Confluence — phrases like "publish this design doc to Confluence", "port this markdown to ATF space", "create a Confluence page from this .md", "ship the system-design.md to the wiki", "put this report on Confluence", "update the Confluence page with my markdown", or any time a local markdown artifact needs to become a Confluence page. Trigger broadly on markdown-to-Confluence intent. Both create-new (with `--parent-id`) and update-existing (with `--page-id`) modes are supported. Models exactly the workflow <user.name> + <assistant.name> ran by hand for trf-benchmark-dashboard's system-design.md and INVESTIGATION-994.md on 2026-05-06.
+description: Port a local markdown file (design doc, investigation report, runbook) to a Confluence page — handles markdown → ADF conversion, renders embedded mermaid diagrams via mermaid.ink as external media, optionally injects a standard header info panel with Repo / Live / Jira cross-links. Use whenever the user wants to publish a markdown file to Confluence — phrases like "publish this design doc to Confluence", "port this markdown to <space>", "create a Confluence page from this .md", "ship system-design.md to the wiki", "update the Confluence page". Supports both create-new (`--parent-id`) and update-existing (`--page-id`) modes.
 ---
 
 # confluence-publish-markdown
@@ -104,7 +104,7 @@ See `references/markdown-subset.md` for the complete list. Quick summary:
 
 ## Auth
 
-Same as `/jira-decompose-epic`: requires `ATLASSIAN_BASIC_AUTH` env var (auto-loaded via `~/.zshrc` → `~/.second-brain-harness.env`).
+Same as `/jira-decompose-epic`: requires `ATLASSIAN_BASIC_AUTH` env var (auto-loaded via `~/.zshrc` → `~/.second-brain-os.env`).
 
 For Confluence specifically: the basic-auth token must support both:
 - `GET /wiki/api/v2/pages/{id}` — for parent/page validation

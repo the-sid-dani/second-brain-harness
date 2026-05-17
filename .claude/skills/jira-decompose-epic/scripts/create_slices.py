@@ -7,7 +7,7 @@ Usage:
 
 Spec file: YAML (.yaml/.yml) or JSON (.json). Schema in ../references/spec-schema.md.
 
-Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain-harness.env).
+Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain-os.env).
 
 Models the trf-benchmark-dashboard pattern (ATF-450) — header info panel,
 ADF taskList for AC, parent linkage, custom fields, and Blocks-link dependency chain.
@@ -110,7 +110,7 @@ def get_basic_auth() -> str:
     if not auth:
         sys.exit(
             "ATLASSIAN_BASIC_AUTH env var not set.\n"
-            "Source ~/.second-brain-harness.env or run from a fresh shell."
+            "Source ~/.second-brain-os.env or run from a fresh shell."
         )
     return auth
 

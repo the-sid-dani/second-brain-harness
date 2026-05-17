@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.18] - 2026-05-17
+
+### Changed
+
+- **Renamed: `second-brain-harness` → `second-brain-os`.** Public repo now at `github.com/the-sid-dani/second-brain-os`; old URL auto-redirects via GitHub permanently. "OS" framing aligns better with the project's intent — a personal AI workspace that runs on your computer — than "harness" (which sounded like internal scaffolding). 18 source-of-truth files updated across `scripts/`, root docs, persona templates, and 10 SKILL.md / script refs in `bootstrap`, `upgrade-harness`, `scaffold-engineering-project`, `confluence-publish-markdown`, `jira-decompose-epic`, `desktop-organizer`. Extract output path moved: `/tmp/second-brain-harness-export` → `/tmp/second-brain-os-export`. `upgrade-harness` skill name retained — it refers to the local Ouros sandbox (`.claude/tools/ouros_harness.py`), not the repo. LICENSE copyright string regenerated to "second-brain-os contributors". Historical references in v0.1.0–v0.1.17 CHANGELOG entries, daily memory logs, design-project docs, and `continuum/autonomous/` reports left intact — they accurately describe shipped state at the time. Existing forks/clones keep working via GitHub's permanent redirect; recommended cleanup is `git remote set-url origin https://github.com/the-sid-dani/second-brain-os.git`.
+- **`scripts/install.sh` final message rewritten** — explicitly points fork users at `claude` → `/bootstrap` → `/mcp` as the three-step post-install flow. Previous message was a generic "install complete" with no next-step pointer.
+- **`scripts/lib/verify.sh` "Post-install manual steps"** reordered with `/bootstrap` as Step 1 (was buried below MCP OAuth hints).
+- **`/bootstrap` Step 2 now probes the CCv4 toolchain** (`bloks`, `tldr`, `fastedit`). New `ccv4_install_state` field (`all-present` / `partial` / `none`). When all three are missing, Step 2 surfaces a strong pre-gate prompt recommending the user abort and run `install.sh` first; Section 8's "What needs your attention" surfaces this case FIRST.
+- **`beru-workspace/3-Resources/templates/persona/TOOLS-template.md` rewritten** as a structural reference, not a status-asserting file. Stripped misleading ✅ marks; added prominent header explaining `/bootstrap` Step 6c regenerates the live TOOLS.md from real probes. Added CCv4 toolchain section (was missing).
+- **`README-template.md` skill counts corrected** — "26 design skills" → 14, "66 pre-built workflows" → 44, brand presets "73" → 72. Design category table now enumerates the 14 kept skills instead of the dropped variants.
+- **Brand-preset count corrected** — `bootstrap/SKILL.md` and README claimed 73; disk has 72.
+
+### Removed
+
+- **21 `gws-*` skills dropped from the bundle.** They shelled out to the `gws` CLI; fork users without it on PATH got silently-dead skills. Bundle is now MCP-first. Source dirs remain at `~/.agents/skills/gws-*` for users who install the CLI separately.
+- **12 niche `design-*` skills dropped:** `audio-jingle`, `digital-eguide`, `email-marketing`, `hyperframes`, `image-poster`, `magazine-poster`, `mobile-app`, `mobile-onboarding`, `replit-deck`, `social-carousel`, `video-shortform`, `wireframe-sketch`. Kept the 14 workhorses (`saas-landing`, `simple-deck`, `dashboard`, `web-prototype`, `blog-post`, `meeting-notes`, `pm-spec`, `docs-page`, `pricing-page`, `team-okrs`, `weekly-update`, `finance-report`, `tweaks`, `critique`). The dropped twelve were external-tool-bound (HeyGen / Suno / Seedance / gpt-image-2) or stylistic niches. `extract-template.sh` SHIPPED_SKILLS reduced 68 → 44.
+
 ## [0.1.17] - 2026-05-11
 
 ### Fixed

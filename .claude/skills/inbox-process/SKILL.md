@@ -111,7 +111,7 @@ Preview: <preview>
 
 **For unmigrated `1-Projects/` folders**, use `AskUserQuestion` with the extended 7-choice set:
 - `scaffold-in-place` — keep the folder where it is, just add `CLAUDE.md` + `memory.md` (chains to a minimal `/new-project`-equivalent that scaffolds in the existing path; asks for type to populate frontmatter)
-- `move-to-coding` — this is actually a code repo; move to `<workspace.root>/<workspace.coding>/<scope>/<name>/` (asks for scope: work/personal/forks). Also append a row to `<indexes.code_projects>`.
+- `move-to-coding` — this is actually a code repo; move to `<workspace.root>/<workspace.coding>/<name>/`. Also append a row to `<indexes.code_projects>`.
 - `move-to-inbox` — wasn't actually project-scoped, demote back to `<workspace.inbox>/<folder-name>/` so it can be triaged like a normal Inbox item next pass
 - `promote` — turn into Resources (chains to `/save-resource`); use when the folder is reference material, not a project (e.g., a Confluence dump, a research dump)
 - `archive` — move to `<workspace.archive>/<folder-name>/` (no `inbox-<date>/` bucket since the folder already has a meaningful name)
@@ -157,16 +157,15 @@ Don't `mv` the folder. Don't rename it. Existing content untouched.
 #### move-to-coding (1-Projects surface only)
 The folder is actually a code repo misplaced in `1-Projects/`. Steps:
 
-1. Ask the user via `AskUserQuestion` for scope: `work` / `personal` / `forks`.
-2. Compute target: `<workspace.root>/<workspace.coding>/<scope>/<folder-name>/`.
-3. Validate target doesn't exist already. If it does, surface conflict and ask user for a different name.
-4. `mv <workspace.projects>/<folder-name> <workspace.root>/<workspace.coding>/<scope>/<folder-name>`
-5. If the folder doesn't already have a `.git/`, optionally offer to `git init` (skip for now if the user says no — they can do it later).
-6. Append a row to `<indexes.code_projects>`:
+1. Compute target: `<workspace.root>/<workspace.coding>/<folder-name>/`.
+2. Validate target doesn't exist already. If it does, surface conflict and ask user for a different name.
+3. `mv <workspace.projects>/<folder-name> <workspace.root>/<workspace.coding>/<folder-name>`
+4. If the folder doesn't already have a `.git/`, optionally offer to `git init` (skip for now if the user says no — they can do it later).
+5. Append a row to `<indexes.code_projects>`:
    ```
-   | <folder-name> | <workspace.root>/<workspace.coding>/<scope>/<folder-name> | TBD | active | no-remote | (migrated from 1-Projects 2026-MM-DD) | <today> |
+   | <folder-name> | <workspace.root>/<workspace.coding>/<folder-name> | TBD | active | no-remote | (migrated from 1-Projects 2026-MM-DD) | <today> |
    ```
-7. Confirm to user: `✅ Moved to <workspace.coding>/<scope>/<folder-name>/. Index updated. Heads up: <workspace.coding>/ is gitignored; this folder is now invisible to outer git.`
+6. Confirm to user: `✅ Moved to <workspace.coding>/<folder-name>/. Index updated. Heads up: <workspace.coding>/ is gitignored; this folder is now invisible to outer git.`
 
 #### move-to-inbox (1-Projects surface only)
 The folder wasn't project-scoped — demote back to Inbox for normal triage.
@@ -260,7 +259,7 @@ Inbox cleared, 1-Projects/ fully scaffolded. ✨
 | Both surfaces empty when invoked | Nothing to triage | Friendly message, stop. Step 1 handles. |
 | `/save-resource` chained call fails mid-batch | Source already moved, type unclear, etc. | Log, continue, surface in summary |
 | `/new-project` chained call fails | Name collision, slug error | Log, continue. Source stays put for next time. |
-| `move-to-coding` target already exists | Same repo name in `<workspace.coding>/<scope>/` | Surface conflict, ask for different name OR ask to merge manually |
+| `move-to-coding` target already exists | Same repo name already at `<workspace.coding>/` | Surface conflict, ask for different name OR ask to merge manually |
 | `scaffold-in-place` overwrites existing CLAUDE.md | Race — folder gained CLAUDE.md between Step 1 scan and Step 4 act | Re-check before write; if CLAUDE.md now exists, skip scaffold and treat as "keep" |
 | User picks `delete` on everything | Possibly accidental | Each delete still requires its own confirm — that's the safety net. Trust the user after explicit confirmation. |
 | `AskUserQuestion` not available (subagent context) | Worker subagents lack the tool | Pre-extract dispositions from invocation prompt. Treat the prompt as authoritative ("promote X to research, archive Y, scaffold-in-place Z as execution"). |

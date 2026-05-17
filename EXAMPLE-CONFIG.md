@@ -8,7 +8,7 @@ The actual Configuration section lives in **root `CLAUDE.md`** under the `## Con
 
 ## Example: a fictional user "Alex Rivera" forking this repo
 
-Imagine Alex is a Senior Product Manager at Acme Corp who just cloned the second-brain-harness repo to use as their own second-brain template. Alex chose to:
+Imagine Alex is a Senior Product Manager at Acme Corp who just cloned the second-brain-os repo to use as their own second-brain template. Alex chose to:
 - Keep the workspace folder name as `workspace` (the harness ships with this default)
 - Customize the assistant persona — picked the name "Atlas" with a research-companion vibe
 

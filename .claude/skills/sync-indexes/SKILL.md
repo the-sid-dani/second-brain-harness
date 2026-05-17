@@ -1,6 +1,6 @@
 ---
 name: sync-indexes
-description: Repairs drift between the on-disk state of `<workspace.root>/<workspace.coding>/{work,personal,forks,archive}/` and `<indexes.code_projects>` (the canonical code-repos index file). Scans the actual code folders, parses the index, computes a three-way diff (repos present on disk but missing from index → propose ADD; rows in index but folder gone from disk → propose FLAG/remove; matches → ok), shows the diff to the user via `AskUserQuestion`, applies only the approved changes. Read-only by default; mutates `<indexes.code_projects>` only after explicit approval. Use this whenever the user wants to audit code-repo bookkeeping — phrases like "sync indexes", "repair code-projects", "check for orphan repos", "what's in 2-Coding that's not in the index", "audit code repos", "is my index up to date?", "/sync-indexes". Trigger broadly on audit/sync/drift/orphan language about code repos. The index matters because `<workspace.coding>/` is gitignored — without a maintained index, no fork-portable record of what code lives where exists. Sister skill to `/prune-projects` (same iterator-multiselect-act shape, different domain).
+description: Audits drift between `<workspace.root>/<workspace.coding>/` (flat — one folder per repo) and `<indexes.code_projects>` (the canonical code-repos index). Three-way diff — repos on disk missing from index → ADD; rows in index without folder → FLAG/remove. Read-only by default; mutates only after `AskUserQuestion` approval. Use whenever the user wants to audit code-repo bookkeeping — phrases like "sync indexes", "check for orphan repos", "audit code repos", "is my index up to date?", "/sync-indexes". Trigger broadly on audit/drift/orphan language.
 allowed-tools: Read Edit Bash AskUserQuestion
 ---
 
@@ -39,17 +39,18 @@ Do NOT trigger for:
 
 ### Step 1: Scan disk
 
-For each scope under `<workspace.root>/<workspace.coding>/`:
+Scan `<workspace.root>/<workspace.coding>/` for direct subdirectories:
 
 ```bash
-for scope in work personal forks archive; do
-  ls -1 "<workspace.root>/<workspace.coding>/$scope/" 2>/dev/null
-done
+ls -1 "<workspace.root>/<workspace.coding>/" 2>/dev/null
 ```
 
-Collect every direct subdirectory. The result is a set of `(scope, repo_name)` pairs. Each represents a code repo on disk. Skip:
+Each direct subdirectory is a code repo. Skip:
 - Hidden entries (starting with `.`)
 - Files (only directories count as repos)
+- `README.md` (the folder README is tracked, not a repo)
+
+The result is a set of `repo_name` values.
 
 If `<workspace.coding>/` doesn't exist, abort: *"Coding directory not found at `<workspace.root>/<workspace.coding>/`. Either nothing's been migrated yet, or the path is wrong — check root CLAUDE.md Configuration."*
 
@@ -63,10 +64,10 @@ Read `<indexes.code_projects>`. The schema is a markdown table with header:
 
 Skip the header row and the separator row (`|------|...`). For each remaining row, extract:
 - `repo` (column 1, trimmed)
-- `path` (column 2, trimmed) — should be like `<workspace.coding>/<scope>/<repo_name>` or `2-Coding/<scope>/<repo_name>` (legacy)
+- `path` (column 2, trimmed) — should be like `<workspace.coding>/<repo_name>` (or the older `<workspace.coding>/<scope>/<repo_name>` form from before the 2026-05 flatten — treat the last path segment as the repo name)
 - `status` (column 4) — `active`, `paused`, `archived`, `MISSING`, etc.
 
-Build a map: `index_paths[<scope>/<repo_name>] = full_row`.
+Build a map: `index_repos[<repo_name>] = full_row`.
 
 If the index file is missing or has only the header (no data rows), that's a valid "fresh state" — proceed with empty index map. The skill will propose ADDs for everything on disk.
 
@@ -74,8 +75,8 @@ If the index file is missing or has only the header (no data rows), that's a val
 
 Three buckets:
 
-- **ADD candidates** — `(scope, repo_name)` on disk that have no matching `index_paths` entry. The skill will propose adding a row.
-- **MISSING candidates** — `index_paths` entries whose folder doesn't exist on disk. The skill will propose flagging the row's status to `MISSING` (or removing it entirely — user choice).
+- **ADD candidates** — `repo_name`s on disk that have no matching `index_repos` entry. The skill will propose adding a row.
+- **MISSING candidates** — `index_repos` entries whose folder doesn't exist on disk. The skill will propose flagging the row's status to `MISSING` (or removing it entirely — user choice).
 - **MATCH** — entries where disk and index agree. No action needed; just count.
 
 If all three buckets are empty except MATCH, print:
@@ -91,7 +92,7 @@ If all three buckets are empty except MATCH, print:
 For each ADD candidate, try to detect its GitHub remote so the index row can be filled in:
 
 ```bash
-git -C "<workspace.root>/<workspace.coding>/<scope>/<repo_name>" remote get-url origin 2>/dev/null
+git -C "<workspace.root>/<workspace.coding>/<repo_name>" remote get-url origin 2>/dev/null
 ```
 
 If a URL is returned, parse it to `owner/repo` form (e.g., `git@github.com:<user.github>/<repo-name>.git` → `<user.github>/<repo-name>`). If no remote (or the dir isn't a git repo), leave the GitHub field as `(needs review)`.
@@ -116,12 +117,12 @@ Show the diff and use `AskUserQuestion` with `multiSelect: true`. Each option is
 
 For ADD candidates, label format:
 ```
-ADD: <scope>/<repo_name> · <github-or-(needs review)> · last touched <date>
+ADD: <repo_name> · <github-or-(needs review)> · last touched <date>
 ```
 
 For MISSING candidates, label format:
 ```
-FLAG: <scope>/<repo_name> · status was <old_status>, folder gone
+FLAG: <repo_name> · status was <old_status>, folder gone
 ```
 
 Question prompt:
@@ -148,7 +149,7 @@ Mutations to `<indexes.code_projects>`:
 
 **For each approved ADD**, append a new row at the end of the table:
 ```
-| <repo_name> | <workspace.coding>/<scope>/<repo_name> | (needs review) | active | <github> | (needs review) | <date> |
+| <repo_name> | <workspace.coding>/<repo_name> | (needs review) | active | <github> | (needs review) | <date> |
 ```
 
 The `Stack` and `Brief` fields are `(needs review)` because we can't infer them — the user fills these in later.
@@ -167,17 +168,17 @@ After all changes apply, print:
 ✅ Sync complete: <indexes.code_projects> updated.
 
 Added (K rows):
-  - work/example-repo (github: <user.github>/example-repo)
-  - personal/notes-app (github: (needs review))
+  - example-repo (github: <user.github>/example-repo)
+  - notes-app (github: (needs review))
 
 Flagged MISSING (M rows):
-  - personal/old-prototype
+  - old-prototype
 
 Removed (P rows):
-  - forks/abandoned-fork
+  - abandoned-fork
 
 Skipped (Q changes you unchecked):
-  - work/private-tool
+  - private-tool
 
 Now tracked: T total rows in index.
 ```
@@ -206,7 +207,7 @@ This nudges follow-through without forcing it. The next sync run treats `(needs 
 | `git remote get-url` fails | Not a git repo, or no remote | Use `(needs review)` for GitHub field. Best-effort enrichment, never blocks. |
 | User unchecks all proposed changes | Audit-only invocation | "Nothing applied. Index unchanged." Exit cleanly. |
 | `AskUserQuestion` not available (subagent context) | Worker subagents lack the tool | Treat all detected changes as approved (apply all ADDs, flag all MISSING). Don't remove rows — destructive default is wrong even for automation. |
-| Two different repos with the same name in different scopes | e.g., `work/foo/` and `personal/foo/` | Treat them as separate entries. The Path column disambiguates. |
+| Legacy index row uses `<workspace.coding>/<scope>/<repo>` path | Pre-2026-05 row that never got migrated | Match by last path segment (repo name). Surface a one-line note suggesting the user update the path column to the flat form. |
 | Configuration values missing | Fresh fork without `/bootstrap` run | Error: *"Configuration section in root CLAUDE.md not populated. Run `/bootstrap` (TBD) or fill it in manually first."* |
 
 ## Output format

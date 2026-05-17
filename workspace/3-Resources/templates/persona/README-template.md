@@ -20,7 +20,7 @@ Pick the tier that matches what you want to do. You can upgrade later — re-run
 
 | Tier | What you get | What's installed beyond Claude Code + git | Disk | Wall time |
 |---|---|---|---|---|
-| **Minimal** | Chief-of-staff workflows, 26 design skills with 73 brand presets, persona templates, MCP research (Slack/Atlassian/Figma via OAuth) | nothing else | ~5 MB | ~5 min |
+| **Minimal** | Chief-of-staff workflows, 14 design skills with 72 brand presets, persona templates, MCP research (Slack/Atlassian/Figma via OAuth) | nothing else | ~5 MB | ~5 min |
 | **Lite CCv4** | Above + `/research`, `/autonomous`, `/premortem`, `/review`, bloks (compact knowledge cards), tldr (structural code reads), Ouros REPL harness | + Homebrew, Node 20, jq, ripgrep, ffmpeg, yt-dlp, Rust, uv, bloks, tldr-cli, Python deps (no FastEdit model) | ~500 MB | ~10-15 min |
 | **Full** | Above + FastEdit MCP (AST-aware code edits, ~45% fewer tokens than diffs) | + fastedits[mlx,mcp] (1.7B MLX merge model) + 5 API keys | ~5 GB | ~20-40 min |
 
@@ -36,8 +36,8 @@ Pick the tier that matches what you want to do. You can upgrade later — re-run
 Three commands in Terminal:
 
 ```bash
-git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
-cd ~/Desktop/second-brain-harness
+git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
+cd ~/Desktop/second-brain-os
 claude
 ```
 
@@ -53,8 +53,8 @@ You're done. Skip the rest of this section unless you want the CCv4 autonomous p
 Run these in Terminal, **in this exact order** (installer first, Claude Code second — hooks and binaries need to be in place before the session starts):
 
 ```bash
-git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
-cd ~/Desktop/second-brain-harness
+git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
+cd ~/Desktop/second-brain-os
 ./scripts/install.sh --no-fastedit-model
 claude
 ```
@@ -70,8 +70,8 @@ Then inside the Claude Code session that opens, type `/bootstrap` to configure i
 Same order — installer first, then Claude Code:
 
 ```bash
-git clone https://github.com/the-sid-dani/second-brain-harness ~/Desktop/second-brain-harness
-cd ~/Desktop/second-brain-harness
+git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
+cd ~/Desktop/second-brain-os
 ./scripts/install.sh
 claude
 ```
@@ -109,8 +109,8 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
 2. Paste this into Claude Code and hit Enter:
 
    ```
-   Hi! I want to install the second-brain-harness — a personal AI workspace.
-   The public template is at: https://github.com/the-sid-dani/second-brain-harness
+   Hi! I want to install the second-brain-os — a personal AI workspace.
+   The public template is at: https://github.com/the-sid-dani/second-brain-os
 
    Please help me set this up. Walk me through these steps:
 
@@ -121,7 +121,7 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
       explain the trade-offs (chief-of-staff + design only vs. + /research and
       /autonomous vs. + FastEdit MCP) and the disk/time cost of each tier.
 
-   3. Ask me where I want to clone the repo (default: ~/Desktop/second-brain-harness).
+   3. Ask me where I want to clone the repo (default: ~/Desktop/second-brain-os).
       Clone it there for me, then cd into it.
 
    4. If I picked Lite CCv4 or Full, run the installer for me:
@@ -154,7 +154,7 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
 
 3. **Follow Claude's instructions** to clone the repo and (optionally) run the installer. When it's done, Claude will tell you to quit and re-open Claude Code in the cloned folder.
 
-4. **Re-open Claude Code** in the cloned folder (Terminal: `cd ~/Desktop/second-brain-harness && claude`), then type `/bootstrap`. If you picked Lite CCv4 or Full, also run `/mcp` to authorize Slack, Figma, and Atlassian.
+4. **Re-open Claude Code** in the cloned folder (Terminal: `cd ~/Desktop/second-brain-os && claude`), then type `/bootstrap`. If you picked Lite CCv4 or Full, also run `/mcp` to authorize Slack, Figma, and Atlassian.
 
 5. **Fill in `.env`** if you used `--skip-api-keys` — open it in your editor and paste each key. The file has comments pointing at where to get each one.
 
@@ -166,7 +166,7 @@ A workspace skeleton that turns Claude Code into your personal chief-of-staff (o
 
 **Three pieces make this work:**
 
-1. **Skills** — 66 pre-built workflows shipped in `.claude/skills/` (including the 9-skill ContinuousClaude V4.7 pipeline). Each one has a description that tells Claude when to use it, so your natural-language prompts automatically route to the right skill.
+1. **Skills** — 44 pre-built workflows shipped in `.claude/skills/` (including the 9-skill ContinuousClaude V4.7 pipeline). Each one has a description that tells Claude when to use it, so your natural-language prompts automatically route to the right skill.
 2. **A PARA workspace** at `workspace/` — Inbox, Projects, Coding, Resources, Archive. Your work lives here; skills know how to navigate it.
 3. **Configuration tokens** in `CLAUDE.md` — your name, your role, your workspace paths. Skills reference these symbolically so the workspace adapts to your setup.
 
@@ -203,7 +203,7 @@ You can also type `/skill-name` directly if you know it — both work.
 
 ## What's included
 
-**Skills (66 total).**
+**Skills (44 total).**
 
 | Category | Skills |
 |---|---|
@@ -212,8 +212,7 @@ You can also type `/skill-name` directly if you know it — both work.
 | ContinuousClaude V4.7 pipeline (9) | `autonomous`, `autonomous-research`, `bootup`, `create-handoff`, `premortem`, `research`, `resume-handoff`, `review`, `upgrade-harness` |
 | Research | `company-research`, `people-research` |
 | Project tracking | `confluence-publish-markdown`, `jira-decompose-epic`, `scaffold-engineering-project` |
-| Design (26 skills) | landing pages, dashboards, decks, mobile apps, blog posts, social carousels, videos, posters, wireframes, OKR trackers, and more |
-| Persona templates (10) | `persona-exec-assistant`, `persona-sales-ops`, `persona-researcher`, `persona-project-manager`, `persona-team-lead`, `persona-content-creator`, `persona-customer-support`, `persona-event-coordinator`, `persona-hr-coordinator`, `persona-it-admin` |
+| Design (14 workhorse skills) | `design-saas-landing`, `design-simple-deck`, `design-dashboard`, `design-web-prototype`, `design-blog-post`, `design-meeting-notes`, `design-pm-spec`, `design-docs-page`, `design-pricing-page`, `design-team-okrs`, `design-weekly-update`, `design-finance-report`, `design-tweaks`, `design-critique`. All read brand tokens from root `DESIGN.md` — swap with `/use-design <brand>` (72 presets shipped). |
 | Reference (with adapt-before-fork disclaimer) | `samba-publish` — internal-company URL deployment via Cloudflare Pages |
 
 Each skill has its own `.claude/skills/<name>/SKILL.md` file documenting what it does, trigger phrases, and process steps. Browse `.claude/skills/` to look around.
@@ -228,7 +227,7 @@ These are connectors to external services. After install, run `/mcp` in Claude C
 - `atlassian` — Jira tickets + Confluence pages.
 - `figma` — read Figma designs and convert to code.
 
-**Brand presets (73).** Pre-built design systems at `workspace/3-Resources/design-systems/` — Airbnb, Stripe, Linear, Notion, Claude, Vercel, Tesla, BMW, Lamborghini, Spotify, and 63 others. Switch the active brand with `/use-design <brand>` and every design-* skill renders in that style.
+**Brand presets (72).** Pre-built design systems at `workspace/3-Resources/design-systems/` — Airbnb, Stripe, Linear, Notion, Claude, Vercel, Tesla, BMW, Lamborghini, Spotify, and 62 others. Switch the active brand with `/use-design <brand>` and every design-* skill renders in that style.
 
 **Persona templates (6).** Generic SOUL / USER / IDENTITY / CLAUDE / README / TOOLS templates that `/bootstrap` fills in with your values.
 
@@ -244,7 +243,7 @@ These are connectors to external services. After install, run `/mcp` in Claude C
 ## Project map
 
 ```
-second-brain-harness/
+second-brain-os/
 ├── README.md              ← you are here
 ├── CLAUDE.md              ← project instructions + Configuration section
 ├── SOUL.md                ← <assistant.name>'s persona, voice, boundaries
@@ -276,7 +275,7 @@ second-brain-harness/
 │   │   ├── organization-reports/     ← workspace cleanup / audit reports
 │   │   ├── research/                 ← user-saved research
 │   │   ├── reference/                ← user-saved reference material
-│   │   └── design-systems/           ← 73 brand presets
+│   │   └── design-systems/           ← 72 brand presets
 │   └── 4-Archive/
 │
 └── .claude/
@@ -416,16 +415,16 @@ If you want a GitHub backup or want to use this on multiple computers, **fork** 
 
 ```bash
 # Option 1: via the GitHub CLI
-gh repo fork the-sid-dani/second-brain-harness --clone --remote
-cd second-brain-harness
+gh repo fork the-sid-dani/second-brain-os --clone --remote
+cd second-brain-os
 claude
 /bootstrap
 
 # Option 2: via the web
-# Visit https://github.com/the-sid-dani/second-brain-harness/fork and click "Create fork"
+# Visit https://github.com/the-sid-dani/second-brain-os/fork and click "Create fork"
 # Then clone YOUR fork:
-git clone https://github.com/YOUR-GITHUB-USERNAME/second-brain-harness ~/Desktop/second-brain-harness
-cd ~/Desktop/second-brain-harness
+git clone https://github.com/YOUR-GITHUB-USERNAME/second-brain-os ~/Desktop/second-brain-os
+cd ~/Desktop/second-brain-os
 claude
 /bootstrap
 ```

@@ -9,7 +9,7 @@ Usage:
     python scaffold.py --spec <path> --validate-only  # pre-flight only
 
 Spec: YAML or JSON. Schema in ../references/spec-schema.md.
-Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain-harness.env).
+Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain-os.env).
 
 This script delegates to two sibling skills:
 - /confluence-publish-markdown
@@ -137,7 +137,7 @@ def validate_spec(spec: dict[str, Any], spec_path: Path) -> list[str]:
 def get_basic_auth() -> str:
     auth = os.environ.get("ATLASSIAN_BASIC_AUTH")
     if not auth:
-        sys.exit("ATLASSIAN_BASIC_AUTH not set. Source ~/.second-brain-harness.env.")
+        sys.exit("ATLASSIAN_BASIC_AUTH not set. Source ~/.second-brain-os.env.")
     return auth
 
 

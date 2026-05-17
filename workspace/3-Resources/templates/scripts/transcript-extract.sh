@@ -40,7 +40,7 @@ done
 
 if [ "$REPO_ROOT" = "/" ]; then
     echo "❌ Could not locate repo root (looking for workspace/0-Inbox/ ancestor)" >&2
-    echo "   Run this script from inside the second-brain-harness tree, or pass output-dir explicitly." >&2
+    echo "   Run this script from inside the second-brain-os tree, or pass output-dir explicitly." >&2
     exit 1
 fi
 

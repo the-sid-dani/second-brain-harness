@@ -40,10 +40,12 @@ verify_all() {
 
     printf '\n%s installed: %d, missing: %d%s\n\n' "${GREEN:-}" "$ok" "$fail" "${RESET:-}"
 
-    info "Post-install manual steps (NOT scripted):"
-    info "  1. Slack MCP   — open Claude Code → /mcp → select slack → OAuth"
-    info "  2. Figma MCP   — open Claude Code → /mcp → select figma → OAuth"
-    info "  3. GWS auth    — run 'gws auth login' if you skipped samba-onboarding"
+    info "Post-install manual steps (NOT scripted, in order):"
+    info "  1. Open Claude Code in this folder → run /bootstrap"
+    info "       (configures persona, regenerates TOOLS.md from live probes, ~15 min)"
+    info "  2. After /bootstrap → run /mcp to authorize HTTP MCPs (slack, atlassian, figma, exa)"
+    info "       (MCP OAuth is per-project — each workspace needs its own grants)"
+    info "  3. GWS auth — run 'gws auth login' if you skipped samba-onboarding"
 
     if [ "$fail" -gt 0 ]; then
         warn "Some binaries missing — re-run ./scripts/install.sh to retry, or install manually."

@@ -5,12 +5,13 @@
       "id": "trigger-explicit-slash",
       "name": "explicit-slash-command-triggers",
       "prompt": "/bootstrap",
-      "expected_output": "Skill triggers. Detects fork state via Step 0. If fresh fork (user.name = placeholder), proceeds through 8 steps. If already-configured (user.name has real value), refuses gracefully and points at /update-config (T2 invariant).",
+      "expected_output": "Skill triggers. Step 0 prints the 8-step plan, Step 1 grep-checks for setup_completed: in CLAUDE.md. If fresh fork (no setup_completed line), proceeds through 8 steps. If already-configured, refuses gracefully and points at /update-config (T2 invariant).",
       "files": [],
       "preconditions": [],
       "assertions": [
         {"text": "/bootstrap skill triggers", "weight": 1, "critical": true},
-        {"text": "Step 0 fork-state check runs first (read Configuration section in CLAUDE.md)", "weight": 1, "critical": true},
+        {"text": "Step 0 narration (welcome + 8-step plan) is emitted as user-visible text before any probes run", "weight": 1, "critical": true},
+        {"text": "Step 1 fork-state check runs first (grep for setup_completed: in CLAUDE.md)", "weight": 1, "critical": true},
         {"text": "On already-configured fork, skill refuses gracefully and surfaces /update-config alternative (T2)", "weight": 1, "critical": true}
       ]
     },
@@ -23,33 +24,33 @@
       "preconditions": [],
       "assertions": [
         {"text": "/bootstrap skill triggers (NOT /new-project, NOT /update-config)", "weight": 1, "critical": true},
-        {"text": "Step 0 fork-state check runs", "weight": 1, "critical": false}
+        {"text": "Step 1 fork-state check runs (grep for setup_completed: in CLAUDE.md)", "weight": 1, "critical": false}
       ]
     },
     {
       "id": "trigger-natural-customize-persona",
       "name": "customize-persona-triggers",
       "prompt": "I want to customize the persona — I'm not Sid, my name is Alex",
-      "expected_output": "User signaling fresh fork + persona customization intent. Skill triggers, Step 2 routes to (b) customize, Step 3 regenerates persona files from templates.",
+      "expected_output": "User signaling fresh fork + persona customization intent. Skill triggers, Step 4 routes to (b) customize, Step 6a regenerates persona files from templates.",
       "files": [],
       "preconditions": [],
       "assertions": [
         {"text": "/bootstrap skill triggers", "weight": 1, "critical": true},
-        {"text": "Step 2 offers (a) keep default OR (b) customize via AskUserQuestion", "weight": 1, "critical": false}
+        {"text": "Step 4 offers (a) keep default / (b) customize / (c) keep as-is via AskUserQuestion", "weight": 1, "critical": false}
       ]
     },
     {
       "id": "t1-preserve-edited-files",
       "name": "user-edited-soul-md-preserved-not-overwritten",
       "prompt": "/bootstrap",
-      "expected_output": "T1 INVARIANT TEST. SOUL.md has been edited by the user beyond the original Beru content (e.g., they added a custom Operating Principle). When Step 3 detects divergence from BOTH upstream and template, it MUST ask before overwriting and default to skip.",
+      "expected_output": "T1 INVARIANT TEST. SOUL.md has been edited by the user beyond the original Beru content (e.g., they added a custom Operating Principle). When Step 6a detects divergence via `git show HEAD:SOUL.md` + `diff -q`, it MUST ask before overwriting and default to skip.",
       "files": [],
       "preconditions": [
         "SOUL.md has been edited beyond the original — e.g., a 7th Operating Principle added that's neither in the upstream Beru SOUL.md nor the template"
       ],
       "assertions": [
-        {"text": "Skill detects SOUL.md divergence (not upstream content, not template content)", "weight": 2, "critical": true},
-        {"text": "Skill asks user via AskUserQuestion before overwriting (skip / overwrite / show-diff)", "weight": 2, "critical": true},
+        {"text": "Step 6a detects SOUL.md divergence via git diff against HEAD", "weight": 2, "critical": true},
+        {"text": "Skill asks user via AskUserQuestion before overwriting — options include skip / show-diff / overwrite / save to .bootstrap-suggested", "weight": 2, "critical": true},
         {"text": "Default behavior is to skip overwriting and preserve user edits", "weight": 1, "critical": true}
       ]
     },
@@ -63,8 +64,8 @@
         "CLAUDE.md Configuration section has user.name set to a real value (not placeholder, not 'Sid' default)"
       ],
       "assertions": [
-        {"text": "Skill detects already-configured state in Step 0", "weight": 2, "critical": true},
-        {"text": "Skill refuses gracefully — does NOT proceed to Step 1+", "weight": 2, "critical": true},
+        {"text": "Skill detects already-configured state in Step 1 (grep for setup_completed: line)", "weight": 2, "critical": true},
+        {"text": "Skill refuses gracefully — does NOT proceed to Step 2+", "weight": 2, "critical": true},
         {"text": "Skill surfaces /update-config as the alternative for partial edits", "weight": 1, "critical": false},
         {"text": "Skill mentions --reconfigure flag for users who genuinely want to redo setup", "weight": 1, "critical": false}
       ]
@@ -73,7 +74,7 @@
       "id": "t3-no-auto-commit",
       "name": "skill-does-not-auto-commit",
       "prompt": "/bootstrap",
-      "expected_output": "T3 INVARIANT TEST. After all writes complete in Steps 3, 4, 7 the skill surfaces a diff and tells the user to commit manually. NEVER runs `git add` or `git commit`.",
+      "expected_output": "T3 INVARIANT TEST. After all writes complete in Steps 5, 6, 7a the skill surfaces a diff and tells the user to commit manually. NEVER runs `git add` or `git commit`.",
       "files": [],
       "preconditions": [],
       "assertions": [
@@ -85,11 +86,12 @@
       "id": "t4-no-tool-install",
       "name": "skill-does-not-install-tools",
       "prompt": "/bootstrap",
-      "expected_output": "T4 INVARIANT TEST. Step 5 (tool connectivity check) is READ-ONLY probes. If gws/gh/MCPs are missing or not authed, skill surfaces hints (run X command) but does NOT install or auth anything.",
+      "expected_output": "T4 INVARIANT TEST. Step 2 (environment detection) is READ-ONLY probes. If gws/gh/MCPs are missing or not authed, skill surfaces hints in the detection panel and Step 8 follow-ups but does NOT install or auth anything.",
       "files": [],
       "preconditions": [],
       "assertions": [
-        {"text": "Step 5 only runs read-only Bash probes (gws auth status / gh auth status / cat .mcp.json)", "weight": 1, "critical": true},
+        {"text": "Step 2 only runs read-only Bash probes (gws auth status / gh auth status / jq .mcp.json)", "weight": 1, "critical": true},
+        {"text": "Step 2 renders a detection panel with ✅/⏳/⚠️/❌ flags for each CLI, MCP, pipeline tool, and persona file", "weight": 1, "critical": true},
         {"text": "Skill does NOT invoke `brew install`, `gws auth login`, `gh auth login`, or any MCP OAuth flow", "weight": 2, "critical": true},
         {"text": "For ⚠️ tools, skill surfaces a one-line action hint (e.g., 'Run gws auth login') instead of trying to fix", "weight": 1, "critical": false}
       ]
@@ -98,10 +100,10 @@
       "id": "smoke-test-failure-leaves-artifact",
       "name": "smoke-test-failure-preserves-debugging-artifact",
       "prompt": "/bootstrap",
-      "expected_output": "Step 6 smoke test invokes /new-project with a throwaway. If the new project's CLAUDE.md still contains <user.name> placeholder (verification failed), DO NOT delete the smoke-test artifact — leave it for debugging.",
+      "expected_output": "Step 7b smoke test invokes /new-project with a throwaway. If the new project's CLAUDE.md still contains <user.name> placeholder (verification failed), DO NOT delete the smoke-test artifact — leave it for debugging.",
       "files": [],
       "preconditions": [
-        "Configuration section has not been written yet (Step 7 hasn't run, so /new-project might still produce a project with <user.name> placeholder)"
+        "Configuration section may have written incompletely (Step 7a partial — /new-project might still produce a project with <user.name> placeholder)"
       ],
       "assertions": [
         {"text": "On smoke-test verification PASS, skill deletes the throwaway project", "weight": 1, "critical": false},

@@ -1,6 +1,6 @@
 ---
 name: find
-description: Recall layer for the second brain. Searches across `<workspace.root>/<workspace.resources>/`, `<workspace.root>/<workspace.projects>/`, `<workspace.root>/<workspace.archive>/`, and `memory/` for a topic — by filename and by content — then ranks matches and optionally synthesizes them into a structured summary with file citations. All paths come from the Configuration section in root CLAUDE.md — read those first. Use this whenever the user asks <assistant.name> to recall existing knowledge before generating new content — phrases like "do I have anything on X", "what do I know about Y", "search my notes for Z", "find research on W", "is there a project for V", "what did I save about U", "/find <topic>". Trigger broadly on recall language even when the user doesn't say "find" explicitly — recall is the pattern, not the literal command. Replaces manual `ls` + `grep` flailing across four organizational locations. Layer 3 skills (briefing, meeting-prep) will compose `/find` so they can say "you already have a relevant note on this" before generating new content. Inspired by claudesidian's `research-assistant` skill but adapted to our PARA layout, frontmatter conventions, and decision #16 (Resources two-level structure).
+description: Recall layer for the second brain. Searches across `<workspace.root>/<workspace.resources>/`, `<workspace.projects>/`, `<workspace.archive>/`, and `memory/` for a topic — by filename and content — then ranks matches and optionally synthesizes them with file citations. Use whenever the user asks <assistant.name> to recall existing knowledge before generating new content — phrases like "do I have anything on X", "what do I know about Y", "search my notes for Z", "find research on W", "is there a project for V", "/find <topic>". Trigger broadly on recall language even when the user doesn't say "find" explicitly.
 allowed-tools: Read Bash AskUserQuestion
 ---
 
@@ -36,7 +36,7 @@ Do NOT trigger for:
 - Content creation — generate directly. Recall is implicit; the user will say "find" if they want it first.
 - A specific known filename — Read it directly.
 - Web search — use `WebSearch` / `WebFetch`.
-- Code search inside `<workspace.coding>/<scope>/<repo>/` — that's a per-repo concern; `/find` doesn't span gitignored code repos.
+- Code search inside `<workspace.coding>/<repo>/` — that's a per-repo concern; `/find` doesn't span gitignored code repos.
 
 ## Process
 

@@ -56,7 +56,7 @@
 │
 ├── 2-Coding/                             # Development work
 │   ├── Active/                           # Current repos (5-10 max)
-│   │   ├── 2025-11-second-brain-harness/
+│   │   ├── 2025-11-second-brain-os/
 │   │   ├── 2025-11-example-assistant/
 │   │   ├── 2025-10-mcp-server-x/
 │   │   └── [Date prefix shows when started]
@@ -168,7 +168,7 @@
 
 **Applied to:**
 - ✅ Active projects: `1-Projects/2025-11-BMAD/`
-- ✅ Active coding: `2-Coding/Active/2025-11-second-brain-harness/`
+- ✅ Active coding: `2-Coding/Active/2025-11-second-brain-os/`
 - ✅ Content videos: `3-Content/Active/2025-11-17-Mac-Setup/`
 - ✅ Archive: Auto-organized by YYYY-MM
 

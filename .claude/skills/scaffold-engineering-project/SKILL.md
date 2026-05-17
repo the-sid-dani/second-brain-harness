@@ -112,7 +112,7 @@ For first-run safety, **always do `--validate-only` first**. The validate phase 
 ## Auth + dependencies
 
 Same as the atomic skills:
-- `ATLASSIAN_BASIC_AUTH` env var (auto-loaded via `~/.zshrc` → `~/.second-brain-harness.env`)
+- `ATLASSIAN_BASIC_AUTH` env var (auto-loaded via `~/.zshrc` → `~/.second-brain-os.env`)
 - Python 3.10+ with `mistletoe` and `pyyaml` (transitively via the atomic skills)
 - mermaid.ink reachable for diagram rendering
 

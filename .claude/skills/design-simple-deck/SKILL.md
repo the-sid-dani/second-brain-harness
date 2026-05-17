@@ -1,6 +1,6 @@
 ---
 name: design-simple-deck
-description: 'Single-file horizontal-swipe HTML deck. Built by copying the seed `assets/template.html` (which carries the proven 5-rule iframe nav script) and pasting slide layouts from `references/layouts.md`. Pitch decks, product overviews, study material — when you don''t need the magazine aesthetic of `magazine-web-ppt`. Use when the user says "deck", "slides", "ppt", "presentation".'
+description: 'Single-file horizontal-swipe HTML deck. Built by copying the seed `assets/template.html` (which carries the proven 5-rule iframe nav script) and pasting slide layouts from `references/layouts.md`. Pitch decks, product overviews, study material. Use when the user says "deck", "slides", "ppt", "presentation".'
 ---
 
 # Simple Deck Skill

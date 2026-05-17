@@ -10,7 +10,7 @@ Two roots, both walked-up from CWD:
 
 **state_root** (for `continuum/autonomous/`, `continuum/research/`, `thoughts/shared/plans/`, `thoughts/shared/research/` — project work artifacts):
 1. If CWD is inside `<workspace.root>/<workspace.projects>/<slug>/` → `state_root = <workspace.root>/<workspace.projects>/<slug>/`
-2. If CWD is inside `<workspace.root>/<workspace.coding>/<scope>/<name>/` → `state_root = <workspace.root>/<workspace.coding>/<scope>/<name>/`
+2. If CWD is inside `<workspace.root>/<workspace.coding>/<name>/` → `state_root = <workspace.root>/<workspace.coding>/<name>/`
 3. If CWD has a `CLAUDE.md` or `.git/` but no parent workspace match → `state_root = <repo_root>` (standalone repo / original CCv4 mode)
 4. None of the above → `AskUserQuestion`: "No project context detected. Which project should this run in?" Never silently fall back.
 

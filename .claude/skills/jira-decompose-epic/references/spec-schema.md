@@ -99,7 +99,7 @@ The skill requires these env vars at runtime:
 
 | Var | Purpose |
 |---|---|
-| `ATLASSIAN_BASIC_AUTH` | base64(`email:token`) string for HTTP Basic auth on Jira REST. Auto-loaded via `~/.zshrc` → `~/.second-brain-harness.env`. |
+| `ATLASSIAN_BASIC_AUTH` | base64(`email:token`) string for HTTP Basic auth on Jira REST. Auto-loaded via `~/.zshrc` → `~/.second-brain-os.env`. |
 
 The token must support:
 - `POST /rest/api/3/issue` (create)

@@ -13,7 +13,7 @@ Usage:
 Mermaid blocks (```mermaid ... ```) are rendered via mermaid.ink and embedded as
 external mediaSingle nodes — no attachment upload required.
 
-Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain-harness.env).
+Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain-os.env).
 """
 
 from __future__ import annotations
@@ -47,7 +47,7 @@ def get_basic_auth() -> str:
     if not auth:
         sys.exit(
             "ATLASSIAN_BASIC_AUTH env var not set.\n"
-            "Source ~/.second-brain-harness.env or run from a fresh shell."
+            "Source ~/.second-brain-os.env or run from a fresh shell."
         )
     return auth
 

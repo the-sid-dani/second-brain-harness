@@ -1,6 +1,6 @@
 ---
 name: jira-decompose-epic
-description: Decompose an existing Jira Epic into N Story tickets in one batch — all sharing a consistent shape — header info panel with Confluence + repo cross-links, ADF taskList for acceptance criteria (interactive checkboxes), parent linkage, custom fields (Team, AI Category, label), and Blocks links wired between sequential slices (vertical-slice pattern). Use this whenever <user.name> wants to break an Epic into vertical slices and create the corresponding Jira tickets in one batch — phrases like "decompose this Epic into stories", "create the slices", "scaffold the stories under <Epic>", "spin up Slices A through G", "bulk-create these vertical slices in Jira", or any time a design doc lists multiple slices/stories that need to land in Jira together. Trigger broadly on Epic-decomposition / bulk-Story-creation language under an existing Epic. Reads from a YAML or JSON spec file the user prepares; does NOT create the spec from a conversation — the user (or another upstream skill) writes the spec, this skill executes it. Inputs go in, tickets come out, links wire up.
+description: Decompose a Jira Epic into N Story tickets in one batch — consistent shape per story (header info panel with Confluence + repo cross-links, ADF taskList for acceptance criteria, parent linkage, custom fields, Blocks links between sequential slices). Use whenever the user wants to break an Epic into vertical slices and bulk-create the corresponding Stories — phrases like "decompose this Epic into stories", "create the slices", "scaffold the stories under <Epic>", "spin up Slices A through G", "bulk-create these vertical slices in Jira". Reads from a YAML/JSON spec the user prepares — does not author the spec from conversation.
 ---
 
 # jira-decompose-epic
@@ -39,7 +39,7 @@ The spec schema is in `references/spec-schema.md`. A worked example modeling tod
 Before creating anything, run `scripts/create_slices.py --spec <path> --validate-only` to:
 
 1. Parse the spec (YAML or JSON, auto-detected by extension)
-2. Confirm `epic_key` exists via `GET /rest/api/3/issue/{key}` (basic-auth from `~/.second-brain-harness.env`)
+2. Confirm `epic_key` exists via `GET /rest/api/3/issue/{key}` (basic-auth from `~/.second-brain-os.env`)
 3. Verify all `blocked_by_letter` values reference letters that exist in the spec's `slices` array
 4. Confirm all required env vars present: `ATLASSIAN_BASIC_AUTH`, `ATLASSIAN_EMAIL`
 
@@ -80,7 +80,7 @@ Captured from the 2026-05-06 session and locked in `references/spec-schema.md`:
 
 ## Auth
 
-The script reads `ATLASSIAN_BASIC_AUTH` from the environment (auto-loaded via `~/.zshrc` → `~/.second-brain-harness.env`). If the env var isn't set, the script tells the user to source the env file or run from a fresh shell.
+The script reads `ATLASSIAN_BASIC_AUTH` from the environment (auto-loaded via `~/.zshrc` → `~/.second-brain-os.env`). If the env var isn't set, the script tells the user to source the env file or run from a fresh shell.
 
 **Token scope matters.** The basic-auth token must support both:
 - `POST /rest/api/3/issue` (create issues) — requires write scope

@@ -11,7 +11,7 @@ Use when adding capabilities like "perplexity search to the sandbox", "Slack mes
 
 The harness lives at `.claude/tools/ouros_harness.py` with extensive built-in functions: `exa_search`, `nia_search` variants, `llm_call`, `agent_call`, `read_file`, `write_file`, `glob_files`, `run_command`, `research_package`, `pipeline_start`, `pipeline_done`, plus security infrastructure for async web APIs, filesystem operations, and shell commands.
 
-> **Fork-user caveat:** This skill edits `.claude/tools/ouros_harness.py` in place. If you cloned the harness from `second-brain-harness`, the bundled file may be updated by upstream releases. Either upstream your additions via PR or keep your local edits separate to avoid merge conflicts on the next `extract-template.sh` extraction.
+> **Fork-user caveat:** This skill edits `.claude/tools/ouros_harness.py` in place. If you cloned the harness from `second-brain-os`, the bundled file may be updated by upstream releases. Either upstream your additions via PR or keep your local edits separate to avoid merge conflicts on the next `extract-template.sh` extraction.
 
 Start by understanding the request. Ask the user what function they want, what parameters it takes, whether it calls external APIs (async) or runs locally (sync), and what security constraints it needs (path restrictions, API keys, rate limits).
 

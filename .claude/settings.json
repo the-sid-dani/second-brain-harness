@@ -26,6 +26,16 @@
             "timeout": 15
           }
         ]
+      },
+      {
+        "matcher": "Bash|mcp__slack__slack_send_message|mcp__slack__slack_schedule_message|mcp__atlassian__createJiraIssue|mcp__atlassian__editJiraIssue|mcp__atlassian__transitionJiraIssue|mcp__atlassian__addCommentToJiraIssue|mcp__atlassian__addWorklogToJiraIssue|mcp__atlassian__createIssueLink|mcp__atlassian__createConfluencePage|mcp__atlassian__updateConfluencePage|mcp__atlassian__createConfluenceFooterComment|mcp__atlassian__createConfluenceInlineComment",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/external-action-guard.mjs\"",
+            "timeout": 5
+          }
+        ]
       }
     ],
     "PreCompact": [

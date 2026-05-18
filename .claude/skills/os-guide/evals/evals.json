@@ -1,0 +1,311 @@
+{
+  "skill_name": "os-guide",
+  "evals": [
+    {
+      "id": "trigger-positive-para-in-this-os",
+      "name": "what-is-para-in-this-os-narrative-mode",
+      "prompt": "what is PARA in this OS?",
+      "expected_output": "Skill triggers. Reads README.md §'What is PARA in this OS?' (or §'Project Map') + locked decision #1 in system-design.md §7 + Configuration tokens from CLAUDE.md. Answers with the 5-folder workspace layout (0-Inbox/, 1-Projects/, 2-Coding/, 3-Resources/, 4-Archive/), explicitly distinguishes from USER.md's 6-folder Mac Desktop PARA, rejects generic Tiago-Forte theory with a one-line redirect. Every factual claim has *(source: path:line)* citation. Narrative mode (no structured key:value:source block).",
+      "files": [],
+      "preconditions": [
+        "README.md exists with §'What is PARA in this OS?' section (added 2026-05-17 in Pass 2h item 15r).",
+        "system-design.md §7 decision #1 covers the 5-folder PARA layout.",
+        "CLAUDE.md Configuration section is filled in (setup_completed present)."
+      ],
+      "assertions": [
+        {"text": "Output names exactly five workspace folders (0-Inbox, 1-Projects, 2-Coding, 3-Resources, 4-Archive)", "weight": 1, "critical": true},
+        {"text": "Output cites README.md and/or system-design.md with *(source: path:line)* format", "weight": 1, "critical": true},
+        {"text": "Output explicitly notes Mac Desktop PARA is a separate system (6-folder)", "weight": 1, "critical": false},
+        {"text": "Output does NOT lecture on generic Tiago-Forte PARA theory beyond a one-line redirect", "weight": 1, "critical": true},
+        {"text": "Output does not embed paths as raw strings — uses Configuration-resolved paths or token references", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-positive-configuration-token-lookup",
+      "name": "what-is-workspace-projects-token",
+      "prompt": "what is workspace.projects in this OS?",
+      "expected_output": "Skill triggers. Reads Configuration section of CLAUDE.md (§Configuration, lines ~17-58 or current location). Returns the literal value (1-Projects) + resolved path (beru-workspace/1-Projects) + cites CLAUDE.md with line range. May surface related tokens (workspace.root, workspace.inbox, workspace.archive). Re-reads Configuration at invocation — does NOT cache.",
+      "files": [],
+      "preconditions": [
+        "CLAUDE.md Configuration section exists with workspace.projects = 1-Projects."
+      ],
+      "assertions": [
+        {"text": "Output names workspace.projects value as '1-Projects'", "weight": 1, "critical": true},
+        {"text": "Output cites CLAUDE.md Configuration section with line range", "weight": 1, "critical": true},
+        {"text": "Output mentions the resolved path beru-workspace/1-Projects", "weight": 1, "critical": true},
+        {"text": "Output does NOT hardcode workspace.root as beru-workspace if Configuration uses a different value", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-positive-capability-index-dynamic",
+      "name": "what-skills-do-i-have-dynamic-glob",
+      "prompt": "what skills do I have?",
+      "expected_output": "Skill triggers. Uses Glob/Bash to enumerate .claude/skills/*/SKILL.md at invocation time (NOT hardcoded). Reads frontmatter description: line for each. Groups into categories (lifecycle, design, contacts, briefing, research, CCv4, etc.). Returns a structured list with skill name + one-line description. NEVER lists skills from a hardcoded list in the SKILL.md body.",
+      "files": [],
+      "preconditions": [
+        ".claude/skills/ exists with 51+ skill subfolders, each containing SKILL.md with description: frontmatter."
+      ],
+      "assertions": [
+        {"text": "Output reflects actual count of skills present in .claude/skills/ (verifiable via glob)", "weight": 1, "critical": true},
+        {"text": "Output groups skills into intuitive categories (not just an alphabetized dump)", "weight": 1, "critical": false},
+        {"text": "Output includes a one-line description per skill (sourced from frontmatter description field)", "weight": 1, "critical": true},
+        {"text": "Output is NOT generated from a hardcoded list — adding a new skill at .claude/skills/test-x/SKILL.md and re-running should surface it", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-positive-locked-decision-lookup",
+      "name": "what-did-we-decide-about-contacts-location",
+      "prompt": "what did this OS decide about where contacts live?",
+      "expected_output": "Skill triggers. Reads system-design.md §7 (starting line 481). Finds decision #21 (Contacts directory location). Returns the locked answer (<workspace.resources>/contacts/<slug>.md, NOT memory/contacts/) with file:line citation. May also surface decision #22 (schema). Explains the rationale briefly (per locked decision text).",
+      "files": [],
+      "preconditions": [
+        "system-design.md §7 row #21 exists with the contacts directory decision."
+      ],
+      "assertions": [
+        {"text": "Output identifies decision #21 explicitly", "weight": 1, "critical": true},
+        {"text": "Output names the canonical location <workspace.resources>/contacts/<slug>.md (or token-resolved)", "weight": 1, "critical": true},
+        {"text": "Output cites system-design.md with line number", "weight": 1, "critical": true},
+        {"text": "Output explains that contacts/ is in 3-Resources (Reference material) NOT memory/", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-positive-claude-self-consult-structured",
+      "name": "claude-self-consult-via-structured-args",
+      "prompt": "/os-guide --token workspace.projects",
+      "expected_output": "Structured mode invocation. Skill detects --token arg (or equivalent structured input). Returns YAML-ish key:value:source triple. Zero prose padding. Includes key, value, source path:line, resolved_path, related_tokens (workspace.root, workspace.inbox, workspace.archive), canonical_files list, last_verified date. Designed for Claude to parse, not for human reading.",
+      "files": [],
+      "preconditions": [
+        "CLAUDE.md Configuration section filled in."
+      ],
+      "assertions": [
+        {"text": "Output is structured (key:value pairs, YAML-ish) not narrative prose", "weight": 1, "critical": true},
+        {"text": "Output contains 'key:', 'value:', and 'source:' fields at minimum", "weight": 1, "critical": true},
+        {"text": "Output does NOT include narrative voice phrases ('Here's what matters', 'Worth noting')", "weight": 1, "critical": true},
+        {"text": "Output includes resolved_path with Configuration tokens substituted", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-positive-how-to-connect-tool",
+      "name": "how-do-i-connect-slack-procedural",
+      "prompt": "how do I connect Slack to this OS?",
+      "expected_output": "Skill triggers. Reads TOOLS.md §'How to add a tool' (added 2026-05-17 in Pass 2h item 15r) + the existing TOOLS.md Slack row. Returns numbered steps: declare in .mcp.json, run /mcp, OAuth, verify with a slack_search_channels probe, flip TOOLS.md entry. Cites TOOLS.md. Mentions /os-guide --sync as the last step.",
+      "files": [],
+      "preconditions": [
+        "TOOLS.md has §'How to add a tool' section (Pass 2h item 15r prerequisite).",
+        "Slack entry exists in TOOLS.md."
+      ],
+      "assertions": [
+        {"text": "Output gives numbered procedural steps (not abstract overview)", "weight": 1, "critical": true},
+        {"text": "Output references TOOLS.md §'How to add a tool' or the Slack-specific row", "weight": 1, "critical": true},
+        {"text": "Output mentions /mcp command for OAuth", "weight": 1, "critical": true},
+        {"text": "Output mentions running /os-guide --sync afterward (or notes it for future)", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-positive-operating-principle-lookup",
+      "name": "what-is-the-rule-about-duplicate-projects",
+      "prompt": "what's the rule about creating duplicate projects?",
+      "expected_output": "Skill triggers. Reads SOUL.md §Operating Principles. Identifies 'Connect before create' as the relevant principle. Returns it verbatim or paraphrased lightly with citation. May also surface 'Consolidate before duplicate'.",
+      "files": [],
+      "preconditions": [
+        "SOUL.md exists with Operating Principles section (6 principles)."
+      ],
+      "assertions": [
+        {"text": "Output identifies 'Connect before create' principle (or 'Consolidate before duplicate')", "weight": 1, "critical": true},
+        {"text": "Output cites SOUL.md", "weight": 1, "critical": true},
+        {"text": "Output quotes or paraphrases the principle text accurately", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-negative-defer-to-find",
+      "name": "topic-recall-defers-to-find",
+      "prompt": "do I have anything on Anthropic admin API?",
+      "expected_output": "/os-guide does NOT trigger as the primary skill. The query is topic-keyed recall over user content (research notes), which is /find's domain per locked decision #18. If /os-guide is consulted in error, it should respond with a one-line deferral: 'That's topic-keyed recall — use /find for that.'",
+      "files": [],
+      "preconditions": [
+        "/find skill exists and is the unified recall surface (decision #18)."
+      ],
+      "assertions": [
+        {"text": "/find triggers (NOT /os-guide), OR /os-guide explicitly defers to /find in its response", "weight": 1, "critical": true},
+        {"text": "If /os-guide is invoked, it does NOT attempt to search across user content", "weight": 1, "critical": true},
+        {"text": "Output mentions /find as the right skill if deferral happens", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-negative-defer-to-contact",
+      "name": "person-question-defers-to-contact",
+      "prompt": "who is Omar?",
+      "expected_output": "/os-guide does NOT trigger. The query is entity-keyed recall about a person, which is /contact's domain per locked decision #21/22. /contact wins via PRECEDENCE clause when the query target matches a file in contacts/.",
+      "files": [],
+      "preconditions": [
+        "/contact skill exists with the PRECEDENCE rule.",
+        "omar-zennadi.md exists in contacts/."
+      ],
+      "assertions": [
+        {"text": "/contact triggers (NOT /os-guide)", "weight": 1, "critical": true},
+        {"text": "Output is about Omar Zennadi, not generic OS structure", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-negative-defer-to-bootstrap",
+      "name": "fresh-fork-setup-defers-to-bootstrap",
+      "prompt": "I just cloned this repo, set me up",
+      "expected_output": "/os-guide does NOT trigger. The query is first-run interactive setup, which is /bootstrap's domain. /bootstrap refuses re-runs on configured forks (T2 invariant), so this routes there.",
+      "files": [],
+      "preconditions": [
+        "/bootstrap skill exists."
+      ],
+      "assertions": [
+        {"text": "/bootstrap triggers (NOT /os-guide)", "weight": 1, "critical": true},
+        {"text": "Output is an interactive setup flow, not a documentation lookup", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "trigger-negative-defer-to-new-project",
+      "name": "imperative-create-project-defers-to-new-project",
+      "prompt": "create a new project for Q3 OKR work",
+      "expected_output": "/os-guide does NOT trigger. The query is imperative action ('create'), not explanatory ('how do I create'). /new-project handles action; /os-guide explains. Disambiguation rule from skill body: imperative form → action skill; question form → /os-guide.",
+      "files": [],
+      "preconditions": [
+        "/new-project skill exists."
+      ],
+      "assertions": [
+        {"text": "/new-project triggers (NOT /os-guide)", "weight": 1, "critical": true},
+        {"text": "If /os-guide is invoked, it explicitly defers and points at /new-project", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "failure-mode-no-canonical-source",
+      "name": "gap-topic-surfaces-honestly",
+      "prompt": "why were these 5 MCPs chosen and not others?",
+      "expected_output": "Skill triggers but maps to a 'Gaps' row (MCP rationale). Surfaces honestly: 'No canonical source documents the full rationale. Closest related: system-design.md decisions #17 (vision), #20 (plugin MCPs), #23 (exa) for partial rationale. If you want to lock the rationale, write it down at <workspace.resources>/reference/mcp-selection-rationale.md and re-ask after /os-guide --sync.' Does NOT improvise an answer.",
+      "files": [],
+      "preconditions": [
+        "system-design.md §7 has decisions #17, #20, #23 about MCPs.",
+        "No mcp-selection-rationale.md exists at <workspace.resources>/reference/."
+      ],
+      "assertions": [
+        {"text": "Output explicitly states 'no canonical source documents this' (or equivalent)", "weight": 1, "critical": true},
+        {"text": "Output points at closest-related canonical files (decisions #17/#20/#23) with citations", "weight": 1, "critical": true},
+        {"text": "Output does NOT improvise a rationale (no fabricated 'we chose these because...')", "weight": 1, "critical": true},
+        {"text": "Output suggests where to write the answer down if user wants to lock it", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "failure-mode-contradiction-surfacing",
+      "name": "sources-disagree-explicit-surface",
+      "prompt": "is workspace PARA 5 folders or 6 folders?",
+      "expected_output": "Skill detects potential contradiction (README.md says 5-folder workspace, USER.md mentions 6-folder Mac Desktop — but these describe DIFFERENT scopes, not contradiction). Skill MUST disambiguate explicitly: 'Workspace PARA is 5 folders (per README.md). Mac Desktop PARA — separate system — is 6 folders (per USER.md). Which one are you asking about?' Asks one disambiguating question via AskUserQuestion if scope unclear.",
+      "files": [],
+      "preconditions": [
+        "README.md describes 5-folder workspace PARA.",
+        "USER.md describes 6-folder Mac Desktop PARA."
+      ],
+      "assertions": [
+        {"text": "Output explicitly disambiguates workspace PARA vs Mac Desktop PARA", "weight": 1, "critical": true},
+        {"text": "Output cites both sources (README.md and USER.md)", "weight": 1, "critical": true},
+        {"text": "Output does NOT silently pick one as 'the answer'", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "out-of-scope-generic-theory",
+      "name": "generic-para-theory-redirected",
+      "prompt": "what is PARA?",
+      "expected_output": "Ambiguous query (could mean generic theory or this-OS implementation). Skill defaults to the this-OS answer per Step 6 (this-OS-specific over generic). May ask one disambiguating question OR answer the this-OS version with a one-line generic-theory redirect: 'PARA is Tiago Forte's organizational framework — see his book or Wikipedia. In this OS specifically, PARA means [5-folder workspace layout].'",
+      "files": [],
+      "preconditions": [
+        "README.md §'What is PARA in this OS?' exists."
+      ],
+      "assertions": [
+        {"text": "Output prioritizes the this-OS-specific answer over generic theory", "weight": 1, "critical": true},
+        {"text": "Output mentions Tiago Forte and/or Wikipedia ONLY as a one-line redirect, not a lecture", "weight": 1, "critical": true},
+        {"text": "Output gives the this-OS-specific PARA layout (5 folders)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "out-of-scope-claude-code-generic",
+      "name": "generic-claude-code-question-out-of-scope",
+      "prompt": "what is Claude Code?",
+      "expected_output": "Out of scope. /os-guide refuses with redirect: 'That's not OS-shaped — it's a question about Claude Code itself. See Anthropic's docs at https://docs.claude.com/claude-code or the official help system.' Does NOT improvise an answer.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "Output refuses gracefully (no fabricated description of Claude Code)", "weight": 1, "critical": true},
+        {"text": "Output points at Anthropic's external docs", "weight": 1, "critical": true},
+        {"text": "Output does NOT lecture on what Claude Code is", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-positive-sync-mode",
+      "name": "sync-mode-trigger-explicit",
+      "prompt": "/os-guide --sync",
+      "expected_output": "Skill triggers in --sync mode. Phase 1: inventory snapshot (glob skills/brands/contacts/refs/projects/decisions/MCPs/tool-status). Phase 2: diff against last-sync.json (if exists; else first-sync). Phase 3: drift detection (canonical source file existence + section line ranges). Phase 4: Markdown report. Phase 5: AskUserQuestion gate with 4 options (Apply all / Apply some / Skip / Cancel). NEVER auto-applies. NEVER touches files outside .claude/skills/os-guide/.",
+      "files": [],
+      "preconditions": [
+        ".claude/skills/os-guide/state/ exists (with or without last-sync.json)."
+      ],
+      "assertions": [
+        {"text": "Skill detects --sync mode and runs the 5-phase pipeline", "weight": 1, "critical": true},
+        {"text": "Skill produces an inventory report (Markdown) before any mutation", "weight": 1, "critical": true},
+        {"text": "Skill gates ALL routing-table edits behind AskUserQuestion", "weight": 1, "critical": true},
+        {"text": "Skill does NOT modify any file outside .claude/skills/os-guide/", "weight": 1, "critical": true},
+        {"text": "Skill does NOT run git add or git commit", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "trigger-positive-sync-natural-language",
+      "name": "sync-mode-trigger-natural-language",
+      "prompt": "I added a new skill, update /os-guide",
+      "expected_output": "Natural-language --sync trigger. Skill detects intent and runs --sync mode same as explicit /os-guide --sync.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "Skill detects sync intent from natural-language phrasing", "weight": 1, "critical": true},
+        {"text": "Skill runs same 5-phase pipeline as explicit --sync", "weight": 1, "critical": false}
+      ]
+    },
+    {
+      "id": "read-only-by-default",
+      "name": "default-mode-makes-no-mutations",
+      "prompt": "what does this OS do?",
+      "expected_output": "Default mode is read-only. Skill reads canonical sources, produces narrative answer with citations. Does NOT modify any file. Does NOT run /sync as a side-effect. Pure read-only invocation.",
+      "files": [],
+      "preconditions": [],
+      "assertions": [
+        {"text": "Skill does NOT modify any file in default mode", "weight": 1, "critical": true},
+        {"text": "Skill does NOT auto-run --sync as a side-effect", "weight": 1, "critical": true},
+        {"text": "Output is purely informational (read response)", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "configuration-unfilled-short-circuit",
+      "name": "fresh-fork-unfilled-config-graceful-error",
+      "prompt": "what is workspace.projects?",
+      "expected_output": "If CLAUDE.md Configuration is empty or placeholder (e.g., setup_completed: missing), skill short-circuits per Step 2: 'Cannot answer — Configuration section in root CLAUDE.md is unfilled or placeholder. This usually means /bootstrap hasn't run yet. Run /bootstrap first, then re-ask.' Does NOT improvise.",
+      "files": [],
+      "preconditions": [
+        "Simulated state: CLAUDE.md exists but Configuration section is unfilled (this is a fresh-fork scenario)."
+      ],
+      "assertions": [
+        {"text": "Output explicitly identifies Configuration as unfilled/placeholder", "weight": 1, "critical": true},
+        {"text": "Output redirects to /bootstrap", "weight": 1, "critical": true},
+        {"text": "Output does NOT improvise a default value", "weight": 1, "critical": true}
+      ]
+    },
+    {
+      "id": "renamed-canonical-file-graceful-failure",
+      "name": "missing-canonical-file-graceful-flag",
+      "prompt": "what is PARA in this OS?",
+      "expected_output": "If routing table points at README.md but the file is missing or renamed, skill surfaces: 'Routing table points at README.md but file is missing — has it been renamed? Run /os-guide --sync to detect and fix.' Does NOT improvise from memory.",
+      "files": [],
+      "preconditions": [
+        "Simulated state: README.md temporarily renamed to README-OS.md."
+      ],
+      "assertions": [
+        {"text": "Output surfaces the missing-file failure explicitly", "weight": 1, "critical": true},
+        {"text": "Output suggests /os-guide --sync as the fix", "weight": 1, "critical": true},
+        {"text": "Output does NOT produce a PARA answer from memory", "weight": 1, "critical": true}
+      ]
+    }
+  ]
+}

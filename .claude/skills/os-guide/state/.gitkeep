@@ -1,0 +1,7 @@
+# State directory for /os-guide --sync mode
+#
+# Files that land here at runtime:
+#   - last-sync.json          — snapshot of OS inventory at the last --sync run
+#   - sync-deferred-YYYY-MM-DD.md — report from a "Skip — defer for later" choice
+#
+# Empty on first invocation; --sync treats absence of last-sync.json as first-sync (full reset).

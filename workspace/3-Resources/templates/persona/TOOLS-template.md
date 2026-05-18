@@ -91,11 +91,60 @@ Fill in only if you use Drive folders as source-of-truth content. `/bootstrap` c
 
 List anything you've **explicitly chosen** not to install or connect. Helps future-you (and your fork audience) distinguish "deliberate skip" from "accidentally missing."
 
+## How to add a tool
+
+Two paths depending on tool type:
+
+### Adding an MCP server
+
+1. **Declare in `.mcp.json`** at repo root. Add a new entry to `mcpServers`:
+   ```json
+   {
+     "mcpServers": {
+       "<name>": {
+         "type": "http",
+         "url": "https://mcp.<provider>.com/mcp"
+       }
+     }
+   }
+   ```
+   For local-process MCPs (e.g., `gemini-vision`), use `"command"` + `"args"` instead of `"type"` + `"url"` — see existing entries as template.
+
+2. **Authorize via `/mcp`** in Claude Code from this project root. Pick the new entry → walk through OAuth flow in your browser (HTTP MCPs) OR confirm the local process starts (stdio MCPs).
+
+3. **Verify with a probe** — call ONE tool the MCP exposes (e.g., `mcp__<name>__<simple_read_tool>`). Any successful response = it's live.
+
+4. **Flip the TOOLS.md entry** from ⏳ to ✅. Add a one-liner describing what tools it exposes and any known limits.
+
+5. **Tell `/os-guide`** to refresh: `/os-guide --sync` so the routing table picks up the new MCP.
+
+### Adding a CLI tool
+
+1. **Install via the appropriate installer** — `brew install <name>` for most; some have org-specific installers.
+
+2. **Run the auth probe** to confirm it's working. Each tool has its own probe:
+   - `gws auth status` — Google Workspace CLI
+   - `gh auth status` — GitHub CLI
+   - `databricks auth profiles` — Databricks CLI (use `-p <profile>` if multiple)
+   - `sf org list` — Salesforce CLI
+   - `<tool> --version` as fallback if no auth command exists
+
+3. **If auth succeeds**: add row under the `## CLIs` section of TOOLS.md with ✅ + one-liner including verified state (scopes, profiles, version).
+
+4. **If auth fails**: still add the row but mark ⚠️ with the specific error captured — future-you (or future-fork-user) needs to know what's broken, not just that it's missing.
+
+5. **Tell `/os-guide`** to refresh: `/os-guide --sync` so the capability index picks up the new CLI.
+
+### Removing a tool
+
+Same in reverse — drop the `.mcp.json` entry OR `brew uninstall <name>`, flip TOOLS.md entry to ❌ (or delete the row if it never worked), then `/os-guide --sync` to drop it from the routing table.
+
 ## When tools change
 
 1. **Update this file** — flip the status flags by hand, OR re-run `/bootstrap` (delete `setup_completed:` line first) to regenerate from fresh probes.
 2. If a Layer 3 skill (`/briefing`, `/meeting-prep`) gated on the tool, update its composition map too.
+3. Run `/os-guide --sync` to refresh the OS knowledge skill's view of available tools.
 
 ## Discipline: every entry needs a probe
 
-Adding an entry to TOOLS.md? Back it with a **verification probe** — a command output, a test invocation, a Bash check. Vibes-based entries drift, and the next person reading this file (including future-you) will trust them.
+Adding an entry to TOOLS.md? The claim must be backed by a **verification probe** — a command output, a test invocation, a Bash check. Trusted-handoff or vibes-based entries drift, and the next person reading this file (including future-you) will trust them. Each tool above has a verification probe baked into its `## How to add a tool` step 3 (MCP) or step 2 (CLI). Use it.

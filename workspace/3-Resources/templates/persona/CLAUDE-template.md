@@ -77,6 +77,10 @@ For Memory System (dual-folder), Workspace (PARA layout), and Outputs convention
 
 <assistant.name> writes to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<YYYY-MM-DD>.md`, `<workspace.root>/<workspace.resources>/meeting-prep/`, `<workspace.root>/<workspace.resources>/organization-reports/`. Never write outputs at the workspace root. Never mix briefings with project files.
 
+### OS knowledge skill — consult `/os-guide` before answering OS-shaped questions from memory
+
+When the user asks an OS-shaped question — workspace paths, Configuration token values, what skills exist, how memory works, contacts schema, locked decisions, Operating Principles, tool inventory — **invoke `/os-guide` instead of answering from memory.** Memory drifts; the canonical source files (CLAUDE.md, README.md, SOUL.md, TOOLS.md, etc.) don't. `/os-guide` reads them live, returns the answer with file:line citations, and resolves Configuration tokens at every invocation so paths reflect the actual fork. Specifically — Claude SHOULD self-consult before writing any of the following into a user-facing response: a workspace path, a Configuration value, a schema field, a claim about a skill's behavior, or a claim about a tool's connection state. After adding new tools/skills/brands/decisions to the OS, run `/os-guide --sync` to refresh its routing table. Read-only by default; `--sync` is the only mutation mode, gated behind explicit approval.
+
 ### Contacts (per-person reference directory)
 
 Per-person tracking lives at `<workspace.root>/<workspace.resources>/contacts/<slug>.md`. **Schema, frontmatter fields, body sections, and conventions** are documented at `<workspace.root>/<workspace.resources>/contacts/README.md` — single source of truth.

@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.19] - 2026-05-17
+
+### Added
+
+- **`os-guide` skill** — runtime-read librarian over the OS's canonical source files. Answers "how does X work in this OS?" by routing the question to its canonical source (CLAUDE.md / README.md / SOUL.md / TOOLS.md / SKILL.md files), reading at runtime, and citing with file:line refs. Two-audience design: (a) Claude Code self-correcting mid-session before writing an OS-shaped claim from memory, (b) fork users in their first 30 days. Read-only by default; `/os-guide --sync` is the only mutation mode and refreshes the routing table after new tools / skills / brands / decisions are added. Locked principle: explainer skills must be runtime-read librarians, not textbooks — referencing canonical sources, never reproducing them.
+- **`external-action-guard.mjs` hook** — PreToolUse show-and-confirm friction on irreversible external actions: Slack send (`mcp__slack__slack_send_message` + `slack_schedule_message`), GitHub destructive push (`git push --force` or `git push` targeting main/master), Atlassian writes (Jira issue create/edit/transition + Confluence page create/update), `rm -rf` outside whitelisted paths (`/tmp/`, `node_modules/`, `__pycache__/`, `.venv/`, `dist/`, `build/`, `.tldr/`, `.workflow/`). Emits `permissionDecision: "ask"` via modern `hookSpecificOutput` format — block is show-and-confirm, not show-and-deny. Goal: friction at the moment of action, not refusal. Fails open on any error.
+- **`/os-guide` consult section in CLAUDE-template.md** — tells Claude to invoke `/os-guide` instead of answering OS-shaped questions from memory. Specifically applies before writing a workspace path, Configuration value, schema field, skill-behavior claim, or tool-connection-state claim into a user-facing response.
+- **"What is PARA in this OS?" section in README-template.md** — table explaining the 5-folder workspace layout (`0-Inbox`, `1-Projects`, `2-Coding`, `3-Resources`, `4-Archive`) with a Configuration-token bridge and a "Areas was deliberately cut" callout. Helps fork users distinguish the in-this-OS implementation from Tiago Forte's generic PARA framework.
+- **"How to add a tool" section in TOOLS-template.md** — step-by-step guide for adding MCP servers (declare in `.mcp.json` → authorize via `/mcp` → probe → flip status → `/os-guide --sync`) and CLI tools (install → auth probe → add row → `/os-guide --sync`). Plus a "Removing a tool" subsection. Each path has a verification probe baked in.
+- **Two new Quick Reference rows in README-template.md** — `/os-guide` for understanding how X works in this OS, `/os-guide --sync` for refreshing the routing table after additions.
+- **`/os-guide` Day 1 + Day 2+ mentions in `bootstrap` SKILL.md** — Day 1 onboarding now points fork users at `/os-guide` after `/bootstrap`, and Day 2+ rhythms list `/os-guide --sync` as the after-adding-a-tool follow-up.
+
+### Changed
+
+- **`SHIPPED_SKILLS` allowlist** — 44 → 45 skills. Added `os-guide` to the first-party group (15 → 16).
+- **`os-guide` skill body genericized** — replaced literal `beru-workspace/` paths with `<workspace.root>/<workspace.resources>/` token forms in 7 locations (line references in canonical source listings, citation examples, the PARA disambiguation question). Removed the "Locked design decisions" subsection that referenced Sid's private design project (`2026-05-second-brain-design/system-design.md`). Decision-numbered references (`decision #N`) elsewhere in the skill body are left as-is for this release — they don't break the leakage scan but are broken cross-refs for fork users; cleanup deferred to a future release.
+- **`external-action-guard.mjs` spec comment** — genericized to drop the path reference to Sid's private design project.
+
+### Removed
+
+- **`pii-leak-guard.mjs` not shipped in the public bundle.** The hook hardcodes Sid's PII patterns (`sid.dani`, `Siddharth`, `@samba.tv`) as the literal regexes it guards against. Useful for the maintainer's local workspace but useless and confusing to fork users (it would warn about leaking *someone else's* PII). Kept in the maintainer's local tree; not copied by `extract-template.sh`. The corresponding hook registration in `.claude/settings.json` is stripped via a new `jq` filter step in the extractor so the public bundle doesn't ship a dangling hook reference. Re-introduce as a config-driven generic (pattern file or env var) in a future release.
+
+### Infrastructure
+
+- **Extract-template.sh hook copy list updated** — `pii-leak-guard` removed from the for-loop at PHASE 2.5; `external-action-guard` retained. New `jq` post-copy filter on `.claude/settings.json` drops the `PreToolUse` hook block whose `command` references `pii-leak-guard.mjs`. Filter is no-op-safe (handles missing jq gracefully via `warn`).
+
 ## [0.1.18] - 2026-05-17
 
 ### Changed

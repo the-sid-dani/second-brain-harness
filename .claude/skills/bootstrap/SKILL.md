@@ -646,12 +646,17 @@ Day 1 — start here:
 
 Day 2+ — natural rhythms:
 
+- /os-guide              when you don't know how something in this OS works (PARA,
+                         Configuration tokens, tools, project lifecycle, etc.) —
+                         reads canonical files live, so it can't drift
 - /find <topic>          when you're not sure if you've already noted something
 - /contact-log <name>    after every meaningful call or 1:1
 - /thinking-partner      when you want to explore before solving
 - /save-resource         to stash a link / doc for later
 - /prune-projects        every Friday to clean up stale work
 - /use-design <brand>    to swap the active design system (72 brands shipped)
+- /os-guide --sync       after adding a new tool, skill, or design brand — refreshes
+                         /os-guide's routing table so it sees the new addition
 
 For everything else, just talk naturally — Claude routes to the right skill via
 the description field. /help for the full skill list if you want to browse.

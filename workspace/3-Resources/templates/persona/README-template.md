@@ -174,6 +174,24 @@ PARA is a personal-knowledge-management system invented by Tiago Forte — short
 
 ---
 
+## What is PARA in this OS?
+
+PARA is Tiago Forte's organizational framework (Projects / Areas / Resources / Archive) — see his book *Building a Second Brain* or Wikipedia for the generic theory. **In this OS specifically**, PARA means the 5-folder layout under `<workspace.root>/`:
+
+| Folder | Contains |
+|---|---|
+| `0-Inbox/` | Ad-hoc capture — anything not yet decided where it belongs. Exit via `/inbox-process` (e.g., a Friday triage habit). |
+| `1-Projects/` | Active projects, one folder per project, each with its own `CLAUDE.md` + `memory.md` |
+| `2-Coding/` | Code repos (each its own git, gitignored from outer git) |
+| `3-Resources/` | Inputs AND outputs colocated by type — templates/, meetings/, research/, contacts/, briefings/, etc. |
+| `4-Archive/` | Completed or stale (move, never delete) |
+
+The folder names are not arbitrary — they're referenced symbolically across every skill as Configuration tokens (`<workspace.projects>` resolves to `1-Projects/`, etc. — see `CLAUDE.md` Configuration section). If you fork this and rename them, edit the Configuration section to match; the skills will adapt.
+
+**Areas was deliberately cut** from this 5-folder version. Ongoing responsibilities live in `3-Resources/` instead of a separate Areas folder. One less folder to maintain.
+
+---
+
 ## What you can ask it to do
 
 You don't have to memorize slash commands. Claude reads your prompt and the description of every installed skill, then picks the best match.
@@ -386,6 +404,8 @@ Plain Claude Code primitives:
 
 | I want to... | How |
 |---|---|
+| Understand how X works in this OS (PARA, Configuration, tools, skills, decisions) | `/os-guide` skill — reads canonical files live with file:line citations |
+| Refresh `/os-guide` after adding new tools / skills / brands / decisions | `/os-guide --sync` — diffs filesystem against last sync, proposes routing updates, asks before applying |
 | Know who <user.name> is | `USER.md` |
 | Know who <assistant.name> is | `SOUL.md`, `IDENTITY.md` |
 | See active projects (live, with staleness) | `bash <workspace.root>/<workspace.resources>/templates/project-query.sh` |

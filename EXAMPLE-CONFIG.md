@@ -49,6 +49,7 @@ Their Configuration section would look like:
 ### assistant
 - `assistant.name` = `Atlas`
 - `assistant.role` = `Research Companion`
+- `assistant.vibe` = `Curious and methodical — like a research partner who's read the field deeply and helps you build on it.`
 - `assistant.emoji` = `📚`
 
 ### setup_completed
@@ -75,6 +76,7 @@ Their Configuration section would look like:
 | `user.company` | Surfaced in briefings, contact filtering ("status: external" = not at company) | `Acme Corp`, `Globex`, `Anthropic` |
 | `assistant.name` | Persona name — pick anything you like; referenced everywhere in skills via `<assistant.name>` | `Atlas`, `Echo`, `Pierre`, `Cortex`, `Sage` |
 | `assistant.role` | Short role descriptor (used in SOUL.md, IDENTITY.md, voice cues) | `Chief of Staff`, `Research Companion`, `Engineering Co-Pilot` |
+| `assistant.vibe` | One-line voice/tone descriptor used in SOUL.md and persona regeneration | `Professional but warm — like an exec assistant who's been with you for years`, `Curious and methodical — like a research partner` |
 | `assistant.emoji` | Used in greetings, output headers, status indicators | `🎯`, `📚`, `⚙️`, `🧠` |
 | `setup_completed` | Date `/bootstrap` ran successfully — re-run gate (T2) | `2026-05-06` |
 

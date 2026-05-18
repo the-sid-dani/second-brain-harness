@@ -1,4 +1,4 @@
-# Second-Brain Harness — Project Instructions for <assistant.name>
+# Second-Brain OS — Project Instructions for <assistant.name>
 
 This file is project-scoped instructions only. **Persona, user, and tooling context live in dedicated files** — do not duplicate them here.
 
@@ -60,7 +60,7 @@ Resolved paths (combine the above): `<workspace.root>/<workspace.projects>` → 
 
 ### Forking note
 
-When someone clones this repo to use as their own second-brain harness:
+When someone clones this repo to use as their own second-brain OS:
 1. Run `/bootstrap` — interactive setup that fills in the values above and (optionally) rewrites the persona files (SOUL, USER, IDENTITY) from templates at `<workspace.root>/<workspace.resources>/templates/persona/`
 2. Optionally rename `<workspace.root>/` to whatever feels right and update `workspace.root` to match
 3. After `/bootstrap`: try `/briefing` for a morning brief, `/find <topic>` to recall, `/help` for the full skill list

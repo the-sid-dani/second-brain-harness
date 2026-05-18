@@ -12,7 +12,7 @@ Scaffolds any new project — <assistant.name> meta-project OR code repo. The tw
 
 ## Why this exists
 
-Per-project YAML frontmatter is the source of truth for project discovery (no INDEX file to drift, per system-design.md decision #15). Every new project must start with that frontmatter populated correctly, or `/prune-projects` and frontmatter queries break. Doing this by hand is error-prone — date prefix, status field, project-type enum, template selection, and (for code) GitHub remote setup all need to be right. This skill makes the happy path one command.
+Per-project YAML frontmatter is the source of truth for project discovery (no INDEX file to drift). Every new project must start with that frontmatter populated correctly, or `/prune-projects` and frontmatter queries break. Doing this by hand is error-prone — date prefix, status field, project-type enum, template selection, and (for code) GitHub remote setup all need to be right. This skill makes the happy path one command.
 
 Code projects fold into this skill rather than living in a separate `/new-code-project` because the *shape* is the same: a folder with CLAUDE.md + memory.md + status frontmatter. The genuinely-unique parts (folder under `<workspace.coding>/`, `git init`, optional `gh repo create`, append to `<indexes.code_projects>`) are a clean branch off the project-type question, not a whole separate skill.
 
@@ -234,7 +234,7 @@ Don't abort the whole skill on a `gh` failure; the local repo is still useful.
 
 ### Step 10 (code-repo only): Update the code-projects index
 
-The index lives at `<indexes.code_projects>` and is the one allowed exception to decision #15's no-INDEX rule (justified — `<workspace.coding>/` is gitignored from outer git, so frontmatter-grep doesn't work there).
+The index lives at `<indexes.code_projects>` and is the one allowed INDEX exception (justified — `<workspace.coding>/` is gitignored from outer git, so frontmatter-grep doesn't work there).
 
 If the file is missing, create it with:
 

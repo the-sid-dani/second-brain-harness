@@ -1,4 +1,4 @@
-# Second-Brain Harness
+# Second-Brain OS
 
 A personal AI workspace that runs on your computer. You talk to it naturally — it handles morning briefings, contacts, projects, meeting prep, research recall, design output, and more.
 
@@ -200,7 +200,7 @@ You don't have to memorize slash commands. Claude reads your prompt and the desc
 |---|---|
 | "morning, what's on my plate today?" | `/briefing` |
 | "do I have research on prompt caching?" | `/find` |
-| "what did I save about Hyperframes?" | `/find` |
+| "what did I save about prompt caching?" | `/find` |
 | "tell me about Alex" | `/contact` |
 | "what's my context with Sarah again?" | `/contact` |
 | "I just spoke with Alex about the launch" | `/contact-log` |

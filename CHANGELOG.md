@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.21] - 2026-05-17
+
+### Changed
+
+- **Persona templates rebranded to "Second-Brain OS".** Fork users were seeing the old "Second-Brain Harness" name in their regenerated `CLAUDE.md` and `README.md` (CLAUDE-template.md heading + body, README-template.md heading) — leftover from the v0.1.18 rename that didn't catch the templates. Fixed at the source so the next `/bootstrap` produces correctly-branded persona files.
+- **Removed stale `hyperframes` references** from the shipped bundle. The `design-hyperframes` skill was dropped in v0.1.13 (external HeyGen tool), but the name lingered in `TOOLS-template.md` ("video/transcript flows (hyperframes, transcript-extract.sh)"), `INSTALL.md` ("ffmpeg for video encoding (used by hyperframes / design skills)"), and a `README-template.md` example query ("what did I save about Hyperframes?"). Cleaned in 3 spots.
+- **`.env.example` header** "Second-brain-harness API keys" → "second-brain-os API keys".
+- **EXAMPLE-CONFIG.md** now documents the `assistant.vibe` field (was missing from the example block and field-reference table — `vibe` is referenced in CLAUDE.md Configuration but the worked example didn't show it).
+- **Stray `decision #N` and `system-design.md` cross-references scrubbed from 6 shipping skills** (`thinking-partner`, `archive-project`, `save-resource`, `new-project`, `sync-indexes`, `briefing`). These were parenthetical citations like "per decision #15", "decision #23 token-isolation", "Locked by decision #22" — fork users don't have the `system-design.md` source file the numbers reference. The principles remain in the skill bodies as principles; the broken citations are gone. Legitimate references to `system-design.md` as a user-input file (in `jira-decompose-epic`, `scaffold-engineering-project`, `confluence-publish-markdown` — where the user's own design doc is the expected input) are preserved.
+
+### Notes
+
+- This was a polish-pass surfaced by manual review of the v0.1.20 export — the v0.1.20 release already had these residual refs; the bundle worked fine but the wording was sloppy for first-time forkers. v0.1.21 is the cleanup.
+
 ## [0.1.20] - 2026-05-17
 
 ### Changed

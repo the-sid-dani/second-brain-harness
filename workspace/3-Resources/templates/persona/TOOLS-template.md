@@ -49,7 +49,7 @@ If these are missing, install.sh wasn't run. `/research` and `/autonomous` won't
 ## Pipeline tools
 
 - `<status>` `jq`, `rg` — JSON parse + fast grep. Required by several skills.
-- `<status>` `ffmpeg`, `yt-dlp` — only needed for video / transcript flows (hyperframes, `transcript-extract.sh`).
+- `<status>` `ffmpeg`, `yt-dlp` — only needed for video / transcript flows (`transcript-extract.sh`).
 
 ## Native skill bundles (in `.claude/skills/`)
 

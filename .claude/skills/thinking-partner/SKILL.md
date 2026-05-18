@@ -61,9 +61,9 @@ Before asking questions, gather vault context. Two equally valid ways to do this
 /find <keyword>
 ```
 
-**Option B — reference what's already in context.** If active project files (`CLAUDE.md`, `memory.md`, `system-design.md`, `tool-inventory.md`, etc.) are auto-loaded and contain relevant material, cite them directly without a separate `/find` call. Subagent contexts that lack the `Skill` tool MUST use this fallback. Phrasing examples that work for both options:
-- *"Quick context from the vault: decision #20 in system-design.md §7 locked Slack into v1 just today…"*
-- *"Pulling up tool-inventory.md mentally — ~270 lines, 11 sections covering…"*
+**Option B — reference what's already in context.** If active project files (`CLAUDE.md`, `memory.md`, design notes, etc.) are auto-loaded and contain relevant material, cite them directly without a separate `/find` call. Subagent contexts that lack the `Skill` tool MUST use this fallback. Phrasing examples that work for both options:
+- *"Quick context from the vault: a recent design decision locked Slack into v1 just today…"*
+- *"Pulling up the tool inventory mentally — covering the main MCPs and CLIs…"*
 
 `/find`'s default mode is ranked-list (fast). If matches exist (via either option), hold them in working memory for Step 3 — they shape the questions ("I see you already have notes on this — do those still apply, or is this a fresh angle?"). If no matches, acknowledge cold-start explicitly: *"I don't see prior notes on this — fresh thinking."* Never fabricate vault context that doesn't exist.
 

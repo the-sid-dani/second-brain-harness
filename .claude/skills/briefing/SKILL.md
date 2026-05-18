@@ -59,7 +59,7 @@ If the file already exists for today (re-running the briefing same-day), append 
 
 ### T2 — Filter `status: personal` contacts BEFORE building "Open commitments by person"
 
-The contacts directory holds both work AND personal contacts (per decision #22 status enum: `active | inactive | external | personal`). Briefing is a **work-context skill**. Personal contacts (friends, family, side-project collaborators) are intentionally segregated and must never bleed into a work brief.
+The contacts directory holds both work AND personal contacts (status enum: `active | inactive | external | personal`). Briefing is a **work-context skill**. Personal contacts (friends, family, side-project collaborators) are intentionally segregated and must never bleed into a work brief.
 
 Implementation: when iterating `<workspace.resources>/contacts/<slug>.md` files, parse frontmatter and skip any where `status: personal`. Do this at read time, not display time — stripping at display means the data was still loaded into context and could leak via summarization.
 
@@ -339,7 +339,7 @@ Process:
    - Extract "To <name>" subsection (things the user has promised the contact) — flag any that are stale (>14 days since logged)
 3. Compose section:
    - Group by contact name
-   - Use WikiLink format: `[[contacts/<slug>]]` per decision #19
+   - Use WikiLink format: `[[contacts/<slug>]]`
    - Surface only contacts with at least one open commitment
 
 If a contact file has no `## Open commitments` section, skip silently — not all contacts have one yet.
@@ -619,14 +619,14 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 | Section order is wrong | Skill writer ad-libbed | Order is FIXED: What needs today → Calendar → Today's work from projects → Slack → Jira → Commitments → Recent shipped → Notes → Tools used. Don't reorder per "what felt right today" — predictability matters. Absent gated sections collapse out cleanly; order of present sections is preserved. |
 | Generated artifact ends up in 0-Inbox or 1-Projects | Skill confused output convention | Briefing is an OUTPUT (lives at `<workspace.resources>/briefings/`), not an INBOX item, not a PROJECT. The output convention is hardcoded to `<workspace.root>/<workspace.resources>/briefings/` — see Step 9 validation. |
 | Briefing leaks into Slack/email | Skill auto-sent | Briefing NEVER auto-sends (boundary rule). It writes a local file. <user.name> sends manually if at all. |
-| Exa called from main context | Token-isolation violation per decision #23 | Briefing does not invoke `web_search_advanced_exa` directly. For external-topic enrichment, suggest `/find` or `/contact-research`. |
+| Exa called from main context | Token-isolation violation | Briefing does not invoke `web_search_advanced_exa` directly. For external-topic enrichment, suggest `/find` or `/contact-research`. |
 
 ## Boundaries
 
 - **Never auto-send.** Briefing is a draft that <user.name> reads. Sending to Slack/email/Jira requires explicit "send it" from <user.name> (per CLAUDE.md "Boundaries"). Drafts only.
 - **Never modify project files.** This skill READS `<workspace.projects>/*/CLAUDE.md` and `<workspace.projects>/*/memory.md` (via project-query.sh and tail) and `<workspace.resources>/contacts/*.md`. It does NOT write to either.
 - **Never auto-commit.** The briefing file is uncommitted by default; <user.name> commits it (or not — `<workspace.root>/<workspace.resources>/briefings/` may be `<user.name>`-curated).
-- **Never call Exa directly** (decision #23 token-isolation). If a topic needs external research, suggest `/find` or `/contact-research`.
+- **Never call Exa directly** (token-isolation rule). If a topic needs external research, suggest `/find` or `/contact-research`.
 - **Never fabricate.** T3 invariant. Empty MCP → empty section or short note. Thin project memory → surface that fact, don't invent recommendations.
 - **Never mix personal-life content into work brief.** T2 invariant. `status: personal` contacts filtered at read time.
 - **Never assume a tool is present.** T4 invariant. Step 0.5 detects availability; Steps 1-6 gate on it. Absent tools omit silently from body, footer documents. Never invent a tool call to fill a section; never write a "⚠️ X not configured" line into the body.

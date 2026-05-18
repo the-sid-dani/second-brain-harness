@@ -63,7 +63,7 @@ Probe: `claude --version`
 brew install ripgrep ffmpeg yt-dlp
 ```
 
-These back several skills: `rg` for fast grep, `ffmpeg` for video encoding (used by hyperframes / design skills), `yt-dlp` for transcript extraction.
+These back several skills: `rg` for fast grep, `ffmpeg` for video encoding (used by design skills), `yt-dlp` for transcript extraction.
 
 Probe: `rg --version`, `ffmpeg -version`, `yt-dlp --version`.
 

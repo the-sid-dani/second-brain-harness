@@ -12,7 +12,7 @@ Repair drift in `<indexes.code_projects>`. The code folder (`<workspace.root>/<w
 
 ## Why this exists
 
-The code index is the single allowed INDEX file in this workspace (decision #15 exception). It's justified because `<workspace.coding>/` is gitignored and the frontmatter-grep approach used everywhere else (`<scripts.project_query>` over `1-Projects/`) doesn't work for code repos that aren't visible to outer git.
+The code index is the single allowed INDEX file in this workspace — justified because `<workspace.coding>/` is gitignored and the frontmatter-grep approach used everywhere else (`<scripts.project_query>` over `1-Projects/`) doesn't work for code repos that aren't visible to outer git.
 
 The index is maintained primarily by `/new-project`'s code-repo branch (which appends a row when a code repo is scaffolded). But three things cause drift:
 - Repos cloned manually into `<workspace.coding>/` (skipping `/new-project`)

@@ -128,7 +128,7 @@ Print:
   Retro: <appended | skipped>
 ```
 
-Stop. Do not auto-commit, do not modify any index file (no INDEX file exists per system-design.md decision #15 — the code-projects.md exception applies only to code repos), do not propose a follow-up project.
+Stop. Do not auto-commit, do not modify any index file (no INDEX file is maintained — discovery happens via frontmatter queries, with the code-projects.md exception applying only to code repos), do not propose a follow-up project.
 
 ## Failure modes
 

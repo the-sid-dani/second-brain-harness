@@ -6,7 +6,7 @@ allowed-tools: Read Write Bash AskUserQuestion
 
 # save-resource
 
-Workhorse for getting things into Resources. Input is a source (file or content) + type + topic; output is a file at the canonical destination per decision #16 in system-design.md §7.
+Workhorse for getting things into Resources. Input is a source (file or content) + type + topic; output is a file at the canonical destination under `<workspace.root>/<workspace.resources>/`.
 
 **Before you begin: read the Configuration section in root CLAUDE.md.** Path tokens like `<workspace.resources>` resolve to whatever's defined there — don't hardcode.
 
@@ -152,7 +152,7 @@ For research, also print the topic folder so the user can `cd` in:
 Topic folder: <workspace.root>/<workspace.resources>/research/<YYYY-MM-topic-research>/
 ```
 
-Stop. Don't auto-update any index file (no INDEX exists for Resources per decision #15), don't propose related actions, don't auto-commit.
+Stop. Don't auto-update any index file (no INDEX is maintained for Resources), don't propose related actions, don't auto-commit.
 
 ## Failure modes
 

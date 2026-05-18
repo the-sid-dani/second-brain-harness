@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.23] - 2026-05-17
+
+### Removed
+
+- **Extractor's Phase 6 `~/.daily-agents.env` → `~/.second-brain-os.env` sed step** — added in v0.1.20 to compensate for `72e9129` (which had drifted the atlassian-skill env paths to `.daily-agents.env`). Since `fca6c97` reverted the source files back to `.second-brain-os.env` directly, the sed had become a no-op. 12 lines of dead defensive code removed. Phase 10's `daily-agents` leakage scan still catches accidental regressions if any future commit reintroduces the wrong path.
+
+### Notes
+
+- Extractor-only change. No skill bodies, hooks, root docs, or installer affected.
+
 ## [0.1.22] - 2026-05-17
 
 ### Changed

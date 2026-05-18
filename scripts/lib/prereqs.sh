@@ -47,7 +47,7 @@ persist_brew_path() {
   fi
 
   {
-    printf '\n# Added by samba-onboarding\n'
+    printf '\n# Added by second-brain-os installer\n'
     # shellcheck disable=SC2016  # we intentionally write $(...) literally to the profile
     printf 'eval "$(%s shellenv)"\n' "$brew_bin"
   } >> "$profile"
@@ -85,11 +85,10 @@ install_git() {
   ok "Installed $(git --version)"
 }
 
-# install_jq — `jq` is required by lib/ui.sh:validate_oauth_json to parse and
-# validate the GWS OAuth client_secret.json before installing it. macOS
-# Sonoma+ ships /usr/bin/jq, but older macOS and Linux/WSL distros do not —
-# so we install it explicitly via Homebrew (already on PATH after install_brew).
-# Must run BEFORE step 5 (Installing Samba CLIs) so validate_oauth_json works.
+# install_jq — `jq` is required by .claude/tools/*, the extract-template.sh
+# settings-filter step, and MCP config parsing. macOS Sonoma+ ships /usr/bin/jq,
+# but older macOS and Linux/WSL distros do not — so we install it explicitly
+# via Homebrew (already on PATH after install_brew).
 install_jq() {
   if command -v jq >/dev/null 2>&1; then
     skip "jq $(jq --version) already installed"

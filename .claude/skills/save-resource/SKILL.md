@@ -72,7 +72,7 @@ Branches by type:
 **`reference`:** if source is a file with a sensible name, use that name; else ask: *"What's the filename? (e.g., `vendor-list-2025.csv`, `employee-directory.csv`)"*. Preserve the file extension.
 
 **`meetings`:** ask in plain chat: *"Who or what was the meeting about? I'll prefix with YYYY-MM-DD."* Construct `YYYY-MM-DD-<topic>.md`. If the source has a date in its name (e.g., `2026-04-30-show-and-tell.md`), use that date; else today's date.
-- Example: "1on1 with Omar" on 2026-05-05 → `2026-05-05-omar-1on1.md`
+- Example: "1on1 with Alex" on 2026-05-05 → `2026-05-05-alex-1on1.md`
 
 **`other`:** ask for both the subfolder name AND filename: *"What's the subfolder name? (e.g., `writing-style`, `voice`, `team-handbook`)"*, then *"What's the filename?"*.
 

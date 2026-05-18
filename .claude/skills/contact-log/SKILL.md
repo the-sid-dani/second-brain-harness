@@ -62,9 +62,9 @@ This decision is locked. If a future skill needs both surfaces written together,
 ### Step 1: Match the name
 
 Extract the name from the invocation. Examples:
-- `/contact-log omar` → query = `omar`
-- `log my 1:1 with omar` → query = `omar`
-- `just talked to michela, log it` → query = `michela`
+- `/contact-log alex` → query = `alex`
+- `log my 1:1 with alex` → query = `alex`
+- `just talked to michele, log it` → query = `michele`
 - `/contact-log` (no name) → ask in plain chat: *"Which contact should I log against?"*
 
 Compose `/contact <query>` to identify the target — reuse the locked priority order from `<workspace.root>/.claude/skills/contact/SKILL.md` Step 3 (exact slug > slug-stem-match > `name` token-level > `legal_name` token-level > prefix > substring; substring against `legal_name` is intentionally excluded). Don't reimplement the algorithm here; compose.
@@ -202,7 +202,7 @@ Stop. Do not auto-update any index file (no INDEX exists for contacts). Do not a
 | Edit #1 (frontmatter) fails | `last_interaction:` line format unexpected (e.g., trailing inline comment, weird whitespace) | Abort, report error. Do NOT fall back to `Write`. Surface the literal `old_string` mismatch so user can fix the file. |
 | Edit #2 (body insertion) fails | `## Interaction log` heading text doesn't match expected, or the line after it is non-deterministic | Abort, report error. Do NOT fall back to `Write`. Re-Read and try a tighter anchor (e.g., heading + 2 lines), or surface the issue. |
 | File modified between Read and Edit | Concurrent edit, git pull, etc. | Edit's built-in safety catches this — surface the error and re-prompt the user to re-run. |
-| `AskUserQuestion` not available (subagent context) | Worker subagent runs lack the tool | Pre-extract topic + body from the invocation prompt if possible (e.g., `log my 1:1 with omar — discussed MCP, agreed on auth pattern`). If extraction fails, abort cleanly — do not invent. |
+| `AskUserQuestion` not available (subagent context) | Worker subagent runs lack the tool | Pre-extract topic + body from the invocation prompt if possible (e.g., `log my 1:1 with alex — discussed MCP, agreed on auth pattern`). If extraction fails, abort cleanly — do not invent. |
 | User invokes on a `status: personal` or `status: family` contact | Logging interaction with a friend | Works normally. No special handling. The status field doesn't gate `/contact-log`. |
 | Configuration values missing | Fresh fork without `/bootstrap` run | Error: *"Configuration section in root CLAUDE.md not populated. Run `/bootstrap` (TBD) or fill it in manually first."* |
 

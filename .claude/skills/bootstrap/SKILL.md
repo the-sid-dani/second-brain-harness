@@ -31,8 +31,8 @@ After all writes complete, surface the diff (or path list) and tell the user to 
 ### T4 — NEVER install tools
 
 Step 2 is READ-ONLY probes. If a tool is missing/unauthed, surface a hint pointing at the appropriate installer:
-- For Samba employees: `samba-onboarding` (the company-internal tool-layer installer)
-- For external users: `brew install <tool>` + the tool's own auth flow (e.g., `gh auth login`, `gws auth login -s <scopes>`)
+- For most fork users: `brew install <tool>` + the tool's own auth flow (e.g., `gh auth login`, `gws auth login -s <scopes>`)
+- If you have an org-internal installer (a company-provided setup tool), point there instead
 - For MCPs: `/mcp` command to authorize via OAuth
 
 ---

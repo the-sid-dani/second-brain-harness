@@ -45,7 +45,7 @@ verify_all() {
     info "       (configures persona, regenerates TOOLS.md from live probes, ~15 min)"
     info "  2. After /bootstrap → run /mcp to authorize HTTP MCPs (slack, atlassian, figma, exa)"
     info "       (MCP OAuth is per-project — each workspace needs its own grants)"
-    info "  3. GWS auth — run 'gws auth login' if you skipped samba-onboarding"
+    info "  3. GWS auth (optional) — run 'gws auth login' if you installed Google Workspace CLI separately"
 
     if [ "$fail" -gt 0 ]; then
         warn "Some binaries missing — re-run ./scripts/install.sh to retry, or install manually."

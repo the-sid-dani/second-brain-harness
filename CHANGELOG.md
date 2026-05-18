@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.20] - 2026-05-17
+
+### Changed
+
+- **Installer rebrand — fork users now see "Second-Brain OS Installer" instead of "Samba Onboarding".** Stale `samba-onboarding`-named language was leaking into the user-facing surfaces of the v0.1.19 bundle — the installer header, log file (`~/samba-onboarding.log`), shell-rc comment block, runtime "samba-onboarding artifacts detected" message, and the `INSTALL.md` troubleshooting section all referenced the company-internal install tool that fork users don't have. Renamed in 6 files: `scripts/lib/ui.sh` (header + subtitle + log filename), `scripts/lib/prereqs.sh` (shell-rc comment + stale "Installing Samba CLIs" reference), `scripts/lib/verify.sh` (post-install hints), `scripts/install.sh` (top-of-file comment + variable rename `SAMBA_DONE`→`FOUNDATION_INSTALLED` + foundation-detection message), `INSTALL.md` (troubleshooting section), and `beru-workspace/3-Resources/templates/scripts/transcript-extract.sh` (comment). Detection logic widened from `gh + gws + claude` to `gh + claude` (gws isn't shipped in this bundle).
+- **`os-guide` skill body genericized.** Removed ~15 abstract `decision #N` and `system-design.md` cross-references that wouldn't resolve for fork users (the design log is maintainer-private). Skill remains operative: still routes OS-shaped questions to canonical sources, still cites with file:line refs. Dropped the "Locked design decisions" routing-table subsection entirely (was Sid-private). Replaced "After locking a new decision in `system-design.md` §7" with "in your fork's design log (if you keep one)". Cleaner for forkers, no functional change for the maintainer.
+- **Contact-skill examples genericized to placeholder names.** `contact/SKILL.md` and `contact-log/SKILL.md` taught the fuzzy-match algorithm using literal Samba colleague names (Omar Zennadi / Jaya Aswani / Alyson Sprague / Bob van Toorn / Lena Kincaid / Michael Zennadi). Replaced consistently across the skill bodies with placeholder names (Alex Chen / Priya Patel / Jordan Rivera / Robin van Pelt / Lena Okoye / Michael Chen + michele anti-regression example) that preserve the algorithmic structure including the substring-vs-token anti-regression rule.
+- **Briefing skill body genericized.** `briefing/SKILL.md`: 9 literal "Sid" references replaced with `<user.name>` or "the user"; tagline examples changed from "Omar's waiting on you" to "Alex is waiting on you"; the "Origin incident" callout that named real colleagues (Bob/Jay/Walter/Phillip group DM) replaced with the abstract "a multi-person DM thread containing the highest-leverage open question was invisible" version that preserves the technical lesson.
+- **External-action-guard hook message** changed from "explicit Sid approval" to "explicit user approval".
+
+### Fixed
+
+- **`scripts/lib/prereqs.sh` `install_jq` comment** referenced `validate_oauth_json` and "step 5 (Installing Samba CLIs)" — neither exists in the public bundle. Rewrote to point at the real consumers (`.claude/tools/*`, extract-template.sh settings-filter, MCP config parsing).
+
+### Known issues remaining (cosmetic)
+
+- Brand-preset count in v0.1.19 CHANGELOG narrative says 72 but the actual export ships 73. Cosmetic.
+
 ## [0.1.19] - 2026-05-17
 
 ### Added

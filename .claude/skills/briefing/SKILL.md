@@ -1,6 +1,6 @@
 ---
 name: briefing
-description: Morning chief-of-staff briefing — composes available signal sources (email, calendar, messaging, issue-tracking, code-hosting) plus local sources (contacts, active projects, USER.md priorities) into one self-contained HTML brief at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Detects tool availability at runtime in Step 0.5 + auth-health probes each detected tool in Step 0.6, surfacing failures via AskUserQuestion BEFORE composing (so a dead Slack token doesn't get discovered after the brief is written). Fork users with zero MCPs still get a useful brief from local state. Use when <user.name> asks to start the day or surface what needs attention — phrases like "/briefing", "brief me", "what's on my plate today", "what should I work on today". Trigger broadly on day-orientation language. Filters `status: personal` contacts; never auto-sends; never fabricates absent signals (see SKILL.md body for invariants T1-T4).
+description: Morning chief-of-staff briefing — composes available signal sources (email, calendar, messaging, issue-tracking, code-hosting) plus local sources (contacts, active projects, USER.md priorities) into one self-contained HTML brief at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Detects tool availability at runtime in Step 0.5 + auth-health probes each detected tool in Step 0.6, surfacing failures via AskUserQuestion BEFORE composing (so a dead Slack token doesn't get discovered after the brief is written). Fork users with zero MCPs still get a useful brief from local state. Use when <user.name> asks to start the day or surface what needs attention — phrases like "/briefing", "brief me", "what's on my plate today", "what should I work on today". Trigger broadly on day-orientation language. Filters `status: personal` contacts; never auto-sends; never fabricates absent signals; **Slack sweep MUST cover all four channel types — `public_channel`, `private_channel`, `im`, AND `mpim` (group DMs) — narrowing channel_types to a subset has historically hidden high-signal multi-person threads** (see SKILL.md body for invariants T1-T5).
 allowed-tools: Read Write Glob Bash AskUserQuestion Skill mcp__slack__slack_search_public_and_private mcp__slack__slack_search_channels mcp__atlassian__searchJiraIssuesUsingJql
 ---
 
@@ -49,7 +49,7 @@ Do NOT trigger for:
 
 ## Tiger-grade invariants (LOAD-BEARING — DO NOT VIOLATE)
 
-These four invariants protect against high-cost failure modes. They are stated multiple times throughout this skill (in description, here, in step headers, in failure modes table) by design — premortem-tier risks need redundancy.
+These **five** invariants protect against high-cost failure modes. They are stated multiple times throughout this skill (in description, here, in step headers, in failure modes table) by design — premortem-tier risks need redundancy.
 
 ### T1 — Output path is fixed
 
@@ -83,6 +83,16 @@ For each gated step (Gmail, Calendar, Slack, Jira, GitHub):
 The `## Tools used` footer at the bottom of every brief lists which signal sources were composed vs which were not configured vs which errored. This is the single source of truth for "what's in this brief" — never invent a section header that the footer doesn't back.
 
 Fork users with zero MCPs still get a useful brief from the mandatory floor: project memory tails, today-relevant signals, priority-ranked synthesis. That's not a degraded experience; that's the floor of the value proposition.
+
+### T5 — Slack sweep MUST cover all four channel types
+
+Slack has FOUR distinct surfaces: `public_channel`, `private_channel`, `im` (1:1 DM), and `mpim` (group DM, 3+ people). The skill's Step 3 sweep MUST cover all four every run. Narrowing `channel_types` to a subset has historically hidden high-signal multi-person threads.
+
+**Origin incident:** a multi-person DM (MPIM) thread containing the highest-leverage open question of the week was invisible to the original briefing because every Slack query narrowed `channel_types` to either `im` alone or `public_channel,private_channel` — so MPIMs were excluded by construction. The recovery query took thirty seconds; the miss in the original brief cost an hour of "what else might I be missing" thrash.
+
+**Implementation rule:** for every Slack search query in Step 3, EITHER omit `channel_types` entirely (default = all four), OR set `channel_types: "public_channel,private_channel,mpim,im"`. NEVER narrow to a subset without an explicit reason. The default-omit form is preferred because there are fewer ways to silently break it. See Step 3 #T5 for the full four-pass spec.
+
+**Pre-Write assertion (Step 9):** the assembled brief must include at least one Slack search whose `channel_types` was either omitted or contained `mpim`. If you cannot point to one, the sweep was incomplete — re-run Step 3 before composing.
 
 ## Process
 
@@ -239,25 +249,64 @@ Process:
 
 If `gws calendar +agenda` errors at runtime: write "⚠️ Calendar errored — <one-line cause>" + log to footer. Do not invent events. If it returns empty: "Calendar is clear today."
 
-### Step 3: Slack digest — DYNAMIC channel enumeration
+### Step 3: Slack digest — FOUR-SURFACE SWEEP
 
 **Gate (T4):** runs ONLY if `detection.mcp.slack == true` (≥1 `mcp__slack__*` tool in the deferred-tools list). If false, skip entirely — no section in body. Footer documents "not configured." Per T4, do NOT write "⚠️ Slack not configured" inline; that's noise for users who never configured Slack.
 
-No hardcoded channel list. Instead, enumerate channels at runtime and surface signal:
+#### T5 — MANDATORY four-surface coverage (load-bearing invariant)
 
-1. **Get @-mentions across all channels** — `mcp__slack__slack_search_public_and_private` with query `@<user.slack_handle>` (or `@me` if MCP supports it), filtered to last 24h. This catches everything no matter which channel.
-2. **Get the user's channel membership** — `mcp__slack__slack_search_channels` (no query → returns the channel list, including channels the user is a member of).
-3. **For each channel with high recent activity** (>10 unread messages in last 24h, threshold tunable via USER.md), surface a one-line digest: top message by reaction count, or thread the user participated in that has a new reply.
-4. **Optionally check DMs** — `slack_search_public_and_private` with `is:dm` filter for any unread DM threads where the last message is from someone other than <user.name>.
+Slack has **FOUR** distinct surfaces. The skill MUST cover all four every run. Missing any one creates the exact failure mode that hid the Bob/Jay group DM from the 2026-05-17 brief — a multi-person high-signal thread sat invisible because the queries excluded `mpim`. Never repeat this.
+
+| Surface | `channel_type` | What lives here | Coverage rule |
+|---|---|---|---|
+| Public channel | `public_channel` | Team channels, mentions, broadcasts | MUST search |
+| Private channel | `private_channel` | Project/exec channels `<user.name>` is in | MUST search |
+| 1:1 DM | `im` | Direct messages with one other person | MUST search |
+| **Group DM (3+ people)** | **`mpim`** | **Multi-party threads — execs collaborating, working groups, ad-hoc squads** | **MUST search (this is the historically-missed one)** |
+
+**Implementation rule:** for every Slack search query in Step 3, EITHER omit `channel_types` entirely (default includes all four), OR set `channel_types: "public_channel,private_channel,mpim,im"` explicitly. NEVER narrow to a subset unless you're running a deliberate scoped follow-up. The default-omit form is preferred — fewer ways to silently break.
+
+**Pre-Write assertion:** in Step 9 the brief must include at least one Slack search whose `channel_types` was either omitted or contained `mpim`. If you cannot point to one, the sweep was incomplete — re-run Step 3 before composing.
+
+#### The four passes — run in this order
+
+1. **Pass A — Owed replies across ALL surfaces** (the chief-of-staff move; ranked highest):
+   - Query: `to:<@<USER_SLACK_ID>> after:<7d-cutoff>`
+   - `channel_types`: **omit** (defaults to all four) — explicitly DO NOT narrow to `im` only
+   - This catches messages addressed to the user in 1:1 DMs, group DMs, AND channel mentions where last message is from someone else
+   - For each result, the heuristic is: "someone wrote to `<user.name>`; has `<user.name>` replied since?" If not → it's owed.
+
+2. **Pass B — @-mentions in channels** (broader awareness):
+   - Query: `<@<USER_SLACK_ID>> after:<7d-cutoff>`
+   - `channel_types: "public_channel,private_channel"` (named channels only — Pass A already covered DM/MPIM mentions)
+   - Catches "[name] flagged you in #channel" patterns even if not directly addressed
+
+3. **Pass C — the user's own thread participation needing follow-up**:
+   - Query: `from:<@<USER_SLACK_ID>> is:thread after:<7d-cutoff>`
+   - `channel_types`: omit (all four)
+   - For each thread the user posted in, check via `slack_read_thread` if anyone replied AFTER their last message → owed follow-up
+
+4. **Pass D — Priority channel activity digest**:
+   - If `USER.md` has a `## Priority Slack Channels` section, iterate that list via `slack_read_channel` (top ~5 messages each, last 24h)
+   - Otherwise, enumerate user's channel membership via `slack_search_channels` and pick channels with high recent activity (>10 messages/24h)
+   - Surface top message by reaction count + any thread the user participated in
+
+**Cross-check after passes A-D:** before composing the brief, run a sanity grep on the assembled "owed replies" list — count distinct people, count distinct channel types. If the list has 0 MPIM entries AND USER.md indicates the user is in any group DMs (or `slack_search_channels` returned any MPIM in the channel list), spend ONE more query: `from:<@<USER_SLACK_ID>>` with `channel_types: mpim` to verify MPIMs are genuinely quiet, not just missed. Document the check in the footer if MPIM count is 0.
 
 **Timestamp quirk to know about:** `slack_search_public_and_private` sometimes returns far-future literal dates ("year 56347xxx") due to a Slack search index quirk. The *message content* is real and current. Frame surfaced messages by relative recency ("today", "yesterday", "earlier this morning") rather than echoing the literal date column. Don't show the noisy date strings to <user.name>.
 
-Output structure:
-- @-mentions across all channels — top 5
-- Active channels — top 3 most-active channels with one-line digest each
-- Threads where <user.name> may owe a reply — top 3
+#### Output structure (preserved order)
 
-If a USER.md "Priority Slack Channels" section exists in the future, prepend those channels to the active-channels list. Otherwise rely on dynamic enumeration. Surface a hint at section bottom: *"💡 To pin specific channels to the top of this digest, add a `## Priority Slack Channels` section to USER.md."*
+- **Owed replies — Tier 1 (multi-person blockers, time-sensitive, manager chain)** — top 3-5
+- **Owed replies — Tier 2 (real questions, you owe substantive answer)** — top 3-5
+- **Owed replies — Tier 3 (warm acknowledgments, low urgency)** — top 3
+- **@-mentions in channels (no direct ask)** — top 5
+- **Active channels — Priority-pinned first, then dynamic** — top 3
+- **Threads where the user posted but someone replied after** — top 3
+
+Every surfaced item must include: who, where (channel name + type — flag MPIMs as "group DM"), when (relative), one-line text, and a Tier classification.
+
+If a USER.md "Priority Slack Channels" section exists, prepend those channels to the active-channels list. Otherwise rely on dynamic enumeration. Surface a hint at section bottom: *"💡 To pin specific channels to the top of this digest, add a `## Priority Slack Channels` section to USER.md."*
 
 If Slack MCP errors at runtime (was detected but call failed): write "⚠️ Slack MCP errored — <one-line cause>" + log to footer. Do not invent messages.
 
@@ -412,7 +461,7 @@ Output is a **single self-contained HTML file** styled with the active DESIGN.md
     <header class="topbar" data-od-id="topbar">
       <div>
         <h1>Morning brief · <YYYY-MM-DD></h1>
-        <p class="tagline">Generated <HH:MM> by <assistant.name>. <One-line tagline derived from the day's signal — e.g., "Three meetings, two open Jira tickets, and Omar's waiting on you."></p>
+        <p class="tagline">Generated <HH:MM> by <assistant.name>. <One-line tagline derived from the day's signal — e.g., "Three meetings, two open Jira tickets, and Alex is waiting on you."></p>
       </div>
       <div class="right"><span class="pill"><day-of-week, e.g., Tuesday></span></div>
     </header>
@@ -498,7 +547,7 @@ Output is a **single self-contained HTML file** styled with the active DESIGN.md
 ```
 
 **Voice (per SOUL.md) — applies to the human-readable text rendered inside the HTML:**
-- Topbar tagline: warm + direct, like "Morning <user.name>! Three meetings, two open Jira tickets, and Omar's waiting on you." (no "Per your request..." / "Please be advised...")
+- Topbar tagline: warm + direct, like "Morning <user.name>! Three meetings, two open Jira tickets, and Alex is waiting on you." (no "Per your request..." / "Please be advised...")
 - Use phrases like "Here's what matters...", "Worth noting...", "From what I'm seeing..." in the project-synthesis closing line
 - Status indicators 🟢🟡🔴 inside `<span class="pill">` — colored by status, not decoration
 - Be opinionated in the projects section's closing synthesis line. "Ship X today because Y." Not "you could consider..."
@@ -562,6 +611,9 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 | Step 0.6 false positive (probe failed but tool actually works) | Probe was too strict or hit a transient network glitch | Use the lightest possible probe (e.g., `slack_search_channels limit=1`, not a heavy search). On transient failure, "Continue anyway" lets the user override. |
 | Step 0.6 took >10 seconds | Probe too heavy | Each probe must be sub-second. If you can't find a sub-second probe for a tool, skip the probe for that tool and accept the inline runtime-error path. |
 | Slack channels missed | Static channel list assumption | Step 3 uses DYNAMIC enumeration via `slack_search_channels`, not a hardcoded list. No maintenance required as channel membership changes. |
+| **Group DM (MPIM) thread entirely missed** | **T5 violation — Step 3 queries narrowed `channel_types` to a subset that excluded `mpim`** | **MUST cover all four Slack surfaces: `public_channel`, `private_channel`, `im`, `mpim`. Prefer omitting `channel_types` entirely (default = all four) over enumerating subsets. Step 9 pre-Write assertion REQUIRES at least one search whose `channel_types` was omitted or contained `mpim`. Origin: a multi-person DM containing the highest-leverage thread of the week was invisible to the brief because every Slack query narrowed to `im`-only or `public+private`-only.** |
+| Owed replies surfaced as flat list (no tiering) | Step 3 output didn't apply the three-tier classification | Tier 1 = multi-person blockers / time-sensitive / manager chain. Tier 2 = real questions, substantive answer owed. Tier 3 = warm acknowledgments / low urgency. The tier IS the prioritization — without it, the user has to re-prioritize during their Monday-morning blast. |
+| Slack section shows 0 MPIM entries without sanity check | Skipped the cross-check at end of Step 3 | After Passes A-D, if 0 MPIMs surfaced AND `slack_search_channels` returned any MPIMs in membership, run one explicit `channel_types: mpim` query to verify they're genuinely quiet, not missed. Document the check in footer. |
 | Project section flat (no opinion) | Skill defaulted to listing instead of synthesizing | Step 7 final synthesis line is mandatory: "From what I'm seeing, the highest-leverage work today is X because Y." Don't ship without it. |
 | Calendar conflict missed | Overlap detection failed | Sort events by start, scan for `event[i].end > event[i+1].start` — flag both with 🔴. |
 | Section order is wrong | Skill writer ad-libbed | Order is FIXED: What needs today → Calendar → Today's work from projects → Slack → Jira → Commitments → Recent shipped → Notes → Tools used. Don't reorder per "what felt right today" — predictability matters. Absent gated sections collapse out cleanly; order of present sections is preserved. |

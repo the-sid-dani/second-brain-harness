@@ -3,7 +3,7 @@
 # Idempotent. Safe to re-run. macOS-only (WSL2 deferred).
 #
 # Phases:
-#   1-3 Foundation (Homebrew, Node/git, Claude Code) — skipped if samba-onboarding ran
+#   1-3 Foundation (Homebrew, Node/git, Claude Code) — skipped if foundation already installed
 #   4-7 Toolchain (sys-extras, Rust, uv, CCv4 binaries)
 #   8   CCv4 Python deps
 #   9   FastEdit MCP registration
@@ -74,7 +74,7 @@ type init_log >/dev/null 2>&1 && init_log
 
 header "second-brain-os install" 2>/dev/null || true
 
-# Override samba-onboarding's `step <num> <label> <cmd...>` with a CCv4-port-style
+# Override the 3-arg `step <num> <label> <cmd...>` form from ui.sh with a CCv4-port-style
 # single-arg banner. Sibling libs (and the pipeline below) call `step "[N/11] label"`
 # as a banner, then chain the install function via `&&` — keeping the runner
 # logic on the caller side, not inside step.
@@ -82,22 +82,21 @@ step() {
     printf '\n\033[1;34m==> %s\033[0m\n' "$1"
 }
 
-# ---- samba detection ----
-SAMBA_DONE=0
+# ---- foundation detection ----
+FOUNDATION_INSTALLED=0
 if command -v gh >/dev/null 2>&1 \
-   && command -v gws >/dev/null 2>&1 \
    && command -v claude >/dev/null 2>&1; then
-    SAMBA_DONE=1
-    info "samba-onboarding artifacts detected (gh + gws + claude on PATH) — skipping foundation steps 1-3"
+    FOUNDATION_INSTALLED=1
+    info "foundation toolchain detected (gh + claude on PATH) — skipping foundation steps 1-3"
 fi
 
 # ---- 11-step pipeline ----
-if [ "$SAMBA_DONE" -eq 0 ]; then
+if [ "$FOUNDATION_INSTALLED" -eq 0 ]; then
     step "[1/11] Homebrew"           && install_brew
     step "[2/11] Node 20, git, jq"   && install_node_and_git
     step "[3/11] Claude Code"        && install_claude
 else
-    info "[1-3/11] skipped (samba foundation present)"
+    info "[1-3/11] skipped (foundation already installed)"
 fi
 
 step "[4/11]  System extras"         && install_sys_extras

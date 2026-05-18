@@ -145,7 +145,7 @@ function handleSlackSend(toolName, toolInput) {
     ...preview.split("\n").map((l) => "  > " + l),
     "",
     "Slack sends are immediate and visible to channel members.",
-    "Per locked rule: no auto-send to messaging surfaces without explicit Sid approval.",
+    "Per locked rule: no auto-send to messaging surfaces without explicit user approval.",
   ].join("\n");
 }
 

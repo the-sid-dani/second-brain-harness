@@ -12,8 +12,7 @@
 #   workspace/0-Inbox/    (resolved relative to repo root, run from anywhere)
 #
 # DEPENDENCIES:
-#   yt-dlp  — install via `brew install yt-dlp` (NOT installed by samba-onboarding;
-#             handoff was incorrect about this)
+#   yt-dlp  — install via `brew install yt-dlp`
 #   jq      — already installed
 #
 # OUTPUT FORMAT:

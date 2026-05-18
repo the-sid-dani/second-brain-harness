@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 # lib/ui.sh — colored output, step framing, log file management.
 
-LOG_FILE="${HOME}/samba-onboarding.log"
+LOG_FILE="${HOME}/second-brain-os-install.log"
 
 # Truncate the log file. Called explicitly from install.sh on each run start so
 # that re-sourcing this file (e.g., from a sub-shell) doesn't wipe an in-flight log.
@@ -17,8 +17,8 @@ else
 fi
 
 header() {
-  printf '\n%sSamba Onboarding%s\n' "$BOLD" "$RESET"
-  printf '%sInstalls Claude Code, the Samba CLI toolchain, and pre-configures workspaces.%s\n' "$DIM" "$RESET"
+  printf '\n%sSecond-Brain OS Installer%s\n' "$BOLD" "$RESET"
+  printf '%sInstalls Claude Code + CCv4 toolchain (bloks, tldr, optional FastEdit MCP) and pre-configures workspaces.%s\n' "$DIM" "$RESET"
   printf '%sLog: %s%s\n\n' "$DIM" "$LOG_FILE" "$RESET"
 }
 

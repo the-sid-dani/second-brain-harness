@@ -21,7 +21,7 @@ Runtime-read librarian over the second-brain OS's canonical source files. Answer
 - A claim about a skill's behavior or scope
 - A claim that a tool is or isn't installed
 - A schema field (contacts, design systems, project frontmatter)
-- A locked decision from `system-design.md` §7
+- A locked design decision (if your fork maintains a design-log file)
 
 Memory drifts. Canonical files don't. This skill exists to make the latter cheap to consult.
 
@@ -31,9 +31,9 @@ This rule mirrors the contact-no-fabrication discipline in the user's auto-memor
 
 ## Why this exists
 
-The OS has eight+ canonical sources (`CLAUDE.md`, `README.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`, `TOOLS.md`, `system-design.md`, contacts/`README.md`, plus individual SKILL.md files). Without `/os-guide`, answering "where does X live?" or "what's the rule about Y?" is a manual ritual of `grep` + `cat` + remembering which file owns which topic.
+The OS has seven+ canonical sources (`CLAUDE.md`, `README.md`, `SOUL.md`, `USER.md`, `IDENTITY.md`, `TOOLS.md`, contacts/`README.md`, plus individual SKILL.md files — and your own design log if you keep one). Without `/os-guide`, answering "where does X live?" or "what's the rule about Y?" is a manual ritual of `grep` + `cat` + remembering which file owns which topic.
 
-The naive alternative — encoding the answers in a tutorial-style skill body — fails the moment any canonical source drifts. Locked decision #25 in `system-design.md` §7 forbids it: explainer skills MUST be runtime-read librarians, not textbooks. This skill embodies that decision. Reference, don't reproduce (per `SOUL.md` Operating Principles).
+The naive alternative — encoding the answers in a tutorial-style skill body — fails the moment any canonical source drifts. The core principle this skill enforces: explainer skills MUST be runtime-read librarians, not textbooks. Reference, don't reproduce (per `SOUL.md` Operating Principles).
 
 Two audiences:
 - **Claude Code, self-correcting mid-session** (primary) — about to write a path, a config value, or a skill claim; pauses to verify.
@@ -70,12 +70,12 @@ Trigger phrases (broad — the pattern is "OS-shaped explanatory question", not 
 ## Do NOT trigger for
 
 - **Topic-keyed recall over user content** ("do I have anything on Anthropic?", "what did I save about Q1 planning?") — that's `/find`. `/find` searches Resources/Projects/Archive/memory for content the user authored. `/os-guide` does NOT.
-- **Entity-keyed recall about a person** ("who is Omar?", "context on Michela") — that's `/contact`.
+- **Entity-keyed recall about a person** ("who is Alex?", "context on Michele") — that's `/contact`.
 - **First-run interactive setup on a fresh fork** ("I just cloned this, set me up") — that's `/bootstrap`. `/os-guide` is the post-bootstrap steady-state reference.
 - **Action requests** ("create a project", "archive this", "log my interaction with X") — those are the mutation skills (`/new-project`, `/archive-project`, `/contact-log`).
 - **Generic theory** (Tiago Forte's PARA framework as a concept, Claude Code as a product, generic productivity systems) — out of scope; refer to external sources. `/os-guide` only answers the *in-this-OS-specifically* version.
 - **Live workspace state** ("what projects are active right now?") — that's `project-query.sh`. The skill can point at it but doesn't run it.
-- **CLI install instructions** (`brew install gws`, `samba-onboarding` flow) — out of scope; point at the appropriate installer.
+- **CLI install instructions** (`brew install <tool>`, org-internal installer flows) — out of scope; point at the appropriate installer.
 
 ---
 
@@ -86,7 +86,7 @@ When multiple skills could match the user's phrasing, the priority is:
 | Skill | Owns | When this skill wins | When it defers |
 |---|---|---|---|
 | `/bootstrap` | First-run interactive setup, persona regeneration, Configuration writes | Fresh fork before `setup_completed:` is filled in | After fork is configured |
-| `/find` | Topic-keyed recall over user content (Resources, Projects, Archive, memory) — per locked decision #18 | "do I have anything on X" / "find my notes on Y" | OS structural questions ("how does X work in this OS") |
+| `/find` | Topic-keyed recall over user content (Resources, Projects, Archive, memory) | "do I have anything on X" / "find my notes on Y" | OS structural questions ("how does X work in this OS") |
 | `/contact` | Per-person entity recall | "who is X" / "context on Y" where X/Y is a name | Anything not-a-person |
 | `/os-guide` | OS-meta — config, paths, schema, capability index, locked decisions, trigger-phrase map | "how does X work here" / "what is X in this OS" / "where does X live (structurally)" | User content (defer to `/find`); people (defer to `/contact`); first-run (defer to `/bootstrap`) |
 
@@ -102,7 +102,7 @@ This is the librarian's shelves. **Every answer this skill gives MUST cite a row
 
 | Topic | Canonical source(s) | Notes |
 |---|---|---|
-| PARA layout (5-folder workspace) | `README.md` §"Project Map" + §"What is PARA in this OS" + locked decision #1 in `system-design.md` §7 | The 5-folder this-OS implementation |
+| PARA layout (5-folder workspace) | `README.md` §"Project Map" + §"What is PARA in this OS" | The 5-folder this-OS implementation |
 | Mac Desktop PARA (6-folder, distinct) | `USER.md` §"Mac Desktop Layout (PARA)" | **Separate system** — disambiguate from workspace PARA |
 | What does NOT belong at root | `README.md` §"What does NOT belong at root" | Explicit anti-pattern list |
 | Outputs location (briefings/meeting-prep/etc.) | `README.md` §"Outputs" + `CLAUDE.md` §"Briefing & report outputs" | CLAUDE.md adds `<assistant.name>`-specific deltas |
@@ -128,16 +128,16 @@ This is the librarian's shelves. **Every answer this skill gives MUST cite a row
 
 | Topic | Canonical source(s) | Notes |
 |---|---|---|
-| Memory model (Folder A vs Folder B) | `README.md` §"Memory — dual-folder model" | Locked decision #10 in `system-design.md` §7 |
+| Memory model (Folder A vs Folder B) | `README.md` §"Memory — dual-folder model" | Two memory folders, distinct roles |
 | Daily journal location | `memory/YYYY-MM-DD.md` (append-only) | Cited from `README.md` |
-| Writing-style profile | `memory/writing-style.md` | Locked location per decision #10 |
-| Learned preferences | `memory/learned-preferences.md` | Locked location per decision #10 |
+| Writing-style profile | `memory/writing-style.md` | Optional — present if the user has authored one |
+| Learned preferences | `memory/learned-preferences.md` | Optional — durable cross-session preferences |
 
 ### Tools & MCPs
 
 | Topic | Canonical source(s) | Notes |
 |---|---|---|
-| Tool inventory (live state) | `TOOLS.md` (root, auto-loaded) | The ONLY canonical tool source. `tool-inventory.md` was deprecated 2026-05-17 (item 15q in `system-design.md` §6). |
+| Tool inventory (live state) | `TOOLS.md` (root, auto-loaded) | The ONLY canonical tool source — regenerated by `/bootstrap` from live probes. |
 | How to add a new tool (MCP or CLI) | `TOOLS.md` §"How to add a tool" | Step-by-step procedure for both paths |
 | Declared MCPs | `.mcp.json` at repo root | `mcpServers` block |
 
@@ -147,7 +147,7 @@ This is the librarian's shelves. **Every answer this skill gives MUST cite a row
 |---|---|---|
 | Contacts schema (frontmatter + body sections) | `<workspace.root>/<workspace.resources>/contacts/README.md` | **Reference, don't reproduce** — read live, don't restate. |
 | Contact location | `<workspace.root>/<workspace.resources>/contacts/<slug>.md` | Per-file flat layout |
-| WikiLinks `[[topic]]` convention | `CLAUDE.md` §"Cross-references — WikiLinks convention" + decision #19 | Manual convention; `/find` follows `[[X]]` links |
+| WikiLinks `[[topic]]` convention | `CLAUDE.md` §"Cross-references — WikiLinks convention" | Manual convention; `/find` follows `[[X]]` links |
 
 ### Lifecycle skills
 
@@ -156,9 +156,9 @@ This is the librarian's shelves. **Every answer this skill gives MUST cite a row
 | How to create a new project | `.claude/skills/new-project/SKILL.md` + `README.md` Quick Reference | The skill body is the authoritative procedure |
 | How to archive a project | `.claude/skills/archive-project/SKILL.md` | |
 | How to prune stale projects | `.claude/skills/prune-projects/SKILL.md` | Friday-batch staleness review |
-| How to triage Inbox | `.claude/skills/inbox-process/SKILL.md` + Operating Principle "Capture before commit" | Locked decision #24 |
+| How to triage Inbox | `.claude/skills/inbox-process/SKILL.md` + Operating Principle "Capture before commit" | Drives the Inbox-to-home pipeline |
 | How to save a resource | `.claude/skills/save-resource/SKILL.md` | |
-| How to find existing knowledge | `.claude/skills/find/SKILL.md` + decision #18 | The unified recall surface |
+| How to find existing knowledge | `.claude/skills/find/SKILL.md` | The unified recall surface |
 
 ### Capability index (dynamic — globbed at invocation)
 
@@ -199,7 +199,7 @@ The following are commonly asked but have **no canonical source today**. The ski
 
 | Topic | Status | Workaround |
 |---|---|---|
-| Why these 5 MCPs (gemini-vision/exa/slack/atlassian/figma) and not others | MISSING | Point at `system-design.md` decision #17 (vision) + #20 (plugin MCPs) + #23 (exa) for partial rationale |
+| Why these 5 MCPs (gemini-vision/exa/slack/atlassian/figma) and not others | MISSING | Point at `TOOLS.md` + `.mcp.json` `_notes` block for partial rationale; full rationale lives in your fork's design log if you keep one |
 | How hooks work end-to-end | MISSING | Point at `.claude/hooks/` source files + `CLAUDE.md` §"Bundled harness layout" |
 | How to author a new skill (procedural) | PARTIAL | Point at `/skill-creator` SKILL.md — it teaches conversationally |
 | Configuration-token resolution under the hood | MISSING | Point at `CLAUDE.md` §"Configuration" for the *what*; explain that skills substitute tokens at read-time |
@@ -266,13 +266,13 @@ last_verified: <date if available, e.g. from setup_completed>
 
 ### Step 5 — Surface disagreements explicitly
 
-If two canonical sources contradict each other (e.g., `README.md` says X about a topic but `system-design.md` §7 says Y), **never silently pick one**. Surface both with citations and explain the hierarchy:
+If two canonical sources contradict each other (e.g., `README.md` says X about a topic but a SKILL.md or design log says Y), **never silently pick one**. Surface both with citations and explain the hierarchy:
 
 > *"Sources disagree on this:*
 > *- `README.md` (line N) says X*
-> *- `system-design.md` decision #M (line P) says Y*
+> *- `<other-file>` (line P) says Y*
 >
-> *Locked decisions in `system-design.md` §7 win over README when they conflict. Recommend updating README to match. The current locked answer is Y."*
+> *When conflicts arise, locked design decisions win over README. Recommend updating README to match. The current locked answer is Y."*
 
 This discipline mirrors `/find`'s contradiction-surfacing rule at `find/SKILL.md:155`.
 
@@ -367,7 +367,7 @@ Voice per `SOUL.md` Operating Principles. Lead with the answer. No filler.
 | 6 | Recursive self-call / loop | Skill MUST NOT call itself; MUST NOT call `/find` recursively for OS-knowledge. Canonical source list is hardcoded in Routing Table. |
 | 7 | Out-of-scope question | Step 8 — graceful refusal with redirects. |
 | 8 | Description over-triggers (steals routing from `/find`/`/bootstrap`) | Description claims explicit scope + names neighbors. Eval cases include explicit deferral tests. |
-| 9 | Skill body drifts (someone adds prose answers) | The rule from decision #25: routing entries only, never content. Pre-commit grep MAY enforce in future. |
+| 9 | Skill body drifts (someone adds prose answers) | The core rule: routing entries only, never content. Pre-commit grep MAY enforce in future. |
 | 10 | Two canonical sources disagree | Step 5 — surface both with citations, explain hierarchy. Never silently pick. |
 | 11 | User asks for live workspace state (e.g., "what projects are active?") | Point at `<scripts.project_query>` (project-query.sh); don't run it inline. This skill is structural, not state-querying. |
 | 12 | Claude self-consults but the user's question wasn't OS-shaped | Skill should still produce a useful answer if possible, but if the question maps to no row, fall to Step 7 (no-canonical-source) gracefully. |
@@ -379,7 +379,7 @@ Voice per `SOUL.md` Operating Principles. Lead with the answer. No filler.
 This skill is **read-only by default**. The single exception is `--sync` mode (see `--sync` section below), which edits the Routing Table only, gated by explicit user approval.
 
 The skill MUST NOT:
-- Modify any canonical source file (CLAUDE.md, README.md, SOUL.md, TOOLS.md, system-design.md, contacts/README.md, etc.) — those are owned by their respective edit paths (the user, `/bootstrap`, lifecycle skills)
+- Modify any canonical source file (CLAUDE.md, README.md, SOUL.md, TOOLS.md, contacts/README.md, etc.) — those are owned by their respective edit paths (the user, `/bootstrap`, lifecycle skills)
 - Auto-install tools, run `/mcp`, modify `.mcp.json`
 - Run `git add` or `git commit` — surface commands as text only
 - Modify any user content (Resources, Projects, Archive, memory)
@@ -400,7 +400,7 @@ If asked to do any of the above, defer to the appropriate skill (`/bootstrap` fo
 
 - **Explicit command**: `/os-guide --sync` or `/os-guide refresh`
 - **Natural language**: "sync the os guide", "refresh /os-guide", "I added new tools — update the guide", "I added a new skill, update /os-guide"
-- **Future (deferred)**: PostToolUse hook on Edit/Write to canonical files (TOOLS.md, .mcp.json, system-design.md, CLAUDE.md) that suggests `--sync` without auto-running it
+- **Future (deferred)**: PostToolUse hook on Edit/Write to canonical files (TOOLS.md, .mcp.json, CLAUDE.md) that suggests `--sync` without auto-running it
 
 ### Five-phase behavior
 
@@ -415,7 +415,8 @@ BRANDS=$(find "$WORKSPACE_RESOURCES/design-systems" -maxdepth 2 -name DESIGN.md 
 CONTACTS=$(ls "$WORKSPACE_RESOURCES/contacts/"*.md 2>/dev/null | grep -v README | wc -l)
 REFDOCS=$(ls "$WORKSPACE_RESOURCES/reference/"*.md 2>/dev/null | wc -l)
 PROJECTS=$(find "$WORKSPACE_PROJECTS" -maxdepth 2 -name CLAUDE.md | wc -l)
-DECISIONS=$(grep -c "^| [0-9]\+ |" "$DESIGN_PROJECT/system-design.md")
+# Optional — only if your fork maintains a design-log file
+# DECISIONS=$(grep -c "^| [0-9]\+ |" "$DESIGN_LOG")
 MCPS=$(jq -r '.mcpServers | keys[]' .mcp.json 2>/dev/null | wc -l)
 ```
 
@@ -550,7 +551,7 @@ These 3 cases are listed explicitly in the Phase 4 report under "Items requiring
 - **After adding a new skill** via `/skill-creator`
 - **After adding a new MCP** to `.mcp.json` and authorizing it via `/mcp`
 - **After adding a new design-system brand** to `<workspace.resources>/design-systems/`
-- **After locking a new decision** in `system-design.md` §7
+- **After locking a new decision** in your fork's design log (if you keep one)
 - **After major doc edits** that may have moved section line ranges (CLAUDE.md restructure, README rewrite)
 - **On schedule** — once a week as a maintenance ritual, similar to `/prune-projects` Friday batch (manual at first; cron only after value is proven, per the heartbeat lesson)
 

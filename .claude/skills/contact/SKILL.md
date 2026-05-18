@@ -37,7 +37,7 @@ Do NOT trigger for:
 
 ### Precedence vs `/find`
 
-When both could trigger (e.g., "tell me about omar"):
+When both could trigger (e.g., "tell me about alex"):
 - If the query maps to a name that matches a file in `<workspace.root>/<workspace.resources>/contacts/` (per the match algorithm below), `/contact` wins.
 - If no contact matches, fall through to `/find` behavior — search resources/projects/archive/memory for the term.
 - If `<user.name>` types `/find <name>` explicitly, honor that — they want topic-keyed search across the second brain even though a contact exists.
@@ -50,7 +50,7 @@ Every contact lives at `<workspace.root>/<workspace.resources>/contacts/<slug>.m
 
 ### Step 1: Get the query
 
-If the invocation includes a name (e.g., `"/contact omar"`, `"who is omar again?"`, `"context on michela"`), extract it. Otherwise ask in plain chat:
+If the invocation includes a name (e.g., `"/contact alex"`, `"who is alex again?"`, `"context on michele"`), extract it. Otherwise ask in plain chat:
 
 *"Which contact? I'll look across `<workspace.root>/<workspace.resources>/contacts/`."*
 
@@ -70,14 +70,14 @@ If the contacts directory doesn't exist or is empty, abort: *"No contacts direct
 
 Evaluate each tier in order. **First tier with a non-empty result wins; do not continue to lower tiers.** Within a tier, ties go to multi-match disambiguation (Step 4).
 
-1. **Exact slug match.** Slug equals query-slug (e.g., query `omar-zennadi` matches `omar-zennadi.md`).
-2. **Slug-stem-match.** Slugify the query (lowercase, whitespace → hyphen). Match if (a) any hyphen-separated token of the slug equals the slugified query (e.g., query `omar` → slug-token match against `omar-zennadi`), OR (b) the slugified query is a contiguous multi-token slice of the slug (e.g., query `van toorn` → slugified `van-toorn` is a contiguous slice of `bob-van-toorn`).
-3. **Frontmatter `name` token-level match** (case-insensitive). Query equals the full `name` string (case-insensitive) OR any whitespace-separated token of `name` equals the query exactly. Examples: query `omar zennadi` matches `name: Omar Zennadi` (full-string); query `aswani` matches `name: Jaya Aswani` (token-exact). Token-level NOT substring — `lyson` does NOT match `Alyson Sprague`.
-4. **Frontmatter `legal_name` token-level match** (case-insensitive). Query equals the full `legal_name` string (case-insensitive) OR any whitespace-separated token of `legal_name` equals the query exactly. Example: query `michael` matches `legal_name: Michael Zennadi` (token-exact on first token). **Token-level NOT substring.** Substring against `legal_name` would cause `michela` to match Omar via `Michael` substring — that's the locked anti-regression rule, intentionally NOT in this tier OR tiers 5/6. Token-exact is safe because `michela` is not a token of `Michael Zennadi`.
-5. **Prefix match on slug or `name`.** Query `aly` matches slug `alyson-sprague` and name `Alyson Sprague`. Multiple hits → multi-match.
-6. **Substring match on slug or `name`** (case-insensitive). Last resort. Query `kin` matches `lena-kincaid`. Multiple hits → multi-match.
+1. **Exact slug match.** Slug equals query-slug (e.g., query `alex-chen` matches `alex-chen.md`).
+2. **Slug-stem-match.** Slugify the query (lowercase, whitespace → hyphen). Match if (a) any hyphen-separated token of the slug equals the slugified query (e.g., query `alex` → slug-token match against `alex-chen`), OR (b) the slugified query is a contiguous multi-token slice of the slug (e.g., query `van pelt` → slugified `van-toorn` is a contiguous slice of `robin-van-pelt`).
+3. **Frontmatter `name` token-level match** (case-insensitive). Query equals the full `name` string (case-insensitive) OR any whitespace-separated token of `name` equals the query exactly. Examples: query `alex chen` matches `name: Alex Chen` (full-string); query `patel` matches `name: Priya Patel` (token-exact). Token-level NOT substring — `ord` does NOT match `Jordan Rivera`.
+4. **Frontmatter `legal_name` token-level match** (case-insensitive). Query equals the full `legal_name` string (case-insensitive) OR any whitespace-separated token of `legal_name` equals the query exactly. Example: query `michael` matches `legal_name: Michael Chen` (token-exact on first token). **Token-level NOT substring.** Substring against `legal_name` would cause `michele` to match Alex via `Michael` substring — that's the locked anti-regression rule, intentionally NOT in this tier OR tiers 5/6. Token-exact is safe because `michele` is not a token of `Michael Chen`.
+5. **Prefix match on slug or `name`.** Query `aly` matches slug `jordan-rivera` and name `Jordan Rivera`. Multiple hits → multi-match.
+6. **Substring match on slug or `name`** (case-insensitive). Last resort. Query `kin` matches `lena-okoye`. Multiple hits → multi-match.
 
-`legal_name` is **not** included in tiers 5 or 6 (prefix/substring) — only in tier 4 (token-level exact). Token-level on legal_name is safe (token-exact `michael` matches Omar's `Michael Zennadi`, but `michela` is NOT a token of `Michael Zennadi` so no regression). Substring on legal_name would re-introduce the `michela`→Omar bug — that's the locked rule.
+`legal_name` is **not** included in tiers 5 or 6 (prefix/substring) — only in tier 4 (token-level exact). Token-level on legal_name is safe (token-exact `michael` matches Alex's `Michael Chen`, but `michele` is NOT a token of `Michael Chen` so no regression). Substring on legal_name would re-introduce the `michele`→Alex bug — that's the locked rule.
 
 ### Step 4: Resolve outcome
 

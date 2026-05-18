@@ -263,8 +263,8 @@ echo 'set -a && [ -f .env ] && . .env; set +a' >> ~/.zshrc
 ```
 Or export the key directly in `~/.zshrc`.
 
-**Installer reports "samba-onboarding detected, skipping steps 1-3."**
-This is correct behavior when `gh`, `gws`, and `claude` are all already on PATH — the foundation steps are already covered. Re-run with `--reconfigure` if you need to re-prompt for API keys only.
+**Installer reports "foundation toolchain detected, skipping steps 1-3."**
+This is correct behavior when `gh` and `claude` are already on PATH — the foundation steps are already covered. Re-run with `--reconfigure` if you need to re-prompt for API keys only.
 
 ---
 

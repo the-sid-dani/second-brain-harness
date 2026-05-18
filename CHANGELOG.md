@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.22] - 2026-05-17
+
+### Changed
+
+- **README restructured to lead with concepts, not commands.** The v0.1.21 README jumped straight into the install tier table + 3 install commands before explaining what the OS is, what a "skill" is, or what `/bootstrap` does. Fork users landed on a wall of shell commands without context. New structure:
+  1. **What is this?** (concept first)
+  2. **How it works** — new section explaining the three layers (skills / PARA workspace / Configuration tokens) and the two-stage setup model (shell `install.sh` for power-user toolchain, Claude `/bootstrap` for personalization)
+  3. **Install** — now framed as "you're trying to reach `/bootstrap`; everything else is plumbing." Path A (Minimal) is `clone → cd → claude → /bootstrap`; Path B (Lite CCv4) adds `./scripts/install.sh --no-fastedit-model` before `claude`; Path C (Full) drops the flag.
+  4. **The PARA workspace** — explains each of the 5 folders (`0-Inbox`, `1-Projects`, `2-Coding`, `3-Resources`, `4-Archive`) with a "what goes in it" + "why it exists" column. New callout that `/bootstrap` creates the empty folder skeleton; skills own the content.
+  5. Reference sections (Project map, Configuration tokens, Update Rules, What's included, Quick reference) come after.
+- **`/bootstrap` reframed as the central setup step.** Previous README treated `install.sh` and `/bootstrap` as equally-weighted install steps. The new framing: `/bootstrap` is THE step that personalizes the OS to you; `install.sh` is optional plumbing that only matters if you want `/research`, `/autonomous`, `/premortem`, `/review`. Minimal-tier users skip `install.sh` entirely.
+
+### Notes
+
+- README-template.md grew from 438 → 482 lines (+44, mostly the new "How it works" section).
+- No skill bodies, hooks, or scripts changed in v0.1.22 — README-only release.
+
 ## [0.1.21] - 2026-05-17
 
 ### Changed

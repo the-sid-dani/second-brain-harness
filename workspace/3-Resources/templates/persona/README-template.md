@@ -14,26 +14,57 @@ All routed automatically to the right pre-built workflow. No commands to memoriz
 
 ---
 
+## What is this?
+
+A workspace skeleton that turns Claude Code into your personal chief-of-staff (or research companion, engineering co-pilot, sales-ops assistant — you pick the persona during setup). You configure it once with your identity, then talk to the assistant normally. It routes your intent to the right pre-built workflow.
+
+It's NOT a SaaS product, hosted service, or app. It's a folder on your Mac that Claude Code reads from. Your data never leaves your machine unless YOU send it somewhere (e.g., when you ask it to publish a Slack message, you're authorizing that one send).
+
+---
+
+## How it works
+
+Three pieces fit together:
+
+### 1. **Skills** — pre-built workflows in `.claude/skills/`
+
+A skill is just a markdown file with frontmatter that tells Claude when to use it. The bundle ships 45 of them: `briefing` runs morning briefs, `contact` looks up people, `new-project` scaffolds projects, `design-saas-landing` renders HTML mockups, and so on. When you type *"morning, what's on my plate?"*, Claude reads every skill's description and picks the best match. You can also invoke a skill explicitly with `/briefing`, `/contact <name>`, etc.
+
+**The one skill you'll always run first is `/bootstrap`.** It's the interactive setup that personalizes the OS to you — collects your name, role, workspace paths, persona name, design brand, then writes that into the Configuration section of `CLAUDE.md`. Everything else assumes `/bootstrap` has been run.
+
+### 2. **A PARA workspace** at `<workspace.root>/`
+
+PARA is a folder convention (Projects / Areas / Resources / Archive) borrowed from Tiago Forte. In this OS it means a fixed 5-folder layout under one root directory — that's where YOUR data lives (briefings, contacts, project notes, research, design files). The skills know how to navigate it because the folder names are referenced symbolically (`<workspace.projects>`, `<workspace.resources>`, etc.) in Configuration. See "[The PARA workspace](#the-para-workspace)" below for what each folder is for and why.
+
+### 3. **Configuration tokens** in `CLAUDE.md`
+
+One section in root `CLAUDE.md` holds your identity + paths as symbolic tokens (`<user.name>`, `<assistant.name>`, `<workspace.root>`, etc.). Skills resolve them at runtime. This is what makes the bundle portable — fork it, run `/bootstrap`, the tokens get filled in with YOUR values, and every skill adapts. No code changes needed.
+
+### Two-stage setup — why there are two install steps
+
+You may notice the install instructions below have a **shell command** (`./scripts/install.sh`) AND a **Claude Code command** (`/bootstrap`). That's intentional:
+
+- **`./scripts/install.sh`** (shell, OPTIONAL) — installs OS-level tooling needed only by the power-user skills (`/research`, `/autonomous`, `/premortem`, `/review`). Skip it if you only want the chief-of-staff + design skills.
+- **`/bootstrap`** (inside Claude Code, REQUIRED) — personalizes the OS to you. This is the meaningful setup step.
+
+`/bootstrap` can't run in your shell — it's a Claude Code slash command, only available inside a Claude session. So the sequence is always: get to a Claude session in the right folder, then run `/bootstrap` from there.
+
+---
+
 ## Install
 
-Pick the tier that matches what you want to do. You can upgrade later — re-run `./scripts/install.sh` and it picks up where you left off (idempotent).
+The thing you're trying to reach is `/bootstrap` inside Claude Code. Everything before that is plumbing.
 
-| Tier | What you get | What's installed beyond Claude Code + git | Disk | Wall time |
-|---|---|---|---|---|
-| **Minimal** | Chief-of-staff workflows, 14 design skills with 72 brand presets, persona templates, MCP research (Slack/Atlassian/Figma via OAuth) | nothing else | ~5 MB | ~5 min |
-| **Lite CCv4** | Above + `/research`, `/autonomous`, `/premortem`, `/review`, bloks (compact knowledge cards), tldr (structural code reads), Ouros REPL harness | + Homebrew, Node 20, jq, ripgrep, ffmpeg, yt-dlp, Rust, uv, bloks, tldr-cli, Python deps (no FastEdit model) | ~500 MB | ~10-15 min |
-| **Full** | Above + FastEdit MCP (AST-aware code edits, ~45% fewer tokens than diffs) | + fastedits[mlx,mcp] (1.7B MLX merge model) + 5 API keys | ~5 GB | ~20-40 min |
+### Prerequisites (all paths)
 
-### Prerequisites (all tiers)
-
-- macOS 11+ (WSL2/Linux compatibility deferred; brew/mlx paths assume Darwin)
+- macOS 11+ (WSL2/Linux compatibility deferred)
 - [Claude Code](https://claude.com/claude-code) installed
-- git on PATH (`xcode-select --install` if missing)
+- `git` on PATH (`xcode-select --install` if missing)
 - Internet access
 
-### Minimal — chief-of-staff + design only
+### Path A — Minimal (~5 min) — chief-of-staff + design only
 
-Three commands in Terminal:
+For most fork users. Skip the shell installer entirely.
 
 ```bash
 git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
@@ -41,16 +72,13 @@ cd ~/Desktop/second-brain-os
 claude
 ```
 
-Then inside the Claude Code session that opens, type `/bootstrap` and follow the interactive walkthrough (~10 min — sets up identity, persona, design system, workspace). When it finishes, try one of these in the same session:
+Inside the Claude Code session that opens, type `/bootstrap`. ~10 min interactive walkthrough (identity, persona, design brand, workspace folders).
 
-- *"morning, what's on my plate today?"* → your first briefing
-- *"let's start a new project for [whatever]"* → your first project scaffold
+You're done. Try *"morning, what's on my plate today?"* or *"let's start a new project for X"* to confirm.
 
-You're done. Skip the rest of this section unless you want the CCv4 autonomous pipeline.
+### Path B — Lite CCv4 (~10-15 min) — adds `/research`, `/autonomous`, knowledge graph
 
-### Lite CCv4 — adds `/research`, `/autonomous`, knowledge graph
-
-Run these in Terminal, **in this exact order** (installer first, Claude Code second — hooks and binaries need to be in place before the session starts):
+If you want the power-user skills, install the supporting toolchain BEFORE opening Claude (hooks and binaries need to be in place at session-start):
 
 ```bash
 git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
@@ -59,15 +87,15 @@ cd ~/Desktop/second-brain-os
 claude
 ```
 
-`install.sh` installs Rust, uv, bloks, tldr-cli, Python deps for the Ouros harness, ripgrep/ffmpeg/yt-dlp — everything for the ContinuousClaude V4.7 pipeline EXCEPT the 3 GB FastEdit MLX merge model. Skips the FastEdit MCP registration (lazy — you can re-run without the flag later).
+The installer adds Rust, uv, bloks, tldr-cli, Python deps for the Ouros harness, plus ripgrep/ffmpeg/yt-dlp. The `--no-fastedit-model` flag skips the 3 GB MLX merge model (you can add it later by re-running without the flag).
 
-**API keys**: the installer prompts interactively for ANTHROPIC, EXA, NIA, HF, ATLASSIAN. Pass `--skip-api-keys` to write empty `.env` stubs you fill in later.
+**API keys**: the installer prompts for ANTHROPIC, EXA, NIA, HF, ATLASSIAN. Pass `--skip-api-keys` to write empty `.env` stubs you fill in later.
 
-Then inside the Claude Code session that opens, type `/bootstrap` to configure identity / persona / workspace. `/autonomous`, `/research`, `/premortem`, `/review`, `/upgrade-harness`, `/autonomous-research` are now available too.
+Then inside Claude: `/bootstrap` for identity setup, then `/mcp` to OAuth into the HTTP MCPs (Slack, Atlassian, Figma, Exa) — standard browser flow, no app registration needed.
 
-### Full — adds FastEdit MCP
+### Path C — Full (~20-40 min) — adds FastEdit MCP
 
-Same order — installer first, then Claude Code:
+Same as Lite but includes the FastEdit MLX merge model (~3 GB) for AST-aware code edits with ~45% fewer tokens than diff-based edits:
 
 ```bash
 git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
@@ -76,13 +104,25 @@ cd ~/Desktop/second-brain-os
 claude
 ```
 
-`install.sh` downloads the 1.7B FastEdit MLX merge model (~3 GB) and registers it as an MCP in `.mcp.json`. On Apple Silicon, fastedit runs locally with MLX. On Intel Macs, the MLX backend won't be hardware-accelerated.
+On Apple Silicon, FastEdit runs locally via MLX. On Intel Macs, the MLX backend won't be hardware-accelerated.
 
-Then inside Claude Code: `/bootstrap` for identity setup, `/mcp` to OAuth into Slack, Figma, and Atlassian via your browser.
+Then inside Claude: `/bootstrap`, then `/mcp`.
+
+### Tier comparison
+
+| Path | What you get | Disk | Wall time |
+|---|---|---|---|
+| **A: Minimal** | 36 chief-of-staff + design skills, persona templates, MCP research (Slack/Atlassian/Figma via OAuth) | ~5 MB | ~5 min |
+| **B: Lite CCv4** | Above + `/research`, `/autonomous`, `/premortem`, `/review`, bloks, tldr, Ouros REPL harness | ~500 MB | ~10–15 min |
+| **C: Full** | Above + FastEdit MCP (AST-aware code edits) | ~5 GB | ~20–40 min |
+
+You can upgrade later — re-run `./scripts/install.sh` and it picks up where you left off (idempotent).
+
+### Why `cd` before `claude`
+
+Claude Code loads skills + hooks by scanning the directory it was launched from. You must `cd` into the cloned folder **before** running `claude` — otherwise the session won't see `/bootstrap` or the other harness skills. If you forget, type `exit`, `cd` into the folder, run `claude` again.
 
 ### Re-running, upgrading, downgrading
-
-The installer is idempotent — re-run anytime, every step probes for existing tooling and skips when present.
 
 ```bash
 ./scripts/install.sh --reconfigure        # re-prompt API keys (rotate)
@@ -92,17 +132,11 @@ The installer is idempotent — re-run anytime, every step probes for existing t
 ./scripts/install.sh --help               # full flag list
 ```
 
-See `INSTALL.md` for fine-grained step-by-step manual install (use if the installer fails mid-way or you maintain a non-standard toolchain).
-
-### Why the order matters
-
-Claude Code loads skills at session-start by scanning the directory it was launched from. That's why you need to `cd` into the cloned folder **before** running `claude` — otherwise the new session won't see `/bootstrap` or the other harness skills.
-
-If you forget and run `claude` first, just type `exit`, then `cd` to the cloned folder, then `claude` again.
+See `INSTALL.md` for step-by-step manual install (use if the installer fails mid-way or you maintain a non-standard toolchain).
 
 ### Alternative — chat through it with Claude
 
-If you'd rather have a conversation than run terminal commands, here's a prompt to paste into any Claude Code session. **Note**: Claude can clone the repo and run `install.sh` for you, but it can't invoke `/bootstrap` — that's a slash command bound to the new session you'll open after install. This is a fundamental Claude Code constraint (skills load at session-start, not on `cd`), not a limitation of the prompt.
+If you'd rather have a conversation than run terminal commands, here's a prompt to paste into any Claude Code session. **Note**: Claude can clone the repo and run `install.sh` for you, but it can't invoke `/bootstrap` — that's a slash command bound to the new session you'll open after install. This is a fundamental Claude Code constraint (skills load at session-start), not a limitation of the prompt.
 
 1. Open Terminal and run `claude` to start any Claude Code session.
 
@@ -160,35 +194,29 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
 
 ---
 
-## What is this?
+## The PARA workspace
 
-A workspace skeleton that turns Claude Code into your personal chief-of-staff (or research companion, engineering co-pilot, sales-ops assistant — you pick the persona during setup). You configure it once with your identity, then talk to the assistant normally. It routes your intent to the right pre-built workflow.
+When `/bootstrap` runs, it creates a folder tree at `<workspace.root>/` (default: `workspace/`). This is where YOUR content lives — projects, contacts, briefings, research, design files. The skills know how to navigate it.
 
-**Three pieces make this work:**
+### Why these folders, in this layout
 
-1. **Skills** — 44 pre-built workflows shipped in `.claude/skills/` (including the 9-skill ContinuousClaude V4.7 pipeline). Each one has a description that tells Claude when to use it, so your natural-language prompts automatically route to the right skill.
-2. **A PARA workspace** at `workspace/` — Inbox, Projects, Coding, Resources, Archive. Your work lives here; skills know how to navigate it.
-3. **Configuration tokens** in `CLAUDE.md` — your name, your role, your workspace paths. Skills reference these symbolically so the workspace adapts to your setup.
+PARA is Tiago Forte's framework (Projects / Areas / Resources / Archive) — see his book *Building a Second Brain* or Wikipedia for the generic theory. **In this OS specifically**, PARA means a fixed 5-folder layout:
 
-PARA is a personal-knowledge-management system invented by Tiago Forte — short for **P**rojects, **A**reas, **R**esources, **A**rchive. The workspace borrows the same idea.
-
----
-
-## What is PARA in this OS?
-
-PARA is Tiago Forte's organizational framework (Projects / Areas / Resources / Archive) — see his book *Building a Second Brain* or Wikipedia for the generic theory. **In this OS specifically**, PARA means the 5-folder layout under `<workspace.root>/`:
-
-| Folder | Contains |
-|---|---|
-| `0-Inbox/` | Ad-hoc capture — anything not yet decided where it belongs. Exit via `/inbox-process` (e.g., a Friday triage habit). |
-| `1-Projects/` | Active projects, one folder per project, each with its own `CLAUDE.md` + `memory.md` |
-| `2-Coding/` | Code repos (each its own git, gitignored from outer git) |
-| `3-Resources/` | Inputs AND outputs colocated by type — templates/, meetings/, research/, contacts/, briefings/, etc. |
-| `4-Archive/` | Completed or stale (move, never delete) |
+| Folder | What goes in it | Why it exists |
+|---|---|---|
+| `0-Inbox/` | Ad-hoc capture — anything not yet decided where it belongs | The friction-free landing zone. Stuff comes in here when you don't know if it's a project, a reference, or trash yet. `/inbox-process` triages it periodically (e.g., a Friday habit). |
+| `1-Projects/` | Active projects — one folder per project | Time-bounded things with a defined outcome. Each gets its own `CLAUDE.md` + `memory.md`. Status frontmatter (`active`/`done`/`stale`) drives `/prune-projects` and `/archive-project`. |
+| `2-Coding/` | Code repos — one folder per repo | Each its own git repo, gitignored from outer git so dev work stays isolated. The one allowed INDEX file lives at `<workspace.resources>/code-projects.md` (auto-created by `/new-project`) because gitignored repos can't be discovered by frontmatter-grep. |
+| `3-Resources/` | Inputs AND outputs colocated by type — templates, contacts, meetings, briefings, research, design-systems | The "library + filing cabinet" — reference material you didn't create + generated outputs (briefings, organization reports). Subfolders are domain-typed (`meetings/`, `briefings/`, `contacts/`, etc.) so outputs sit next to their inputs. |
+| `4-Archive/` | Completed or stale work | The move-don't-delete graveyard. Old projects keep their `memory.md` so decision history survives. `/archive-project` moves things here and flips status frontmatter. |
 
 The folder names are not arbitrary — they're referenced symbolically across every skill as Configuration tokens (`<workspace.projects>` resolves to `1-Projects/`, etc. — see `CLAUDE.md` Configuration section). If you fork this and rename them, edit the Configuration section to match; the skills will adapt.
 
-**Areas was deliberately cut** from this 5-folder version. Ongoing responsibilities live in `3-Resources/` instead of a separate Areas folder. One less folder to maintain.
+**Areas was deliberately cut** from the original 5-letter PARA. Ongoing responsibilities live in `3-Resources/` instead of a separate Areas folder. One less folder to maintain.
+
+### What `/bootstrap` does NOT touch
+
+`/bootstrap` only creates the EMPTY folder skeleton + scaffolds the templates. It never writes content into `1-Projects/` (those come from `/new-project`) or `3-Resources/briefings/` (those come from `/briefing`). The skills own the content; `/bootstrap` owns the structure.
 
 ---
 
@@ -214,47 +242,9 @@ You don't have to memorize slash commands. Claude reads your prompt and the desc
 | "be a thinking partner — I'm stuck on X" | `/thinking-partner` |
 | "save this article for later" | `/save-resource` |
 | "process my inbox" | `/inbox-process` |
+| "how does X work in this OS?" | `/os-guide` |
 
 You can also type `/skill-name` directly if you know it — both work.
-
----
-
-## What's included
-
-**Skills (44 total).**
-
-| Category | Skills |
-|---|---|
-| Chief-of-staff (everyday workflows) | `archive-project`, `briefing`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `prune-projects`, `save-resource`, `sync-indexes`, `thinking-partner` |
-| Setup & meta | `bootstrap`, `skill-creator` |
-| ContinuousClaude V4.7 pipeline (9) | `autonomous`, `autonomous-research`, `bootup`, `create-handoff`, `premortem`, `research`, `resume-handoff`, `review`, `upgrade-harness` |
-| Research | `company-research`, `people-research` |
-| Project tracking | `confluence-publish-markdown`, `jira-decompose-epic`, `scaffold-engineering-project` |
-| Design (14 workhorse skills) | `design-saas-landing`, `design-simple-deck`, `design-dashboard`, `design-web-prototype`, `design-blog-post`, `design-meeting-notes`, `design-pm-spec`, `design-docs-page`, `design-pricing-page`, `design-team-okrs`, `design-weekly-update`, `design-finance-report`, `design-tweaks`, `design-critique`. All read brand tokens from root `DESIGN.md` — swap with `/use-design <brand>` (72 presets shipped). |
-| Reference (with adapt-before-fork disclaimer) | `samba-publish` — internal-company URL deployment via Cloudflare Pages |
-
-Each skill has its own `.claude/skills/<name>/SKILL.md` file documenting what it does, trigger phrases, and process steps. Browse `.claude/skills/` to look around.
-
-**MCPs (5 pre-configured in `.mcp.json`).**
-
-These are connectors to external services. After install, run `/mcp` in Claude Code to authorize each one (standard browser OAuth — no app registration needed):
-
-- `gemini-vision` — local image/video/document analysis using Google's free Gemini tier. Needs `GEMINI_API_KEY` in your shell env ([get one free](https://aistudio.google.com/apikey)).
-- `exa` — web search.
-- `slack` — read, send, search Slack messages.
-- `atlassian` — Jira tickets + Confluence pages.
-- `figma` — read Figma designs and convert to code.
-
-**Brand presets (72).** Pre-built design systems at `workspace/3-Resources/design-systems/` — Airbnb, Stripe, Linear, Notion, Claude, Vercel, Tesla, BMW, Lamborghini, Spotify, and 62 others. Switch the active brand with `/use-design <brand>` and every design-* skill renders in that style.
-
-**Persona templates (6).** Generic SOUL / USER / IDENTITY / CLAUDE / README / TOOLS templates that `/bootstrap` fills in with your values.
-
-**Workspace skeleton.** PARA-style under `workspace/`:
-- `0-Inbox/` — capture / undecided
-- `1-Projects/` — active projects (each gets its own folder with `CLAUDE.md` + `memory.md`)
-- `2-Coding/` — code repos (each its own git; gitignored from this repo)
-- `3-Resources/` — templates, contacts, meetings, briefings, research, reference, design-systems
-- `4-Archive/` — finished work (move, never delete)
 
 ---
 
@@ -263,24 +253,24 @@ These are connectors to external services. After install, run `/mcp` in Claude C
 ```
 second-brain-os/
 ├── README.md              ← you are here
-├── CLAUDE.md              ← project instructions + Configuration section
+├── CLAUDE.md              ← project instructions + Configuration section (your identity + paths)
 ├── SOUL.md                ← <assistant.name>'s persona, voice, boundaries
 ├── USER.md                ← <user.name>'s profile, role, preferences
 ├── IDENTITY.md            ← <assistant.name>'s name, version, origin
-├── TOOLS.md               ← tool inventory (regenerated by /bootstrap)
+├── TOOLS.md               ← tool inventory (regenerated by /bootstrap from live probes)
 ├── DESIGN.md              ← active design system (swap with /use-design <brand>)
 ├── EXAMPLE-CONFIG.md      ← worked example of the Configuration section
 ├── agent-config.json      ← runtime config
 ├── .mcp.json              ← MCP server registration
-├── .env.example
-├── CHANGELOG.md
+├── .env.example           ← API key stub
+├── CHANGELOG.md           ← release notes
 │
 ├── memory/                ← curated long-form memory (git-tracked)
-│   └── YYYY-MM-DD.md      ← append-only daily logs
+│   └── YYYY-MM-DD.md      ← append-only daily logs (you write these)
 │
 │   (parallel: ~/.claude/projects/.../memory/MEMORY.md — auto-managed, per-machine, NOT in git)
 │
-├── <workspace.root>/      ← your PARA workspace
+├── <workspace.root>/      ← your PARA workspace (gitignored at 2-Coding/)
 │   ├── 0-Inbox/
 │   ├── 1-Projects/        ← each project: CLAUDE.md + memory.md + status frontmatter
 │   ├── 2-Coding/          ← code repos (gitignored)
@@ -365,7 +355,7 @@ Two memory folders, distinct roles. Both load at session start.
 ### Workspace (`<workspace.root>/`)
 
 - New project (planning, strategy, content, research)? → `/new-project` scaffolds at `<workspace.root>/<workspace.projects>/YYYY-MM-slug/`
-- New code repo? → `/new-project`, choose `code-repo` as project-type. Creates at `<workspace.root>/<workspace.coding>/<scope>/<name>/`. Auto-appends to a `code-projects.md` index (which the skill creates on first invocation — fresh forks don't ship one)
+- New code repo? → `/new-project`, choose `code-repo` as project-type. Creates at `<workspace.root>/<workspace.coding>/<name>/`. Auto-appends to a `code-projects.md` index (which the skill creates on first invocation — fresh forks don't ship one)
 - Reference doc, template, meeting prep, research dump? → `<workspace.root>/<workspace.resources>/<topic>/`
 - Ad-hoc / undecided capture? → `<workspace.root>/<workspace.inbox>/`
 - Project complete? → `/archive-project` moves it to `<workspace.archive>/` and flips status frontmatter
@@ -386,6 +376,40 @@ Never write outputs at the workspace root.
 - One-off scripts → `<workspace.root>/<workspace.archive>/<context>/` or a code repo
 - Reference data (CSVs, employee directories) → `<workspace.root>/<workspace.resources>/reference/`
 - Junk (`.DS_Store`, zips, log dumps) → delete
+
+---
+
+## What's included
+
+**Skills (45 total).**
+
+| Category | Skills |
+|---|---|
+| Chief-of-staff (everyday workflows) | `archive-project`, `briefing`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `os-guide`, `prune-projects`, `save-resource`, `sync-indexes`, `thinking-partner` |
+| Setup & meta | `bootstrap`, `skill-creator` |
+| ContinuousClaude V4.7 pipeline (9) | `autonomous`, `autonomous-research`, `bootup`, `create-handoff`, `premortem`, `research`, `resume-handoff`, `review`, `upgrade-harness` |
+| Research | `company-research`, `people-research` |
+| Project tracking | `confluence-publish-markdown`, `jira-decompose-epic`, `scaffold-engineering-project` |
+| Design (14 workhorse skills) | `design-saas-landing`, `design-simple-deck`, `design-dashboard`, `design-web-prototype`, `design-blog-post`, `design-meeting-notes`, `design-pm-spec`, `design-docs-page`, `design-pricing-page`, `design-team-okrs`, `design-weekly-update`, `design-finance-report`, `design-tweaks`, `design-critique`. All read brand tokens from root `DESIGN.md` — swap with `/use-design <brand>` (72+ presets shipped). |
+| Reference (with adapt-before-fork disclaimer) | `samba-publish` — internal-company URL deployment via Cloudflare Pages |
+
+Each skill has its own `.claude/skills/<name>/SKILL.md` file documenting what it does, trigger phrases, and process steps. Browse `.claude/skills/` to look around.
+
+**MCPs (5 pre-configured in `.mcp.json`).**
+
+These are connectors to external services. After install, run `/mcp` in Claude Code to authorize each one (standard browser OAuth — no app registration needed):
+
+- `gemini-vision` — local image/video/document analysis using Google's free Gemini tier. Needs `GEMINI_API_KEY` in your shell env ([get one free](https://aistudio.google.com/apikey)).
+- `exa` — web search.
+- `slack` — read, send, search Slack messages.
+- `atlassian` — Jira tickets + Confluence pages.
+- `figma` — read Figma designs and convert to code.
+
+**Brand presets (72+).** Pre-built design systems at `workspace/3-Resources/design-systems/` — Airbnb, Stripe, Linear, Notion, Claude, Vercel, Tesla, BMW, Lamborghini, Spotify, and 60+ others. Switch the active brand with `/use-design <brand>` and every design-* skill renders in that style.
+
+**Persona templates (6).** Generic SOUL / USER / IDENTITY / CLAUDE / README / TOOLS templates that `/bootstrap` fills in with your values.
+
+**Hooks (7 + 2 libs).** PreToolUse, PostToolUse, UserPromptSubmit, PreCompact, Stop hooks wired in `.claude/settings.json`. Handle status line, structural code reads, post-edit diagnostics, auto-handoff on compaction, intent routing, external-action friction (Slack send, force-push, Atlassian writes, `rm -rf`).
 
 ---
 

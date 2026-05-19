@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — v0.2.1 (ships 3 skills + 2 hooks that were missing from v0.2.0)
+
+The v0.2.0 release inadvertently shipped without three productivity skills and two SessionStart/PreToolUse hooks that already worked on the development fork. v0.2.1 adds them to the extractor allowlist and ships them publicly. Plus a PII scrub of the new ship surface caught and fixed before the bundle ever left.
+
+**Skills (3):**
+- **`/todo`** — Task tracking in personal Notion Action Items [DB]. Read-mostly skill: surfaces today's/tomorrow's tasks (`/todo today`), supports quick capture (`/todo add "..."`), and completion (`/todo done "..."`). Respects a PARA-aligned schema (1st-5th Priority, LNO Category, Kanban Status, Projects [DB] relation). Wraps the official `ntn` CLI + Notion HTTP API. Token + DS IDs auto-load from `~/.second-brain-os.env`. Never creates databases, renames properties, or deletes tasks (only Done/Archived status changes).
+- **`/end-of-day`** — Nightly task reconciliation. Cross-references today's calendar / meeting transcripts / sent emails / (optionally) Slack outbound messages against open Notion Action Items to PROPOSE done-candidates and surface new commitments not yet tracked. Never auto-marks done — returns a proposed batch for confirmation. Closes the loop where overdue items get done same-day but stay flagged "overdue", and tasks with no due date never surface in "today" views.
+- **`/atlassian-attach`** — Upload files (screenshots, diagrams, PDFs) as attachments to a Jira issue or Confluence page. Fills the gap the official Atlassian MCP leaves open (no attachment-upload tools). Pure stdlib Python via REST API. Pairs with `/confluence-publish-markdown` and `/jira-decompose-epic`. Auth via `ATLASSIAN_BASIC_AUTH` env var (classic API token only — scoped tokens cannot upload). Instance set via `ATLASSIAN_INSTANCE` env or `--instance <name>` CLI flag.
+
+**Hooks (2):**
+- **`session-start-tasks.mjs`** — SessionStart hook that injects current Notion task state (overdue + due today, 1st Priority) into session context, so the assistant is always aware of pending tasks before responding. Fails silently if `NOTION_API_TOKEN` / `NOTION_ACTION_ITEMS_DS` env vars are missing. Pairs with `/todo`.
+- **`pre-slack-draft-contact-check.mjs`** — PreToolUse hook that, when drafting/sending a Slack message to a known contact, emits the contact-file context to stderr so the model sees relationship + open commitments + tone notes BEFORE the draft lands. Requires a `.claude/.slack-id-map.json` (Slack user IDs → contact slugs) and contact files at `<workspace.root>/3-Resources/contacts/<slug>.md`. Auto-discovers workspace root by globbing; fails silently if map or contacts missing.
+
+### Changed
+
+- **`scripts/extract-template.sh` allowlist updated**: 45 → 48 skills (added `atlassian-attach`, `end-of-day`, `todo`); 7 → 9 hooks copied (added `session-start-tasks`, `pre-slack-draft-contact-check`). Header comment updated to reflect new counts.
+- **`pre-slack-draft-contact-check.mjs` workspace-path auto-discovery**: previously hardcoded `beru-workspace/3-Resources/contacts/`. Now globs `*/3-Resources/contacts/` at project root, so it works for any workspace name (`workspace`, `brain`, `vault`, etc.) — set by `/bootstrap` or fork user.
+- **`atlassian-attach` scripts/attach.py**: removed `sambatv` hardcoded default for Atlassian subdomain; now empty default with a clear error message pointing to `ATLASSIAN_INSTANCE` env var or `--instance` flag. Example issue keys in docs changed from `AITF-450` (Samba's Atlassian project key) to generic `PROJ-450`.
+
+### Fixed (PII scrub before ship)
+
+Caught and fixed before the v0.2.1 bundle left the dev repo:
+
+- `session-start-tasks.mjs` — "Beru is always aware" → "the assistant is always aware"; "When Sid says..." → "When the user says..."
+- `pre-slack-draft-contact-check.mjs` — header rewritten to remove the specific 2026-05-18 incident reference (named a real colleague + their location); path reference genericized; closing message "before Sid sees it" → "before the user sees it"
+- `todo/SKILL.md` — "Token authorized against Samba TV workspace" + `siddani09@gmail.com` reference rewritten to generic "work / shared Notion workspace"; "Sid promised X to Y" example → "<user.name> promised X to Y"
+- `todo/lib/ntn.sh` — "Sid's convention from MEMORY" → "PARA-aligned convention"
+- `atlassian-attach/references/usage.md` — all `sambatv.atlassian.net` URLs → `acme.atlassian.net`; "Different Atlassian instance (not sambatv)" → "Different Atlassian instance (override the default)"; "Defaults to `sambatv`" → "Defaults to whatever `ATLASSIAN_INSTANCE` env var is set to"
+- `atlassian-attach/scripts/attach.py` — `__pycache__/*.pyc` stale bytecode removed from skill directory (already gitignored, but a local run had left an artifact)
+
+### Removed
+
+- `.claude/.slack-id-map.json` now in `.gitignore` (Sid's personal Slack user-ID → contact-slug map; locally configured, never ship). Defense-in-depth against future accidental commits.
+
+### Notes
+
+- All three Phase 10 extractor leakage passes (PII / path-refs / samba-tools-setup) clean on the v0.2.1 export.
+- The v0.2.1 skill/hook PII scrubs and extractor allowlist updates landed in daily-agents before re-extraction.
+
+---
+
 ### Added — v0.2.0 bundle (WFS-simplify-install, 2026-05-19)
 
 - **`--with-coding` tier flag.** `./scripts/install.sh` now ships a knowledge-worker default tier (foundation + jq + `.env.example` + verify, ~3-5 min) and gates Rust/uv/CCv4 binaries/CCv4 Python deps/FastEdit-MCP behind `--with-coding`. Coding tier is required for `/research`, `/autonomous`, and FastEdit-MCP-backed edits — KW flows (`/briefing`, `/todo`, `/find`) don't need it.

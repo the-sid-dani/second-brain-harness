@@ -43,7 +43,7 @@ Caught and fixed before the v0.2.1 bundle left the dev repo:
 
 ### Notes
 
-- All three Phase 10 extractor leakage passes (PII / path-refs / samba-tools-setup) clean on the v0.2.1 export.
+- All three Phase 10 extractor leakage passes (PII / path-refs / T1 invariant) clean on the v0.2.1 export.
 - The v0.2.1 skill/hook PII scrubs and extractor allowlist updates landed in daily-agents before re-extraction.
 
 ---

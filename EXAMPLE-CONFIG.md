@@ -88,7 +88,7 @@ If you prefer to manually configure (skipping the smoke test, persona regenerati
 
 1. Edit the Configuration section in `CLAUDE.md` with your values
 2. Edit `SOUL.md`, `USER.md`, `IDENTITY.md`, `README.md`, `TOOLS.md` directly to fill in your `<assistant.name>` and `<user.name>` everywhere
-3. Create the workspace folder skeleton via `mkdir -p <workspace.root>/{0-Inbox,1-Projects,2-Coding/{work,personal,forks,archive},3-Resources/{templates,research,reference,meetings,contacts,design-systems},4-Archive}`
+3. Create the workspace folder skeleton via `mkdir -p <workspace.root>/{0-Inbox,1-Projects,2-Coding,3-Resources/{templates,research,reference,meetings,contacts,design-systems,onboarding},4-Archive}` (2-Coding is flat — one folder per repo, no work/personal/forks/archive sub-tree)
 4. Copy templates to make them available: `cp -r workspace/3-Resources/templates/persona <workspace.root>/3-Resources/templates/`
 
 The skills will work either way — they only depend on the Configuration section being filled in correctly.

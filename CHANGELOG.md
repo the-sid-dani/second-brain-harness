@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — v0.2.0 bundle (WFS-simplify-install, 2026-05-19)
+
+- **`--with-coding` tier flag.** `./scripts/install.sh` now ships a knowledge-worker default tier (foundation + jq + `.env.example` + verify, ~3-5 min) and gates Rust/uv/CCv4 binaries/CCv4 Python deps/FastEdit-MCP behind `--with-coding`. Coding tier is required for `/research`, `/autonomous`, and FastEdit-MCP-backed edits — KW flows (`/briefing`, `/todo`, `/find`) don't need it.
+- **`SBOS_TIER` marker.** Installer writes `SBOS_TIER=minimal|coding` idempotently to `~/.second-brain-os.env` (macOS-portable sed; preserves existing vars). `/bootstrap` Step 2 reads the marker — on minimal it renders a "skipped, not missing" panel for the CCv4 toolchain instead of a missing-tool warning.
+- **`--with-ripgrep` opt-in flag.** ripgrep is no longer auto-installed; `/find` skill works with `grep -r` fallback. Pass `--with-ripgrep` for the faster path.
+- **ASCII logo + closing summary card + duration.** `./scripts/install.sh` now opens with a banner, prints a tabular installed-tools card on exit (tier-aware columns), reports total install time, and tees output to `~/.claude/install.log`.
+- **3-layer closing banner.** Final install message frames the journey as Layer 1 (system tools — done) → Layer 2 (`/bootstrap`) → Layer 3 (optional `.env` keys). Coding-tier hint shown only on minimal install.
+- **`.mcp.json` interactive opt-in via `/bootstrap` Step 2.5.** Default `.mcp.json` ships **3 universals only** (gemini-vision / exa / firecrawl) — zero red errors on a fresh `claude` launch. Slack / Atlassian / Figma canonical entries live in `.mcp.json` `_notes.opt_in_*` (single source of truth) and get appended to `mcpServers` interactively when the fork user picks them during bootstrap.
+- **firecrawl MCP** added as the third universal default — official remote MCP at `https://mcp.firecrawl.dev/v2/mcp`, auth via `FIRECRAWL_API_KEY` env var.
+- **`assistant.pronoun` field** added to `/bootstrap` Step 4a (options: she / he / they / no-pronouns). Configuration block now includes `assistant.pronoun = X`; all `<him/her/them>` placeholder strings resolve to the chosen pronoun in bootstrap output.
+- **Day 2+ rhythms externalized** to `beru-workspace/3-Resources/onboarding/day-2-plus.md`. `/bootstrap` final message links to it instead of inlining the content.
+
+### Changed
+
+- **`/bootstrap` SKILL.md slimmed 929 → 498 LOC (-46%)**. 8 narrated steps merged into 6. T1-T4 invariants kept canonical-only in their dedicated section; point-of-use full paragraphs replaced with single-line refs in step headers. Failure-modes table trimmed 18 → 10 rows. Step 4b (voice synthesis) three branches collapsed into one spec with a single preview-before-write gate. Affective moments preserved verbatim: "Meet your assistant:" echo-back, voice-synthesis preview gate.
+- **`.env.example` rewritten.** Sections split by purpose (default-MCP keys / skill-only keys / opt-in connector keys). Added `GEMINI_API_KEY` and `FIRECRAWL_API_KEY` entries with shell-export notes. Removed the stale "installer prompts interactively — re-run with `--reconfigure` to rotate" copy (installer no longer prompts).
+- **`INSTALL.md` rewritten for the tier model.** Was: 11 mandatory steps with ffmpeg/yt-dlp/Rust/CCv4 unconditional. Now: Path A (minimal, 5 steps) and Path B (coding, +5 steps), tier marker + post-install OAuth flow updated for the opt-in MCP model.
+- **`TOOLS.md` MCP + env sections** rewritten to lead with the 3 default MCPs; opt-in connectors documented as "added during `/bootstrap`, not by hand-editing `.mcp.json`". Added `FIRECRAWL_API_KEY` and `SBOS_TIER` to the Environment files section.
+- **`README.md` Forking section** updated with the 2-layer install model (system tools / persona + workspace), tier flag mention, and the v0.2.0 MCP defaults paragraph. Quick Reference table adds tier-aware install rows.
+- **Bootstrap Step 2 panel copy** swapped to the literal UX-flagged text from synthesis-spec §Q5 — "Optional coding-tier tools — Skipped, not missing" instead of the older CCv4-missing-warning copy.
+
+### Removed
+
+- **ffmpeg + yt-dlp auto-install** dropped from `scripts/lib/sys-extras.sh` (zero active skills consume them; pre-existing brew installs untouched).
+- **ffmpeg / yt-dlp probes** dropped from `scripts/lib/verify.sh`.
+- **TOOLS.md rows** for ffmpeg + yt-dlp removed (the binaries may still exist on Sid's machine but are no longer managed by the installer).
+- **Slack / Atlassian / Figma** removed from default `.mcp.json` `mcpServers` (preserved in `_notes.opt_in_*` for bootstrap re-add). Fresh-fork `/mcp` now shows 3 entries, zero red errors. Sid's existing fork: project-scope entries gone; user-scope registrations via samba-onboarding unaffected.
+- **`SAMBA_ONBOARDING_DETECTED` block dropped from `scripts/install.sh`.** The Samba-employee detection branch + closing-banner hints leaked the private path `beru-workspace/2-Coding/samba-onboarding/` into the public OS bundle. Caught by `extract-template.sh` PHASE 10 path-ref leakage probe before shipping to `second-brain-os`. Samba employees still install their internal CLIs by running samba-onboarding directly — they don't need the daily-agents installer to surface that fact.
+
+### Notes
+
+- v0.2.0 acceptance gate (per IMPL_PLAN §7) met structurally: bootstrap LOC <500 ✅ (498); MCP defaults clean ✅ (3 universals); tier gating ✅; zero "what's bloks?" jargon on minimal tier ✅ (bootstrap Step 2 panel uses the "Skipped, not missing" wording). Empirical M1/M2 (time-to-first-`/briefing` <15 min; default install <5 min) require fresh-VM smoke test before tagging.
+- **Not in v0.2.0**: cross-platform Python rewrite (W4, ~14-18h) and Windows port — deferred to v0.3.0. `--doctor` flag is a no-op stub in v0.2.0; full implementation is part of v0.3.0 (W5).
+
 ## [0.1.23] - 2026-05-17
 
 ### Removed

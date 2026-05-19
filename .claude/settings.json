@@ -4,6 +4,18 @@
     "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/status.mjs\""
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start-tasks.mjs\"",
+            "timeout": 6
+          }
+        ]
+      }
+    ],
     "UserPromptSubmit": [
       {
         "matcher": "",
@@ -34,6 +46,16 @@
             "type": "command",
             "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/external-action-guard.mjs\"",
             "timeout": 5
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__slack__slack_send_message_draft|mcp__slack__slack_send_message|mcp__slack__slack_schedule_message",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-slack-draft-contact-check.mjs\"",
+            "timeout": 4
           }
         ]
       }

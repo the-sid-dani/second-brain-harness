@@ -62,61 +62,54 @@ The thing you're trying to reach is `/bootstrap` inside Claude Code. Everything 
 - `git` on PATH (`xcode-select --install` if missing)
 - Internet access
 
-### Path A — Minimal (~5 min) — chief-of-staff + design only
+### Path A — Minimal (~5 min) — chief-of-staff + design only (knowledge-worker default)
 
-For most fork users. Skip the shell installer entirely.
+For most fork users. The default installer tier — foundation toolchain + `.env.example` + tier marker. Skip the `--with-coding` flag entirely.
 
 ```bash
 git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
 cd ~/Desktop/second-brain-os
+./scripts/install.sh    # optional — installs missing foundation tools only (~3-5 min)
 claude
 ```
 
-Inside the Claude Code session that opens, type `/bootstrap`. ~10 min interactive walkthrough (identity, persona, design brand, workspace folders).
+If `gh`, `claude`, `jq`, and `node` are already on PATH, the installer skips foundation steps and just writes `.env.example` + the tier marker (`SBOS_TIER=minimal` → `~/.second-brain-os.env`). You can even skip `./scripts/install.sh` entirely and go straight to `claude` — `/bootstrap` will still work, it just won't have the tier marker (it'll assume minimal).
+
+Inside the Claude Code session that opens, type `/bootstrap`. ~10-15 min interactive walkthrough — identity, persona, design brand, voice, workspace folders, optional MCP connectors (Slack / Atlassian / Figma — opt-in only).
 
 You're done. Try *"morning, what's on my plate today?"* or *"let's start a new project for X"* to confirm.
 
-### Path B — Lite CCv4 (~10-15 min) — adds `/research`, `/autonomous`, knowledge graph
+### Path B — Coding (~15-20 min) — adds `/research`, `/autonomous`, `/premortem`, FastEdit MCP
 
-If you want the power-user skills, install the supporting toolchain BEFORE opening Claude (hooks and binaries need to be in place at session-start):
-
-```bash
-git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
-cd ~/Desktop/second-brain-os
-./scripts/install.sh --no-fastedit-model
-claude
-```
-
-The installer adds Rust, uv, bloks, tldr-cli, Python deps for the Ouros harness, plus ripgrep/ffmpeg/yt-dlp. The `--no-fastedit-model` flag skips the 3 GB MLX merge model (you can add it later by re-running without the flag).
-
-**API keys**: the installer prompts for ANTHROPIC, EXA, NIA, HF, ATLASSIAN. Pass `--skip-api-keys` to write empty `.env` stubs you fill in later.
-
-Then inside Claude: `/bootstrap` for identity setup, then `/mcp` to OAuth into the HTTP MCPs (Slack, Atlassian, Figma, Exa) — standard browser flow, no app registration needed.
-
-### Path C — Full (~20-40 min) — adds FastEdit MCP
-
-Same as Lite but includes the FastEdit MLX merge model (~3 GB) for AST-aware code edits with ~45% fewer tokens than diff-based edits:
+If you want the power-user skills, opt into the coding tier with `--with-coding`:
 
 ```bash
 git clone https://github.com/the-sid-dani/second-brain-os ~/Desktop/second-brain-os
 cd ~/Desktop/second-brain-os
-./scripts/install.sh
+./scripts/install.sh --with-coding                       # full coding tier (~15-20 min, ~5 GB)
+# or, to skip the 3 GB FastEdit MLX merge model:
+./scripts/install.sh --with-coding --no-fastedit-model   # ~10-15 min, ~500 MB
 claude
 ```
+
+`--with-coding` adds Rust, uv, the CCv4 binaries (`bloks`, `tldr-cli`), CCv4 Python deps for the Ouros harness, and the FastEdit MCP. The tier marker becomes `SBOS_TIER=coding` and `/bootstrap` Step 2 probes the full CCv4 toolchain.
+
+Add `--with-ripgrep` if you want the faster `/find` skill (the `grep -r` fallback works without it). Both flags can stack with `--with-coding`.
+
+**API keys**: the installer doesn't prompt. It writes an annotated `.env.example` to the repo root listing 7 optional keys (GEMINI, FIRECRAWL, ANTHROPIC, EXA, NIA, HF, ATLASSIAN) — each with a one-line description of what feature it unlocks. Claude Code itself uses OAuth on first run, so none of those keys are required to start. Copy to `.env` and fill in only what you need: `cp .env.example .env`. Note: MCPs read from your shell env (not `.env`), so for `GEMINI_API_KEY` and `FIRECRAWL_API_KEY` also `export` them in `~/.zshrc`.
+
+Then inside Claude: `/bootstrap` for identity setup. The default `.mcp.json` ships 3 universal MCPs (gemini-vision, exa, firecrawl) — zero red errors on first `/mcp`. Slack / Atlassian / Figma are opt-in: bootstrap Step 2.5 asks which connectors you use and appends them to `.mcp.json` interactively. Run `/mcp` after bootstrap to OAuth any connectors you added — standard browser flow; Slack uses Anthropic's published clientId (a Slack workspace admin approves it once).
 
 On Apple Silicon, FastEdit runs locally via MLX. On Intel Macs, the MLX backend won't be hardware-accelerated.
 
-Then inside Claude: `/bootstrap`, then `/mcp`.
-
 ### Tier comparison
 
-| Path | What you get | Disk | Wall time |
-|---|---|---|---|
-| **A: Minimal** | 36 chief-of-staff + design skills, persona templates, MCP research (Slack/Atlassian/Figma via OAuth) | ~5 MB | ~5 min |
-| **B: Lite CCv4** | Above + `/research`, `/autonomous`, `/premortem`, `/review`, bloks, tldr, Ouros REPL harness | ~500 MB | ~10–15 min |
-| **C: Full** | Above + FastEdit MCP (AST-aware code edits) | ~5 GB | ~20–40 min |
+| Path | Flag | What you get | Disk | Wall time |
+|---|---|---|---|---|
+| **A: Minimal** (default) | (none) | Chief-of-staff + design skills, persona templates, 3 universal MCPs (gemini-vision/exa/firecrawl). Bootstrap Step 2.5 adds Slack/Atlassian/Figma if you opt in. | ~5 MB | ~3-5 min |
+| **B: Coding** | `--with-coding` | Above + `/research`, `/autonomous`, `/premortem`, `/review`, bloks, tldr, Ouros REPL harness, FastEdit MCP (AST-aware code edits). | ~5 GB (or ~500 MB with `--no-fastedit-model`) | ~10-20 min |
 
-You can upgrade later — re-run `./scripts/install.sh` and it picks up where you left off (idempotent).
+You can upgrade later — re-run `./scripts/install.sh --with-coding` and it picks up where you left off (idempotent, additive). The tier marker (`SBOS_TIER`) gets updated to `coding` automatically and `/bootstrap` Step 2 will probe the new tools on next run.
 
 ### Why `cd` before `claude`
 
@@ -125,12 +118,12 @@ Claude Code loads skills + hooks by scanning the directory it was launched from.
 ### Re-running, upgrading, downgrading
 
 ```bash
-./scripts/install.sh --reconfigure        # re-prompt API keys (rotate)
 ./scripts/install.sh --no-fastedit-model  # skip the 3 GB model
-./scripts/install.sh --skip-api-keys      # write empty .env stubs
 ./scripts/install.sh --verbose            # stream sub-command output
 ./scripts/install.sh --help               # full flag list
 ```
+
+The installer is fully idempotent — re-run any time to pick up upgrades. It never prompts for API keys; those live in `.env` (see `.env.example` written at the end of install, or in this repo's root).
 
 See `INSTALL.md` for step-by-step manual install (use if the installer fails mid-way or you maintain a non-standard toolchain).
 
@@ -151,34 +144,36 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
    1. Check what I have installed by running `git --version` and `claude --version`.
       If anything's missing, tell me how to install it on a Mac and pause until I confirm.
 
-   2. Ask me which install tier I want — Minimal, Lite CCv4, or Full. Briefly
-      explain the trade-offs (chief-of-staff + design only vs. + /research and
-      /autonomous vs. + FastEdit MCP) and the disk/time cost of each tier.
+   2. Ask me which install tier I want — Minimal or Coding. Briefly explain
+      the trade-offs (chief-of-staff + design only vs. + /research, /autonomous,
+      /premortem, /review, FastEdit MCP) and the disk/time cost of each.
 
    3. Ask me where I want to clone the repo (default: ~/Desktop/second-brain-os).
       Clone it there for me, then cd into it.
 
-   4. If I picked Lite CCv4 or Full, run the installer for me:
-        - Lite CCv4:  `./scripts/install.sh --no-fastedit-model --skip-api-keys`
-        - Full:        `./scripts/install.sh --skip-api-keys`
+   4. Run the installer for me:
+        - Minimal:  `./scripts/install.sh`
+        - Coding:    `./scripts/install.sh --with-coding`
+                     (add `--no-fastedit-model` if I want to skip the 3 GB MLX model)
 
-      The `--skip-api-keys` flag writes empty `.env` stubs instead of prompting
-      interactively (you can't enter keys for me anyway). Tell me afterward
-      that I need to open `.env` and fill in the 5 keys (ANTHROPIC, EXA, NIA,
-      HF, ATLASSIAN) before running CCv4 skills like /research or /autonomous.
+      The installer never prompts for API keys — it writes an annotated
+      `.env.example` (7 optional keys) you can fill in later. Claude Code
+      itself uses OAuth on first run, so none of the optional keys are
+      needed to start. Tell me where the `.env.example` lives so I know
+      where to look if I want to enable GEMINI / FIRECRAWL / EXA / NIA /
+      Atlassian / HF / Anthropic-SDK features.
 
       Heads up: install.sh may ask for my sudo password ONCE (if Homebrew isn't
       installed yet) and will run many sub-commands (brew, npm, cargo, pip, uv).
       Claude Code may prompt me to approve each Bash command. That's expected.
 
-   5. If I picked Minimal, skip step 4 — just hand off to step 6.
-
-   6. **Important honest handoff**: tell me you can't invoke /bootstrap from this
+   5. **Important honest handoff**: tell me you can't invoke /bootstrap from this
       session because Claude Code loads skills at session-start. Tell me to:
         - type `exit` to quit this Claude Code session
         - re-open Claude Code from the cloned folder (the path you just cloned into)
         - then type `/bootstrap` in that new session
-        - and if I picked Lite CCv4 or Full, also run `/mcp` to OAuth Slack/Figma/Atlassian
+        - bootstrap Step 2.5 will offer optional Slack/Figma/Atlassian MCPs —
+          pick the ones I use; afterward run `/mcp` to OAuth them
 
       Don't pretend to run /bootstrap. The skill literally isn't available here.
 
@@ -188,9 +183,9 @@ If you'd rather have a conversation than run terminal commands, here's a prompt 
 
 3. **Follow Claude's instructions** to clone the repo and (optionally) run the installer. When it's done, Claude will tell you to quit and re-open Claude Code in the cloned folder.
 
-4. **Re-open Claude Code** in the cloned folder (Terminal: `cd ~/Desktop/second-brain-os && claude`), then type `/bootstrap`. If you picked Lite CCv4 or Full, also run `/mcp` to authorize Slack, Figma, and Atlassian.
+4. **Re-open Claude Code** in the cloned folder (Terminal: `cd ~/Desktop/second-brain-os && claude`), then type `/bootstrap`. Bootstrap Step 2.5 will offer optional Slack/Atlassian/Figma MCPs — pick the ones you use; afterward run `/mcp` to OAuth them.
 
-5. **Fill in `.env`** if you used `--skip-api-keys` — open it in your editor and paste each key. The file has comments pointing at where to get each one.
+5. **(Optional) Fill in `.env`** — only if you want to enable one of the 7 optional features (GEMINI / FIRECRAWL / EXA / NIA / Atlassian-uploads / FastEdit-model / Anthropic-SDK Python tools). The installer wrote an annotated `.env.example` at the repo root with one-line descriptions of each key. Copy it: `cp .env.example .env`, then edit. Nothing in `/bootstrap`, `/briefing`, or the design skills requires these. Note: for the MCP keys (`GEMINI_API_KEY`, `FIRECRAWL_API_KEY`) also `export` them in `~/.zshrc` — MCPs read from your shell env, not `.env`.
 
 ---
 

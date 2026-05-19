@@ -1,64 +1,100 @@
 #!/usr/bin/env bash
-# scripts/lib/api-keys.sh — interactively configure CCv4 API keys
+# scripts/lib/api-keys.sh — write annotated .env.example, do NOT prompt.
 #
-# Honors:
-#   SKIP_API_KEYS=1  → write empty .env stubs, do not prompt
-#   RECONFIGURE=1    → re-prompt even for already-populated keys
+# Design: professional installers (Homebrew, oh-my-zsh, starship, chezmoi)
+# never prompt for credentials inline. They install binaries; secrets are
+# deferred to .env.example + post-install README OR first-use prompts.
+#
+# Claude Code itself uses OAuth (Pro/Max/Enterprise/Console login on first
+# `claude` run) — no ANTHROPIC_API_KEY needed for the core LLM. The keys
+# below are all OPTIONAL and only power specific niche features.
+#
+# Honors NONINTERACTIVE=1 (Homebrew convention) — but this step is
+# non-interactive by default, so the flag is effectively a no-op here.
 
 configure_api_keys() {
-    step "Configuring API keys"
+    step "Writing annotated .env.example (optional keys)"
 
-    if [ "${SKIP_API_KEYS:-0}" = "1" ]; then
-        info "--skip-api-keys set; writing empty .env stubs"
-        local env_file=".env"
-        if [ ! -f "$env_file" ]; then
-            cat > "$env_file" <<'STUB'
-# CCv4 API keys
+    local example_file=".env.example"
+
+    # Always (re)write .env.example — it's documentation, not state.
+    cat > "$example_file" <<'EOF'
+# second-brain-os API keys
+#
+# Copy this file to .env (gitignored) and fill in the keys you want to use.
+# The installer no longer prompts — it just writes this annotated example.
+# Edit .env directly to rotate; no installer re-run needed.
+#
+# Required ONLY if you use the listed skill or MCP — the OS boots fine with
+# every key blank. Claude Code itself uses OAuth (Pro/Max/Console login on
+# first `claude` run); /briefing, /todo, /find work with zero keys.
+
+# ────────────────────────────────────────────────────────────────────────
+# Default MCPs (.mcp.json) — keys auto-source from your shell env
+# ────────────────────────────────────────────────────────────────────────
+
+GEMINI_API_KEY=
+# Used by: gemini-vision MCP (image/PDF/video analysis)
+# Get one: https://aistudio.google.com/apikey  (free tier — 15 req/min)
+# Note: must ALSO be exported in your shell (e.g. ~/.zshrc) for the MCP to
+# read it at launch — .env-only export won't reach a child claude process.
+
+FIRECRAWL_API_KEY=
+# Used by: firecrawl MCP (web scrape / crawl / extract — v0.2.0 default MCP)
+# Get one: https://firecrawl.dev
+# Note: must ALSO be exported in your shell for the MCP to read it.
+# Without it, the MCP loads but every tool call returns 401.
+
+# (exa MCP needs no key — its HTTP transport handles auth account-side)
+
+# ────────────────────────────────────────────────────────────────────────
+# Skill-only keys (no MCP — used by .claude/tools/ Python bridges + skills)
+# ────────────────────────────────────────────────────────────────────────
+
 ANTHROPIC_API_KEY=
+# Used by: Ouros harness sub-LLM calls (/research, /autonomous), FastEdit
+# Get one: https://console.anthropic.com
+# Note: Claude Code itself does NOT need this — it auths via OAuth on
+# `claude` login. Only needed for the CCv4 Python tools that call the
+# Anthropic SDK directly.
+
 EXA_API_KEY=
+# Used by: company-research and people-research skills (Python bridge)
+# Get one: https://exa.ai
+# Note: the exa MCP itself uses HTTP-transport auth — this key only powers
+# the skill-side Python bridge.
+
 NIA_API_KEY=
+# Used by: NIA docs bridge (/autonomous-research)
+# Get one: https://trynia.ai
+
+# ────────────────────────────────────────────────────────────────────────
+# Optional connector keys (used by opt-in MCPs you added via /bootstrap)
+# ────────────────────────────────────────────────────────────────────────
+
 HF_TOKEN=
+# Used by: FastEdit model pull if the model is gated on Hugging Face
+# Get one: https://huggingface.co/settings/tokens
+
 ATLASSIAN_BASIC_AUTH=
-STUB
-            info "stub $env_file written; fill in manually before running CCv4 skills"
-        else
-            info ".env exists; not overwriting"
-        fi
-        return 0
+# Used by: /atlassian-attach skill (file uploads — MCP doesn't cover them)
+# Get one: https://id.atlassian.com/manage-profile/security/api-tokens
+# Note: must be a CLASSIC token (scoped tokens cannot upload attachments).
+# Format: base64(email:token) — generate with:
+#   printf 'you@example.com:YOUR_API_TOKEN' | base64
+EOF
+
+    info "wrote $example_file (7 optional keys, all documented)"
+
+    if [ ! -f .env ]; then
+        info "no .env yet — copy .env.example to .env when you want to enable a feature"
+    else
+        info ".env already exists — left untouched"
     fi
 
-    # Interactive prompt helper — idempotent upsert into <file>.
-    prompt_key() {
-        local name="$1" file="$2" url="$3"
-        local current_val=""
-        # `|| true` guards against grep exit 1 (no match) tripping pipefail+errexit
-        if [ -f "$file" ]; then
-            current_val="$(grep "^${name}=" "$file" 2>/dev/null | head -1 | cut -d= -f2- || true)"
-        fi
-        if [ -n "$current_val" ] && [ "${RECONFIGURE:-0}" != "1" ]; then
-            info "$name already set in $file (use --reconfigure to re-prompt)"
-            return 0
-        fi
-        printf "  %s (get from %s): " "$name" "$url"
-        local val
-        read -r val
-        # idempotent upsert
-        if [ -f "$file" ] && grep -q "^${name}=" "$file"; then
-            # macOS sed needs '' after -i
-            sed -i.bak "s|^${name}=.*|${name}=${val}|" "$file" && rm -f "${file}.bak"
-        else
-            printf '%s=%s\n' "$name" "$val" >> "$file"
-        fi
-        info "$name written to $file"
-    }
+    cat <<'NOTE'
 
-    : > /dev/null  # ensure .env exists
-    [ -f .env ] || touch .env
-
-    prompt_key ANTHROPIC_API_KEY .env "https://console.anthropic.com"
-    prompt_key EXA_API_KEY .env "https://exa.ai"
-    prompt_key NIA_API_KEY .env "https://trynia.ai"
-    prompt_key HF_TOKEN .env "https://huggingface.co/settings/tokens (optional)"
-
-    prompt_key ATLASSIAN_BASIC_AUTH .env "https://id.atlassian.com/manage-profile/security/api-tokens"
+  ℹ️  No API keys needed to start.  Claude Code OAuths on first `claude` run.
+     Enable individual features later by editing .env  (see .env.example).
+NOTE
 }

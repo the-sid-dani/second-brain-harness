@@ -11,7 +11,11 @@
     },
     "slack": {
       "type": "http",
-      "url": "https://mcp.slack.com/mcp"
+      "url": "https://mcp.slack.com/mcp",
+      "oauth": {
+        "clientId": "1601185624273.8899143856786"
+      },
+      "callbackPort": 3118
     },
     "atlassian": {
       "type": "http",
@@ -25,7 +29,8 @@
   "_notes": {
     "gemini_vision_env": "Requires GEMINI_API_KEY exported in your shell. Free tier 15 req/min. Get a key at https://aistudio.google.com/apikey and add `export GEMINI_API_KEY=...` to your shell rc.",
     "exa_endpoint": "Uses the advanced endpoint. Only `web_search_advanced_exa` is recommended (per project decision). Auth via Exa's HTTP transport.",
-    "http_mcps": "slack / atlassian / figma / exa are all independent HTTP MCPs. After cloning, run /mcp and authorize each one — standard browser-OAuth, no clientId or app registration needed.",
+    "slack_oauth": "Slack's MCP does NOT support RFC 7591 dynamic client registration, so a pre-registered clientId is required. The clientId above is Anthropic's public Slack app (published in anthropics/claude-plugins-official). Fork users do NOT need to register their own Slack app — just run `/mcp` → Authenticate, then a Slack workspace admin approves the app once. If you prefer to register your own app, replace clientId at https://api.slack.com/apps.",
+    "http_mcps": "atlassian / figma / exa support standard browser-OAuth via /mcp Authenticate (no clientId needed). Slack requires the pre-registered clientId above. Run /mcp after install and authorize each.",
     "fork_note": "This .mcp.json was sanitized for public-fork use — no tokens, no maintainer-specific history. Adjust freely for your own setup."
   }
 }

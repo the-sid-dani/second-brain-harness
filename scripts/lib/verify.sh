@@ -9,17 +9,17 @@ verify_all() {
         "claude --version"
         "gh --version"
         "jq --version"
-        "cargo --version"
-        "bloks --version"
-        "tldr --version"
-        "uv --version"
-        "ffmpeg -version"
-        "yt-dlp --version"
-        "rg --version"
     )
-    # fastedit only required when the model was installed
-    if [ "${NO_FASTEDIT_MODEL:-0}" != "1" ]; then
-        probes+=("fastedit --version")
+    # ripgrep is opt-in (W1). Probe only if rg is on PATH or installer flagged it.
+    if command -v rg >/dev/null 2>&1 || [ "${INSTALL_RIPGREP:-0}" = "1" ]; then
+        probes+=("rg --version")
+    fi
+    # CCv4 toolchain probes only fire on coding tier (W2).
+    if [ "${INSTALL_CODING:-0}" = "1" ]; then
+        probes+=("cargo --version" "bloks --version" "tldr --version" "uv --version")
+        if [ "${NO_FASTEDIT_MODEL:-0}" != "1" ]; then
+            probes+=("fastedit --version")
+        fi
     fi
 
     local ok=0 fail=0
@@ -34,8 +34,11 @@ verify_all() {
         fi
     done
 
-    if [ "${NO_FASTEDIT_MODEL:-0}" = "1" ]; then
+    if [ "${INSTALL_CODING:-0}" = "1" ] && [ "${NO_FASTEDIT_MODEL:-0}" = "1" ]; then
         info "fastedit probe skipped (--no-fastedit-model)"
+    fi
+    if [ "${INSTALL_CODING:-0}" != "1" ]; then
+        info "CCv4 toolchain probes skipped (minimal tier — run with --with-coding to add)"
     fi
 
     printf '\n%s installed: %d, missing: %d%s\n\n' "${GREEN:-}" "$ok" "$fail" "${RESET:-}"

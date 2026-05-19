@@ -1,24 +1,24 @@
 ---
 name: bootstrap
-description: Interactive first-run setup for a fresh fork of the second-brain-os — THE entry point every fork user runs once to configure identity, persona, design system, workspace skeleton, TOOLS.md, and the Configuration token block in root CLAUDE.md. Walks the user through 8 narrated steps with AskUserQuestion gates, read-only environment probes, live tool-detection panel (✅/⏳/⚠️/❌), persona-file regeneration from templates (preserves user edits via git-diff vs upstream), TOOLS.md preview before write, and a smoke test through `/new-project` to verify placeholder substitution. Detects re-runs via `setup_completed:` in Configuration; refuses gracefully. Use after cloning the repo, or when reconfiguring identity / persona / workspace — phrases like "/bootstrap", "I just cloned this", "first-time setup", "configure the assistant". Tiger invariants T1-T4 (never overwrite user-edited persona files, never re-run on configured fork, never auto-commit, never install tools) live in SKILL.md body.
+description: Interactive first-run setup for a fresh fork of the second-brain-os — THE entry point every fork user runs once to configure identity, the assistant's persona (no default name — fork user always names their own assistant), the user's writing voice (sampled or described, saved to memory/writing-style.md), design system, workspace skeleton, TOOLS.md, and the Configuration token block in root CLAUDE.md. Walks through 6 narrated steps with AskUserQuestion gates, conversational explanations of WHY each step matters (not just WHAT), read-only environment probes (tier-aware via SBOS_TIER — CCv4 toolchain probes only fire on coding tier), live tool-detection panel (✅/⏳/⚪/⚠️/❌), persona-file regeneration from templates (preserves user edits via git-diff vs upstream), writing-voice analysis from sample or descriptive answers, TOOLS.md preview before write, and a smoke test through `/new-project` to verify placeholder substitution. Detects re-runs via `setup_completed:` in Configuration; refuses gracefully. Use after cloning the repo, or when reconfiguring identity / persona / workspace / voice — phrases like "/bootstrap", "I just cloned this", "first-time setup", "configure the assistant". Tiger invariants T1-T4 (never overwrite user-edited persona files, never re-run on configured fork, never auto-commit, never install tools) live in SKILL.md body.
 allowed-tools: Read Write Edit Bash AskUserQuestion Skill
 ---
 
 # bootstrap
 
-The first-run setup skill. Configures identity, persona, design system, workspace, generates TOOLS.md from live probes, writes the Configuration section, smoke-tests end-to-end. **8 narrated steps, ~15 minutes for a thorough first run.**
+First-run setup. Walks a freshly-cloned fork through identity, the assistant's persona (you always name your own — no default anchor), your writing voice, design system, workspace, TOOLS.md, configuration, and a smoke test. **6 narrated steps, ~15-20 minutes for a thorough first run.**
 
-**Why this is the most important skill:** every fork user runs this exactly once, and the entire harness is built on top of what `/bootstrap` writes. A broken `/bootstrap` ships a broken second brain to every fork.
+**Why this is the most important skill:** every fork user runs this exactly once, and the entire harness is built on what `/bootstrap` writes. A broken `/bootstrap` ships a broken second brain to every fork.
 
-**Design principle — full transparency.** The user should always know what's happening, what was detected, and what's about to be written. Every Bash probe gets a one-line "about to check X" narration. Every write gets a preview + `AskUserQuestion` gate. Detection results render as a confirmable status panel before any side-effecting step.
+**Design principle — full transparency, conversational tone.** Narrate the *why* before every probe and write. Each substantive write gets a preview + `AskUserQuestion` gate. Detection results render as a confirmable panel before any side-effecting step. Tone is "trusted colleague explaining as we go," not "automated wizard."
 
 ## Tiger invariants (LOAD-BEARING — DO NOT VIOLATE)
 
-Stated multiple times throughout this skill (description, here, in step headers, in failure modes table) by design.
+The four tiger invariants are referenced by ID throughout this file (in step headers and the failure-modes table). Canonical statements live here only.
 
 ### T1 — NEVER overwrite user-edited persona files without explicit confirmation
 
-If a root persona file (`SOUL.md`, `USER.md`, `IDENTITY.md`, `CLAUDE.md`, `README.md`, `TOOLS.md`) has been edited beyond what the persona template would produce, Step 6a MUST detect this via `git show HEAD:<file>` comparison and ask before overwriting. Default behavior: skip. Only overwrite when user explicitly confirms.
+If a root persona file (`SOUL.md`, `USER.md`, `IDENTITY.md`, `CLAUDE.md`, `README.md`, `TOOLS.md`) has been edited beyond what the persona template would produce, Step 5 MUST detect this via `git show HEAD:<file>` comparison and ask before overwriting. Default behavior: skip. Only overwrite when user explicitly confirms.
 
 ### T2 — NEVER re-run on already-configured fork without explicit user action
 
@@ -30,67 +30,67 @@ After all writes complete, surface the diff (or path list) and tell the user to 
 
 ### T4 — NEVER install tools
 
-Step 2 is READ-ONLY probes. If a tool is missing/unauthed, surface a hint pointing at the appropriate installer:
-- For most fork users: `brew install <tool>` + the tool's own auth flow (e.g., `gh auth login`, `gws auth login -s <scopes>`)
-- If you have an org-internal installer (a company-provided setup tool), point there instead
-- For MCPs: `/mcp` command to authorize via OAuth
+Step 2 is READ-ONLY probes. If a tool is missing/unauthed, surface a hint pointing at the appropriate installer — `brew install <tool>` + the tool's own auth flow, or `/mcp` for MCPs. Never run the installer.
 
 ---
 
-## Process — 8 narrated steps
+## Process — 6 narrated steps
 
 ### Step 0: Welcome + plan preview
 
-**Narrate to user (verbatim, in `<assistant.name>` voice):**
+**Narrate to user (verbatim, no assistant name yet — you don't have one until Step 4):**
 
-> Hey! I'm going to walk you through setting up your second-brain harness. Here's the plan — 8 steps, ~15 minutes, every write gates on your approval:
+> Hey — welcome. You've just cloned a second-brain harness, and now we're going to make it *yours*. Not mine. Not the original author's. Yours. By the end of this you'll have an assistant with the name you pick, a personality you describe, and enough understanding of how *you* write that it can draft in your voice.
 >
-> 1. **Check fork state** — make sure this isn't already configured
-> 2. **Probe your environment** — detect CLIs, MCPs, pipeline tools (read-only, nothing gets installed)
-> 3. **Collect identity** — your name, email, GitHub, timezone, etc.
-> 4. **Pick a persona** — keep the default chief-of-staff, or customize
-> 5. **Pick a design brand** — for the `design:*` skills (72 brands shipped)
-> 6. **Apply changes** — regenerate persona files, create workspace skeleton, write TOOLS.md (with preview)
-> 7. **Write Configuration + smoke test** — fill in CLAUDE.md tokens, verify with a throwaway `/new-project`
-> 8. **Summary** — what was written, what needs your follow-up, how to commit
+> Here's the plan — 6 steps, ~15-20 minutes. Every write asks before it happens. Nothing gets installed. Nothing gets committed. You're in the driver's seat the whole time.
 >
-> I never auto-commit, never install anything, and never overwrite your edits without asking. Ready?
+> 1. **Safety check** — make sure this fork isn't already configured (so we don't clobber anything)
+> 2. **Look around your machine** — see what CLIs, MCPs, and tools are installed (read-only)
+> 3. **Who you are** — your name, email, GitHub, timezone — the basics that get substituted everywhere
+> 4. **Design your assistant + teach it your voice** — name, role, vibe, pronoun, emoji; then sample writing or describe how you write
+> 5. **Apply** — persona files, workspace skeleton, design system, TOOLS.md — with previews
+> 6. **Lock in + verify** — Configuration block to CLAUDE.md, smoke test through `/new-project`, closing summary
+>
+> I'll explain *why* each step matters as we go, not just what I'm doing. If anything feels off, say so — we can back up or skip.
 
 **AskUserQuestion gate:**
 
 | Question | Options |
 |----------|---------|
-| "Ready to start?" | (a) **Yes, walk me through** (proceed to Step 1) / (b) **Show me what each step does in more detail** (expand each step) / (c) **Abort** (exit cleanly) |
+| "How thorough should I be?" | (a) **Full walkthrough** (recommended for first-time forks) — narrate every step, confirm every write / (b) **Express** — same writes but skip narration and lump confirmations |
+
+If (b): same step list, same writes, fewer prompts. Default = (a).
 
 ---
 
-### Step 1: Fork-state check (T2 invariant)
-
-**Narrate:** *"First — checking if this fork is already configured. This is a single grep against CLAUDE.md…"*
+### Step 1: Fork-state check (T2 — never re-run on configured fork)
 
 ```bash
-grep -E "^- \`setup_completed\` = " CLAUDE.md
+grep -E "^- \`setup_completed\` = " CLAUDE.md 2>/dev/null
 ```
 
-**Outcomes:**
-- **Match found**: T2 refuse. Print:
-  > This fork is already configured — `setup_completed: <date>` is set in CLAUDE.md.
-  >
-  > To re-run /bootstrap from scratch, delete that line in CLAUDE.md and invoke /bootstrap again.
-  >
-  > For partial edits (just changing your name, swapping the brand, updating one persona file), use `/update-config` — lighter-weight, doesn't touch persona files or run a smoke test.
-
-  STOP. Do NOT proceed.
-
-- **No match**: Print *"Fresh fork detected — proceeding to environment probe."* Continue to Step 2.
+- **Match found**: print the T2 refusal copy and STOP.
+- **No match**: print *"Fresh fork detected — proceeding to environment probe."* Continue to Step 2.
 
 ---
 
-### Step 2: Environment detection (T4 invariant — read-only)
+### Step 2: Environment detection (T4 — read-only)
 
-**Narrate:** *"Now I'm probing your machine to see what's installed and authed. Nothing gets installed in this step — I'm just running `which`, `--version`, `auth status` style commands and parsing the output. Takes ~10 seconds."*
+**Narrate:** *"Now I'm going to take a look around your machine — what CLIs you have, which MCPs are configured, what pipeline tools are around. I do this because half the skills in this harness depend on external tools (Slack, GitHub, Google Workspace, etc.) and I'd rather find out now what's available than have you discover at 8am tomorrow that `/briefing` is missing a piece. Strictly read-only — just `which`, `--version`, `auth status`. Nothing gets installed. ~10 seconds."*
 
-**Run all probes in parallel** via a single Bash call when possible. Capture stdout, stderr, exit codes. Build a `detection_report` object in skill memory.
+**Read install tier first** (so CCv4 probes are gated correctly):
+
+```bash
+SBOS_TIER=$(grep -E '^SBOS_TIER=' ~/.second-brain-os.env 2>/dev/null | head -1 | cut -d= -f2)
+SBOS_TIER=${SBOS_TIER:-minimal}
+```
+
+Stash as `detection_report.install_tier`. Branch:
+- `minimal` → SKIP the CCv4-toolchain probe block (bloks/tldr/fastedit). These are intentionally absent on a knowledge-worker fork. Render the "Optional coding-tier tools — Skipped, not missing" panel instead of an ❌ warning.
+- `coding` → run the existing CCv4 probes. Missing binaries here are a real install failure.
+- Unset → treat as `minimal`; soft note: *"No SBOS_TIER marker found — assuming minimal tier."*
+
+**Run all probes in parallel** via a single Bash call. Capture stdout, stderr, exit codes.
 
 **CLI probes:**
 ```bash
@@ -99,14 +99,12 @@ gh auth status 2>&1 | head -10              # GitHub
 databricks --version 2>&1                   # Databricks CLI
 sf --version 2>&1 | head -1                 # Salesforce CLI version
 sf org list --json 2>&1 | head -20          # SF org auth state
-which yt-dlp 2>&1                           # yt-dlp
-which ffmpeg 2>&1                           # ffmpeg
-which jq 2>&1                               # jq
-command -v rg 2>&1                          # ripgrep
-which node 2>&1; node --version 2>&1        # Node (for local MCPs)
+which jq 2>&1                               # jq (installer + MCP config)
+command -v rg 2>&1                          # ripgrep (opt-in; /find falls back to grep -r)
+which node 2>&1; node --version 2>&1        # Node (local MCPs + .claude/hooks/*.mjs)
 ```
 
-**CCv4-toolchain probes** (these come from `./scripts/install.sh` — if all three are missing, the fork user almost certainly skipped the installer and `/research` + `/autonomous` will be dead until they run it):
+**CCv4-toolchain probes — coding tier ONLY:**
 ```bash
 which bloks 2>&1; bloks --version 2>&1       # Ouros REPL — backs /research
 which tldr 2>&1; tldr --version 2>&1         # tldr cache — used by tldr-read hook
@@ -114,622 +112,387 @@ which fastedit 2>&1; fastedit --version 2>&1 # FastEdit MCP — surgical AST edi
 ```
 
 Store as `detection_report.ccv4_install_state`:
-- `all-present` → ✅ install.sh was run successfully
-- `partial` → ⚠️ install.sh partially completed (rare — surface counts)
-- `none` → ❌ install.sh likely skipped — surface STRONG hint in detection panel and gate (c) in the proceed AskUserQuestion (see below)
-
-For each, parse into `detection_report.clis.<name>` with fields: `installed` (bool), `version` (str), `authed` (bool), `scopes` (list), `notes` (str).
+- tier=minimal → `skipped-by-design` (render "skipped, not missing" panel)
+- tier=coding + all-present → ✅
+- tier=coding + partial → ⚠️ (surface counts)
+- tier=coding + none → ❌ install failed mid-run — strongly recommend (c) re-run installer
 
 **MCP probes:**
 ```bash
-jq '.mcpServers | keys[]' .mcp.json 2>&1            # configured MCPs
-ls ~/.claude/plugins/installed_plugins.json 2>&1    # installed plugins
-[[ -n "${GEMINI_API_KEY:-}" ]] && echo SET || echo UNSET  # for stdio MCPs that need env vars
+jq '.mcpServers | keys[]' .mcp.json 2>&1
+[[ -n "${GEMINI_API_KEY:-}" ]] && echo SET || echo UNSET
 ```
 
-For each MCP in `.mcp.json.mcpServers`:
-- `mcp.<name>.url` (or `command` for stdio)
-- `mcp.<name>.type` (http/stdio)
-- `mcp.<name>.notes` (from `_notes` block, if any)
-- `mcp.<name>.connected`: **do an actual in-session probe**:
-  1. Check the deferred-tools list (visible at session start in system-reminders) for any `mcp__<name>__*` tools. If present → `✅ connected`.
-  2. If absent → `⏳ configured — needs /mcp authorize for this workspace` (per-project OAuth state).
-  3. For stdio MCPs (e.g., gemini-vision): verify required env vars. If unset → `⚠️ stdio MCP needs $GEMINI_API_KEY in shell env`. If set + tools present → `✅ connected`.
-  4. Honesty rule: if you can't determine state, write `ℹ️ configured — status unverified` rather than guessing.
+For each MCP in `.mcp.json.mcpServers`: probe the deferred-tools list (session-start system-reminders) for `mcp__<name>__*` tools — present → `✅ connected`; absent → `⏳ configured — needs /mcp authorize`. Stdio MCPs (e.g., gemini-vision) also need their env var set (`✅` if both set + tools present; `⚠️` if env var missing). Honesty rule: when unsure, write `ℹ️ configured — status unverified`.
 
-**Pipeline tools probe:**
+**Workspace + persona state probes:**
 ```bash
-which jq rg ffmpeg yt-dlp 2>&1
-```
-
-**Workspace state probe:**
-```bash
-ls -d workspace 2>&1                              # default workspace folder name (may already be renamed)
-for d in 0-Inbox 1-Projects 2-Coding 3-Resources 3-Resources/github-forks 4-Archive; do
+for d in 0-Inbox 1-Projects 2-Coding 3-Resources 4-Archive; do
   test -d "workspace/$d" && echo "OK  $d" || echo "MISSING  $d"
 done
-```
-
-**Persona files state probe:**
-```bash
 for f in SOUL.md USER.md IDENTITY.md CLAUDE.md README.md TOOLS.md; do
   if git ls-files --error-unmatch "$f" >/dev/null 2>&1; then
-    git diff --quiet HEAD -- "$f" && echo "CLEAN     $f" || echo "MODIFIED  $f"
+    git diff --quiet HEAD -- "$f" && echo "CLEAN  $f" || echo "MODIFIED  $f"
   else
-    echo "UNTRACKED $f"
+    echo "UNTRACKED  $f"
   fi
 done
 ```
 
-#### Render the detection panel (CRITICAL — this is the new transparency step)
+**Render the detection panel** (CRITICAL — the transparency moment). Single text panel headed `🔍 Environment scan complete (install tier: <minimal|coding>)`. Sections, in order: **Optional coding-tier tools** (renders "Skipped, not missing — add later with `./scripts/install.sh --with-coding`" on minimal; lists `✅ bloks/tldr/fastedit` versions on coding), **CLIs** (✅/⚠️/❌ per CLI with version + auth state), **Pipeline tools** (jq + opt-in rg), **MCPs** (per .mcp.json — ✅ connected / ⏳ needs /mcp authorize / ⚠️ stdio env missing), **Workspace skeleton** (✅ existing dirs / ❌ missing dirs to be created in Step 5), **Persona files** (CLEAN/MODIFIED/UNTRACKED per file via git-diff), **Setup state** (fresh fork or setup_completed line found).
 
-After all probes finish, **render a single status panel** to the user showing what was found. Format:
-
-```
-🔍 Environment scan complete. Here's what I found on your machine:
-
-CCv4 toolchain (from ./scripts/install.sh):
-  ✅ bloks v0.1.0, tldr v0.4.0, fastedit v0.5.0 — install.sh ran successfully
-  (OR — if missing —)
-  ❌ bloks, tldr, fastedit — NOT installed. Looks like you skipped
-     ./scripts/install.sh. /research and /autonomous will not work
-     until you run it. Strongly recommend aborting (option c below) and
-     running the installer first.
-
-CLIs:
-  ✅ gws        v0.X.Y — authed (you@example.com, 7 scopes)
-  ✅ gh         v2.X — authed (your-gh-handle)
-  ⚠️  databricks v0.X — installed; profile you@example.com valid, default broken
-  ⚠️  sf         v2.X — installed; auth broken (AuthDecryptError on 3 orgs)
-  ❌ yt-dlp     — NOT installed (needed by transcript-extract.sh)
-
-Pipeline tools:
-  ✅ jq, rg, ffmpeg — installed
-  ❌ yt-dlp — NOT installed
-
-MCPs (from .mcp.json):
-  ✅ gemini-vision  (stdio, local) — connected, GEMINI_API_KEY set
-  ⏳ slack          (http) — configured, needs /mcp authorize for this workspace
-  ⏳ atlassian      (http) — configured, needs /mcp authorize
-  ⏳ figma          (http) — configured, needs /mcp authorize
-  ⏳ exa            (http) — configured, needs /mcp authorize
-
-Workspace skeleton (workspace/):
-  ✅ 0-Inbox, 1-Projects, 3-Resources, 4-Archive exist
-  ❌ 2-Coding/{work,personal,forks,archive} — MISSING (will create in Step 6)
-
-Persona files (git diff against HEAD):
-  CLEAN     SOUL.md, IDENTITY.md, USER.md, CLAUDE.md, README.md, TOOLS.md
-
-Setup state: fresh fork (no setup_completed: line found)
-```
-
-**Then `AskUserQuestion` gate** (user picked "Confirm every step" + "Summary with drill-down"):
+**Then `AskUserQuestion` gate:**
 
 | Question | Options |
 |----------|---------|
-| "Proceed with this detection result?" | (a) **Proceed to identity collection** (Step 3) / (b) **Show me the full probe output** (print raw stdout/stderr per tool) / (c) **Fix something first** (abort cleanly so user can install/auth a missing tool, then re-run /bootstrap) |
+| "Proceed with this detection result?" | (a) **Proceed to identity collection** / (b) **Show me the full probe output** (print raw stdout/stderr per tool) / (c) **Fix something first** (abort cleanly so user can install/auth a missing tool, then re-run /bootstrap) |
 
-**Special handling for `ccv4_install_state == "none"`**: BEFORE the standard gate, surface this extra prompt:
+**Special-handling — coding-tier failure ONLY** (`install_tier == coding` AND `ccv4_install_state == none`): BEFORE the standard gate, surface this extra prompt:
 
-> ⚠️ Heads up: `bloks`, `tldr`, and `fastedit` are all missing from your PATH. That's the signature of a fork user who skipped `./scripts/install.sh`. The persona-config half of `/bootstrap` will still work fine without those binaries — but `/research`, `/autonomous`, and the FastEdit MCP will be dead until you run install.sh.
->
-> Recommended: pick (c), exit, run `./scripts/install.sh`, then re-run `/bootstrap`. ~10-15 min for the installer; one-time cost.
+> ⚠️ Heads up: you ran `./scripts/install.sh --with-coding`, but `bloks`, `tldr`, and `fastedit` are all missing from your PATH. The CCv4 install must have failed mid-run. `/research`, `/autonomous`, and the FastEdit MCP will be dead until you fix it. Recommended: pick (c), re-run `./scripts/install.sh --with-coding` (idempotent), then re-run `/bootstrap`.
 
-Then issue the standard gate. Default-recommend (c) when this case fires; default-recommend (a) otherwise.
+**Minimal-tier note:** if `install_tier == minimal`, NEVER surface a CCv4-missing warning. The "Skipped, not missing" panel is the whole conversation. Knowledge-worker forks never see a red flag for CCv4 absence.
 
-If (b) chosen: print all raw probe output verbatim, then re-ask the same question.
+If (b): print all raw probe output verbatim, then re-ask. If (c): print *"Fine — go install/auth what you need, then run /bootstrap again. No changes made."* and STOP.
 
-If (c) chosen: print *"Fine — go install/auth what you need, then run /bootstrap again. No changes made."* and STOP.
+#### Step 2.5 — Optional connector MCPs (W6 interactive opt-in)
+
+After the user picks (a) Proceed, surface the optional-connector picker. Only fresh forks (no `setup_completed:` line) reach here — Sid's existing fork and any re-configured fork are gated by T2 in Step 1.
+
+**Narrate:** *"Three MCPs ship out of the box (gemini-vision, exa, firecrawl). Three more are opt-in — pick the ones you actually use and I'll add them to `.mcp.json`. You'll authorize them with `/mcp` after bootstrap. No pick = no entry = no red error on first launch."*
+
+**AskUserQuestion (multi-select):**
+
+| Question | Options |
+|----------|---------|
+| "Which connectors do you use? (multi-select)" | (a) **Slack** — read/send messages, search channels, threads, canvases / (b) **Atlassian (Jira + Confluence)** — issues, pages, comments / (c) **Figma** — design files, dev mode, code connect / (d) **None of these** — skip |
+
+For each selected option, append the canonical MCP entry to `.mcp.json` via a Python json.load/dump (preserves comments/order, no jq dep). **Defensive:** if `.mcp.json` is missing or malformed, write a minimal `{"mcpServers":{}}` shell first, then append.
+
+**Canonical entries** — single source of truth lives in `.mcp.json` `_notes.opt_in_slack` / `_notes.opt_in_atlassian` / `_notes.opt_in_figma`. Read those at runtime; do NOT hardcode the JSON here (drift risk). Slack's entry MUST include `oauth.clientId` and `oauth.callbackPort` (Anthropic's public Slack app, dynamic-client-registration — a Slack workspace admin approves it once).
+
+**Closing line after writes:** *"Added <list of selected connectors>. Run `/mcp` after bootstrap to authorize each — Atlassian/Figma do standard browser-OAuth; Slack needs the workspace-admin approval mentioned above."*
+
+If (d) None: print *"No optional connectors added. Just gemini-vision + exa + firecrawl in .mcp.json (the three universals). Re-run /bootstrap or hand-edit .mcp.json later if you change your mind."* and continue.
 
 ---
 
 ### Step 3: Identity collection (AskUserQuestion-driven)
 
-**Narrate:** *"Now I need to know who you are. I've prefilled defaults where I could detect them — review each one and edit if wrong. These values write to the Configuration section of CLAUDE.md and get substituted into your persona files."*
+**Narrate:** *"Now the part that's about you. I need your name, email, GitHub handle, timezone — the basics. These get substituted into every persona file and written to the Configuration block of CLAUDE.md, which every skill reads. I've prefilled defaults from `git config` and `gh` where I could find them."*
 
-**Detect defaults** in parallel:
-```bash
-git config user.email 2>/dev/null
-git config user.name 2>/dev/null
-date +%Z 2>/dev/null
-gh api user --jq .login 2>/dev/null
-```
+**Detect defaults** in parallel: `git config user.email`, `git config user.name`, `date +%Z`, `gh api user --jq .login`.
 
-**Ask in batched groups** (3 fields per `AskUserQuestion` call, since users can type custom values via "Other"):
+**Ask in batched groups (3 fields per `AskUserQuestion` call):**
 
-**Group 1 — name + email:**
-- `user.full_name` — *"Your full display name?"* (no detected default)
-- `user.name` — *"What should I call you (short name)?"* (default: first word of full_name once entered)
-- `user.email` — *"Email address?"* (default: `git config user.email`)
+- Group 1 — `user.full_name` / `user.name` (short) / `user.email`
+- Group 2 — `user.timezone` / `user.github` / `user.company`
+- Group 3 — `user.email_signature` / `workspace.root` (default `workspace`)
 
-**Group 2 — location + GitHub:**
-- `user.timezone` — *"Timezone?"* (default: `date +%Z`; e.g., `America/New_York`)
-- `user.github` — *"GitHub username?"* (default: `gh api user --jq .login` if `gh` authed)
-- `user.company` — *"Company / org? (optional)"* (default: domain from email if it looks company-shaped)
+Validate lightly: no spaces in github username; email contains `@`.
 
-**Group 3 — signature + workspace:**
-- `user.email_signature` — *"Email signature line?"* (default: `<full_name>` as starter)
-- `workspace.root` — *"Workspace folder name?"* (default: `workspace`; common alternatives: `brain`, `vault`, `<assistant>-workspace`)
-
-Validate lightly: no spaces in github username; email contains `@`. Re-prompt on obvious typos.
-
-**After all 8 collected, echo back:**
-```
-Got it. Here's what I'll write:
-
-  user.name         = <value>
-  user.full_name    = <value>
-  user.email        = <value>
-  user.timezone     = <value>
-  user.github       = <value>
-  user.company      = <value>
-  user.email_signature = <value>
-  workspace.root    = <value>
-```
-
-`AskUserQuestion`: *"Look right?"* — (a) **Confirm, move on** / (b) **Edit one** (re-asks which field to edit) / (c) **Restart Step 3**.
+**Echo back the 8 fields, gate:** (a) **Confirm** / (b) **Edit one** / (c) **Restart Step 3**.
 
 ---
 
-### Step 4: Persona pick (AskUserQuestion-driven)
+### Step 4: Design your assistant + teach it your voice
 
-**Narrate:** *"Now the assistant persona. You can keep the default chief-of-staff persona (named Beru), or customize a new one. If you customize, Step 6 regenerates SOUL.md, USER.md, IDENTITY.md, README.md from templates with your values substituted in."*
+The heart of bootstrap. Two sub-steps — **4a** assistant persona (name/role/vibe/pronoun/emoji, *no default name*), **4b** writing voice.
 
-**AskUserQuestion:**
+#### Step 4a: Assistant persona
+
+**Narrate (verbatim) — this is an affective moment, preserve the spirit:**
+
+> Now let's design the assistant — *your* assistant. This is the entity you'll be talking to every morning, the one drafting your emails, taking your meeting notes, surfacing the projects you've been ignoring. It needs a name. It needs a tone. It needs to feel like *yours*, not like someone else's leftover.
+>
+> A few examples to spark ideas (you don't have to pick from this list):
+>
+> - **Atlas** — strategic, broad-perspective, holds the whole map
+> - **Echo** — quiet, reflective, mirrors your thinking back at you
+> - **Cortex** — analytical, fast, pattern-matching
+> - **Sage** — wise, deliberate, asks the right questions
+> - **Juno** — warm, attentive, like a thoughtful friend
+> - **Pierre, Nova, Mira, Iris, Ren, Kai, Astra** — or anything you want
+>
+> Pick what feels right. You can always change it later.
+
+**Escape hatch first** — before the collection batch, offer an out for users who've already hand-edited:
 
 | Question | Options |
 |----------|---------|
-| "How do you want the persona configured?" | (a) **Keep the default** — chief-of-staff, "Beru", 🎯 emoji, professional-but-warm voice. Skips regeneration of SOUL/IDENTITY/README in Step 6. / (b) **Customize a new persona** — collect name, role, vibe, emoji. Regenerates all persona files in Step 6. / (c) **Keep current files as-is** — even more conservative; useful if you've already hand-edited SOUL/IDENTITY/USER. Step 6 skips ALL persona regen. |
+| "Ready to design your assistant?" | (a) **Yes, walk me through it** (default) / (b) **I've already hand-edited SOUL/IDENTITY/USER and want to keep them** — Step 5 skips ALL persona regen; we still write Configuration in Step 6 using values read from your existing files. |
 
-**If (a) "keep default":** record
-- `assistant.name` = `Beru`
-- `assistant.role` = `Chief of Staff`
-- `assistant.vibe` = `Professional but warm — like a trusted exec assistant who's worked with you for years. Direct, no corporate fluff, detail-heavy.`
-- `assistant.emoji` = `🎯`
+If (b): read `assistant.name`, `assistant.role`, etc. from current `IDENTITY.md` / `SOUL.md`. Skip the collection batch and continue to Step 4b.
 
-**If (b) "customize":** AskUserQuestion follow-up batch:
-- `assistant.name` — *"Name for the assistant?"* (e.g., Atlas, Echo, Pierre, Cortex, Sage)
-- `assistant.role` — *"Short role descriptor?"* (e.g., "Chief of Staff", "Research Companion", "Engineering Co-Pilot")
-- `assistant.vibe` — *"One-line vibe descriptor?"* (e.g., "Quiet and analytical, like a librarian who knows where every book is")
-- `assistant.emoji` — *"Single emoji?"* (e.g., 🎯, 📚, ⚙️, 🧠)
+**Collection batch — one AskUserQuestion call with all five fields:**
 
-**If (c) "keep as-is":** record values from current `IDENTITY.md` / `SOUL.md` (read them) — used for Configuration write only, no template regen.
+- `assistant.name` — *"What do you want to call your assistant?"* (free text)
+- `assistant.role` — *"Short role descriptor?"* (e.g., "Chief of Staff", "Research Companion", "Writing Partner")
+- `assistant.vibe` — *"One-line vibe — how should it feel to talk to them?"*
+- `assistant.pronoun` — *"Which pronoun?"* — (she / he / they / no-pronouns — use name only)
+- `assistant.emoji` — *"Single emoji that represents them?"* (🎯, 📚, ⚙️, 🧠, 🪐, 🌿, 🦉, 🗺️, 🔭)
 
----
+**Pronoun resolution rule:** `assistant.pronoun` flows into every downstream narration. Resolve `<pronoun>` placeholders in templates and in the echo-back text below. For `no-pronouns`, substitute the assistant's name everywhere a pronoun would naturally appear (e.g., "I'll refer to <name> by name" instead of "I'll refer to <pronoun> by name").
 
-### Step 5: Design system pick (AskUserQuestion-driven)
+**After collection, echo back (this is THE affective moment — preserve verbatim):**
 
-**Narrate:** *"The `design:*` skills (decks, dashboards, landing pages, posters, etc.) read brand tokens from a root `DESIGN.md` file. We ship 72 brand presets — pick one as your active brand. You can swap anytime with `/use-design <brand>`."*
+```
+Got it. Meet your assistant:
 
-**Read available brands:**
-```bash
-ls workspace/3-Resources/design-systems/ | grep -v '^README'
+  Name:    <assistant.name>  <assistant.emoji>
+  Role:    <assistant.role>
+  Vibe:    <assistant.vibe>
+  Pronoun: <assistant.pronoun>
+
+This is who you'll be talking to. From here on I'll refer to <pronoun-resolved> by name.
 ```
 
-**Category-first picker** (AskUserQuestion with 4 options — categories grouped so the list fits):
+`AskUserQuestion`: *"Look right?"* — (a) **Yes, perfect** / (b) **Edit one field** / (c) **Restart Step 4a**.
 
-| Question | Options (group 1) |
-|----------|-------------------|
-| "Pick a category for your active brand:" | (a) **AI & LLM** (claude, cohere, elevenlabs, mistral-ai, ollama, replicate, runwayml, together-ai, x-ai…) / (b) **Developer Tools** (cursor, raycast, superhuman, vercel, warp…) / (c) **Productivity & SaaS** (cal, intercom, linear-app, notion, resend…) / (d) **More categories** |
+#### Step 4b: Writing voice (single collapsed spec — preview-before-write gate is THE affective moment)
 
-If "More categories" picked, follow-up:
-- (a) Backend & Data (clickhouse, mongodb, posthog, sentry, supabase…)
-- (b) Design & Creative (airtable, figma, framer, miro, webflow…)
-- (c) Fintech & Crypto (stripe, coinbase, kraken, revolut, wise…)
-- (d) **Even more** → Media & Consumer, Automotive, E-Commerce, Starter, Hand-authored
-
-Then within the chosen category, AskUserQuestion lists brands with their tagline (read first 3 lines of each `DESIGN.md`).
-
-**Three meta-options always offered (in every category question's option list):**
-- **(default)** — `default` brand (Neutral Modern starter — safe pick)
-- **(keep current)** — leave the existing root `DESIGN.md` as-is
-- **(magenta placeholder)** — leave the bright `#ff00aa` REPLACE-ME draft
-
-**After pick, run the `/use-design <brand>` equivalent:**
-```bash
-test -f DESIGN.md && cp DESIGN.md .DESIGN.md.previous
-cp "workspace/3-Resources/design-systems/<brand>/DESIGN.md" DESIGN.md
-```
-
-**Surface:** *"Active design system: `<brand title>`. Backup at `.DESIGN.md.previous` if you want to undo. Swap anytime with `/use-design <other-brand>`."*
-
----
-
-### Step 6: Apply persona files + workspace skeleton + TOOLS.md (with previews)
-
-This step has three sub-steps. **Narrate before each one** so the user knows what's happening.
-
-#### Step 6a: Persona file regeneration (T1 invariant)
-
-**Narrate:** *"Now regenerating persona files from templates. I'll check each file against its git-tracked version first — if you've edited it, I'll ask before overwriting (defaults to skip)."*
-
-**Files in scope** (depends on Step 4 pick):
-- If Step 4 = (a) keep-default → regenerate USER.md only (your details), skip SOUL/IDENTITY/README (keep Beru voice)
-- If Step 4 = (b) customize → regenerate SOUL.md, IDENTITY.md, USER.md, README.md from templates with your values
-- If Step 4 = (c) keep as-is → skip ALL files; only Configuration block in CLAUDE.md updates in Step 7
-
-**For each file in scope, per-file flow:**
-
-```bash
-git show HEAD:<file> 2>/dev/null > /tmp/upstream_<file>
-diff -q /tmp/upstream_<file> <file>   # exit 0 = clean; exit 1 = modified
-```
-
-**Narrate per file:** *"Checking `<file>`… clean / modified beyond upstream."*
-
-**If clean** (matches upstream): print *"Safe to overwrite — your `<file>` matches what was checked into git, no manual edits to preserve."* Read template, substitute placeholders, write. Print *"✅ Wrote `<file>`."*
-
-**If modified** (T1 invariant triggers): `AskUserQuestion`:
+**T1 pre-check** — if `memory/writing-style.md` already exists with non-trivial content (file size > 500 bytes and not just a TODO skeleton), gate FIRST:
 
 | Question | Options |
 |----------|---------|
-| "Your `<file>` has edits beyond the upstream version. What should I do?" | (a) **Skip** — preserve your edits. (Recommended) / (b) **Show diff** — print `git diff HEAD -- <file>` and re-ask / (c) **Overwrite** — replace with regenerated template / (d) **Save regenerated copy to `<file>.bootstrap-suggested`** — write the new version side-by-side so you can manually merge later |
+| "`memory/writing-style.md` already exists. What should I do?" | (a) **Keep as-is** (recommended) — skip Step 4b / (b) **Show me what's there** — print, then re-ask / (c) **Regenerate from scratch** — back up to `.previous`, then run the collection flow |
 
-Default = (a) skip.
+Default = (a). If (c), `cp memory/writing-style.md memory/writing-style.md.previous` before proceeding.
 
-**Placeholder substitution** (use `sed` for atomic substitution, single command per file):
+**Narrate (verbatim) — only if absent OR user picked (c):**
+
+> One more piece — *your* writing voice. Down the line, <assistant.name> is going to draft emails for you, write status updates that sound like you, summarize meetings the way you'd summarize them. To do that well, I need a sense of how you actually write. Not a vague "professional and concise" — actual signal: phrases you use, structure you prefer, things you'd never write.
+
+**Single AskUserQuestion (collapsed from three branches into one):**
+
+| Question | Options |
+|----------|---------|
+| "How should <assistant.name> learn your writing voice?" | (a) **Paste a sample inline** (recommended) — 1-3 paragraphs of something you wrote / (b) **Point me at a file path** — I'll read up to ~200 lines / (c) **Just ask me descriptive questions** — no sample, ~2 minutes / (d) **Skip for now** — drop a TODO starter template |
+
+**Common path — collect → preview → gate → write.** Input source auto-detected:
+
+1. **Collect input** based on choice:
+   - (a) → wait for the user's next turn (the paste). When received, proceed.
+   - (b) → ask for path, validate `test -f "$PATH"`. Fall back to (a) if missing. `Read` up to 200 lines.
+   - (c) → ask three descriptive batches (tone: formal/casual, terse/expansive, direct/hedged; surface: emoji rules, signature line, sentence quirks; NEVERs: phrases-to-never-write, format rules).
+   - (d) → write a TODO starter template to `memory/writing-style.md` and skip the rest of this step. *(Sections: Voice character / Structure preferences / Word choice quirks / Emoji rules / Hard NEVERs / Signature / Sample phrases / Sentence patterns — each as a single TODO line.)*
+
+2. **Synthesize a draft profile** with these sections (skip any section the input doesn't cover — never fabricate):
+   - **Voice character** — one paragraph distilled from input
+   - **Structure preferences** — paragraph length, list/prose ratio, hierarchy
+   - **Word choice quirks** — distinctive phrases used; hedges; phrases explicitly avoided
+   - **Emoji rules** — explicit from (c), or inferred from (a)/(b)
+   - **Hard NEVERs** — only if explicit
+   - **Signature** — only if present in sample or provided
+   - **Source** — `inline paste of N words` / `file: <path>, N lines` / `descriptive answers, no sample`
+
+3. **PREVIEW the synthesized profile to the user before writing.** This preview-before-write gate is THE affective moment of Step 4b — never skip it. After the preview, `AskUserQuestion`:
+
+| Question | Options |
+|----------|---------|
+| "Here's the writing voice profile I'd save. Look right?" | (a) **Yes, save it** → write to `memory/writing-style.md` / (b) **Give me a second sample first** — re-ask for another paste/path, merge / (c) **Edit one section** / (d) **Save it but I'll hand-edit later** |
+
+4. **Write** to `memory/writing-style.md`. Surface: *"Saved to `memory/writing-style.md`. <assistant.name> reads this whenever drafting in your voice. Edit any time."*
+
+---
+
+### Step 5: Apply — persona files + workspace skeleton + design + TOOLS.md (T1 — never overwrite user-edited files)
+
+Three sub-blocks; narrate before each.
+
+#### 5a: Persona file regeneration (T1 invariant — per-file git-diff guard)
+
+**Narrate:** *"Time to make your assistant real on disk. I'll take the templates at `<workspace.root>/3-Resources/templates/persona/` and substitute in everything you've told me — your name, your assistant's name, the vibe, the role, the pronoun — to regenerate `SOUL.md`, `IDENTITY.md`, `USER.md`, and `README.md` at the repo root. Before each overwrite I check `git diff HEAD -- <file>`; if you've hand-edited, I default to skipping."*
+
+For each file in scope (or skip ALL if Step 4a (b) was chosen):
+
 ```bash
-sed \
-  -e "s/<user.name>/${USER_NAME}/g" \
-  -e "s/<user.full_name>/${USER_FULL_NAME}/g" \
-  -e "s/<user.email>/${USER_EMAIL}/g" \
-  -e "s/<user.timezone>/${USER_TZ}/g" \
-  -e "s/<user.github>/${USER_GITHUB}/g" \
-  -e "s/<user.company>/${USER_COMPANY}/g" \
-  -e "s|<user.email_signature>|${USER_SIG}|g" \
-  -e "s/<assistant.name>/${ASSISTANT_NAME}/g" \
-  -e "s|<assistant.role>|${ASSISTANT_ROLE}|g" \
-  -e "s|<assistant.vibe>|${ASSISTANT_VIBE}|g" \
-  -e "s/<assistant.emoji>/${ASSISTANT_EMOJI}/g" \
-  -e "s/<workspace.root>/${WORKSPACE_ROOT}/g" \
-  workspace/3-Resources/templates/persona/<file>-template.md > <file>
+git diff --quiet HEAD -- <file> && STATE=CLEAN || STATE=MODIFIED
 ```
 
-After all in-scope files processed, narrate a one-line summary: *"Persona files: wrote `<list>`, skipped `<list>` (preserved your edits)."*
+- **CLEAN** → substitute placeholders (one `sed` call resolving `<user.*>`, `<assistant.*>` including `<assistant.pronoun>`, `<workspace.root>`, and any legacy pronoun placeholders) and write. *"✅ Wrote `<file>`."*
+- **MODIFIED** (T1 triggers) → `AskUserQuestion`: (a) **Skip — preserve edits** (recommended) / (b) **Show diff** / (c) **Overwrite** / (d) **Save regenerated copy to `<file>.bootstrap-suggested`**. Default = (a).
 
-#### Step 6b: Workspace skeleton (idempotent — T4)
+After all files processed: *"Persona files: wrote `<list>`, skipped `<list>`."*
 
-**Narrate:** *"Now ensuring the workspace folder skeleton exists. This is idempotent — `mkdir -p` only, never destructive. If you renamed `workspace.root` in Step 3, I'll `mv` the folder first."*
+#### 5b: Workspace skeleton (idempotent — T4 safe)
 
-**If `workspace.root` was renamed:**
+**Narrate:** *"Now the workspace folder skeleton — the PARA structure that every project-lifecycle skill reads from. `mkdir -p` only — never destructive."*
+
 ```bash
 if [[ -d workspace && ! -d "${WORKSPACE_ROOT}" ]]; then
   mv workspace "${WORKSPACE_ROOT}"
-  echo "Renamed workspace/ → ${WORKSPACE_ROOT}/"
 fi
+mkdir -p "${WORKSPACE_ROOT}"/{0-Inbox,1-Projects,2-Coding,3-Resources/{templates,research,reference,meetings,contacts,design-systems,onboarding},4-Archive}
 ```
 
-**Then create missing canonical subdirs:**
-```bash
-mkdir -p "${WORKSPACE_ROOT}"/{0-Inbox,1-Projects,2-Coding/{work,personal,forks,archive},3-Resources/{templates,research,reference,meetings,contacts,design-systems},4-Archive}
-```
+Surface which subdirs were newly created vs already existed.
 
-**Surface diff:** which subdirs were newly created vs already existed (cross-reference Step 2's workspace probe).
+#### 5c: Design system pick + TOOLS.md generation (T1 invariant on TOOLS.md)
 
-#### Step 6c: TOOLS.md generation with preview (T1 invariant)
+**Design pick:** AskUserQuestion category-first (AI & LLM / Developer Tools / Productivity & SaaS / More). After pick, run `cp <selected-brand>/DESIGN.md DESIGN.md` (back up existing to `.DESIGN.md.previous`). Meta-options: `(default)`, `(keep current)`, `(magenta placeholder)`.
 
-**Narrate:** *"Now generating TOOLS.md from the Step 2 detection panel. I'll show you the content before writing — you can accept, save to a side-file for review, or skip entirely."*
+**TOOLS.md generation:** build content from `detection_report` — every ✅/⏳/⚪/⚠️/❌ flag traces to a real probe. **T1 check** on TOOLS.md before writing:
 
-**Build content** from `detection_report`. Skeleton — every status flag must trace back to a real Step 2 probe result, no fabrication:
-
-```markdown
-# TOOLS.md — Tool Index
-
-**Auto-loaded at every session start.** Generated by `/bootstrap` on <YYYY-MM-DD>. Re-run `/bootstrap` (after deleting `setup_completed:` line) to regenerate, or edit by hand.
-
-## Connected MCPs (this repo's `.mcp.json`)
-
-<from detection_report.mcps — one line per MCP with ✅/⏳/⚠️/ℹ️ flag and any notes>
-- ✅ **gemini-vision** (stdio, local) — connected, GEMINI_API_KEY set. 7 tools: image, OCR, multi-image, compare, filename suggestion, document, video.
-- ⏳ **slack** (http) — `https://mcp.slack.com/mcp`. Configured but not authorized in this workspace. Run `/mcp` to authorize.
-- ⏳ **atlassian** (http) — Run `/mcp` to authorize.
-- ...
-
-## CLIs
-
-<from detection_report.clis — one line per CLI>
-- ✅ **`gws`** (Google Workspace CLI) — v<X.Y> authed (`<email>`, <N> scopes: <comma-list>). Called directly via Bash by `/briefing` (Gmail triage + calendar agenda). No `gws-*` / `recipe-*` wrapper bundle ships in this harness; re-add from `~/.agents/skills/gws-*` if you want the wrappers back.
-- ✅ **`gh`** (GitHub CLI) — v<X.Y> authed as `<username>`, scopes: <list>.
-- ⚠️ **`databricks`** — v<X.Y> installed; profile `<email>` valid, default profile broken. Pass `-p <email>` or set `DATABRICKS_CONFIG_PROFILE`.
-- ⚠️ **`sf`** (Salesforce CLI) — v<X.Y> installed; auth broken (`sf org login web -a <alias>` to fix). Open question: is Salesforce load-bearing for your flow? If not, leaving broken is fine.
-- ❌ **`yt-dlp`** — NOT installed. Install: `brew install yt-dlp`. Required by `transcript-extract.sh`.
-
-## Pipeline tools
-
-- ✅ `jq`, `rg`, `ffmpeg` — installed
-- ❌ `yt-dlp` — NOT installed; install via `brew install yt-dlp`
-
-## Native skill bundles (in `.claude/skills/`)
-
-The full inventory is visible at session start in the available-skills list. Bundle map:
-
-- ✅ **`design-*`** (14) — HTML/visual artifact skills (decks, dashboards, landing pages, blog posts, OKR trackers, PM specs, finance reports). Brand tokens from root `DESIGN.md`. Library: `<workspace.root>/3-Resources/design-systems/`. Swap: `/use-design <brand>`.
-- ✅ **<assistant.name>-internal** (15) — `archive-project`, `briefing`, `bootstrap`, `budget-tracker`, `contact`, `contact-log`, `desktop-organizer`, `find`, `inbox-process`, `new-project`, `prune-projects`, `save-resource`, `skill-creator`, `sync-indexes`, `thinking-partner`.
-- (NOT shipped — dropped v0.1.13: 21 `gws-*` CLI wrappers, 12 niche `design-*`, all `recipe-*` / `persona-*`. Re-add from `~/.agents/skills/` if needed.)
-
-## ContinuousClaude V4.7 bundle
-
-9 skills (`autonomous`, `autonomous-research`, `bootup`, `create-handoff`, `premortem`, `research`, `resume-handoff`, `review`, `upgrade-harness`) + 5 hooks + 4 Python tools. Run `./scripts/install.sh` to install supporting binaries. See `INSTALL.md`.
-
-## Standard Claude Code tools (always available)
-
-`Read`, `Write`, `Edit`, `Bash`, `Glob`, `Grep`, `Skill`, `Agent`, `Task` family, `AskUserQuestion`, `CronCreate`/`List`/`Delete`, `WebFetch`, `WebSearch`, `Monitor`, `NotebookEdit`, `RemoteTrigger`, `PushNotification`.
-
-## Google Drive (project-critical IDs)
-
-<TBD — fill in if you use Drive folders for source-of-truth content. /bootstrap can't know which Drive folders matter to you.>
-
-- **Meeting Transcripts:** `<TBD>` (e.g., Tactiq full transcripts folder ID)
-- **Meeting Recordings:** `<TBD>` (e.g., Gemini AI summaries — prefer when available)
-
-## Platform formatting
-
-- **WhatsApp:** No markdown tables, no headers. Use `*bold*` and bullet lists.
-- **Discord:** Wrap multiple links in `<>` to suppress embeds.
-- **Slack:** plain markdown works in messages; canvases support richer formatting. Avoid `#` headers in regular messages — use `*bold*` for emphasis.
-
-## NOT connected (intentional or gated)
-
-<TBD — list tools you've explicitly chosen NOT to install. Helps future-you (and your fork audience) know what was deliberate vs accidentally missing.>
-
-## When tools change
-
-1. Edit this file — flip the status flags.
-2. Re-run `/bootstrap` (delete `setup_completed:` line first) to regenerate from current detection, OR edit by hand.
-3. If a Layer 3 skill (`/briefing`, `/meeting-prep`) gated on a tool, update its composition map too.
-
-## Discipline: every entry needs a probe
-
-Adding an entry to TOOLS.md? Back it with a **verification probe** — a command output, a test invocation, a Bash check. Vibes-based entries drift.
-```
-
-**T1 check on TOOLS.md:**
 ```bash
 git diff --quiet HEAD -- TOOLS.md && echo CLEAN || echo MODIFIED
 ```
 
-**Preview + AskUserQuestion gate (user picked "Preview + accept/skip"):**
-
-Print the full generated content to the user. Then:
+**Preview the full generated content, then gate:**
 
 | Question | Options |
 |----------|---------|
-| "Here's the TOOLS.md I'd write. What now?" | (a) **Write it** — replace root TOOLS.md (T1 check: if file modified, downgrade to (b)) / (b) **Write to `TOOLS.md.bootstrap-suggested`** — leave current TOOLS.md alone, save the generated version side-by-side so you can manually merge / (c) **Skip TOOLS.md entirely** — keep current, no side-file |
-
-If T1 flag is MODIFIED, force (b) unless user explicitly overrides — show one extra confirmation: *"TOOLS.md has uncommitted edits. Defaulting to side-file write so I don't lose them. Override with 'force overwrite' if you really mean it."*
+| "Here's the TOOLS.md I'd write. What now?" | (a) **Write it** (downgrades to (b) automatically if T1 is MODIFIED) / (b) **Write to `TOOLS.md.bootstrap-suggested`** — side-file / (c) **Skip entirely** — keep current |
 
 ---
 
-### Step 7: Configuration write + smoke test
+### Step 6: Lock in + verify (T3 — never auto-commit)
 
-**Narrate:** *"Now writing the Configuration section in CLAUDE.md (this is the atomic commit point — every value collected so far lands here) and running a smoke test through `/new-project` to verify placeholder substitution actually works end-to-end."*
+Two sub-blocks: write the Configuration block, then run a smoke test.
 
-#### Step 7a: Configuration write
+#### 6a: Configuration write to CLAUDE.md
 
-Edit root `CLAUDE.md` Configuration section using `Edit` tool with line anchors. **Show the user the diff before writing.**
+**Narrate:** *"Last write. The Configuration block in `CLAUDE.md` is the single source of truth — every skill reads `<user.name>`, `<assistant.name>`, `<assistant.pronoun>`, `<workspace.root>` from it."*
 
-Required edits (one `Edit` call per line, or one Write of the whole Configuration block):
-- `user.name` line → Step 3 value
-- `user.full_name` line → Step 3
-- `user.email` line → Step 3
-- `user.timezone` line → Step 3
-- `user.github` line → Step 3
-- `user.email_signature` line → Step 3
-- `user.company` line → Step 3
-- `assistant.name` line → Step 4
-- `assistant.role` line → Step 4
-- `assistant.vibe` line → Step 4
-- `assistant.emoji` line → Step 4
-- `workspace.root` line → Step 3 (if renamed)
-- **append `setup_completed: <YYYY-MM-DD>` line** to `### lifecycle` section (T2 re-run gate)
+Edit the Configuration section: write the 13 tokens (`user.*` × 7, `assistant.*` × 5 *including pronoun*, `workspace.root`) and append `setup_completed: <YYYY-MM-DD>` to the `### lifecycle` block (the T2 re-run gate).
 
-**AskUserQuestion before edits:**
-
-| Question | Options |
-|----------|---------|
-| "I'm about to write 12 Configuration lines + `setup_completed:` to CLAUDE.md. The diff is shown above. Proceed?" | (a) **Yes, write it** / (b) **Show me the exact diff again** / (c) **Skip Configuration write** (will block smoke test — abort cleanly) |
-
-After write, **append a daily-log entry** to `memory/<YYYY-MM-DD>.md`:
-
-```markdown
-## <YYYY-MM-DD HH:MM> — /bootstrap run
-
-Configured fork:
-- user.name: <value>
-- user.full_name: <value>
-- user.github: <value>
-- assistant.name: <value> (default-kept / customized)
-- workspace.root: <value>
-- design-system: <brand name>
-- Persona files regenerated: <list, or "kept default">
-- Tool probes: <N CLIs ready, M missing, K MCPs ✅, L MCPs ⏳>
-
-Smoke test: <PASSED / FAILED — see <path>>
-```
-
-#### Step 7b: Smoke test via `/new-project`
-
-**Narrate:** *"Running the smoke test now — invoking `/new-project` with a throwaway name to verify placeholder substitution. If it fails (placeholder string `<user.name>` literal still appears in the scaffolded files), I'll leave the artifact for debugging rather than deleting it."*
-
-Invoke `/new-project` via the Skill tool with:
-- name: `bootstrap-smoke-test-<HHMMSS>` (timestamp suffix prevents collisions)
-- type: `design` (lightest scaffold — no GitHub repo, no extra branches)
-- skip Step 0's "find existing" gate
-
-**After scaffold completes, verify:**
-1. Folder exists at `<workspace.root>/<workspace.projects>/<YYYY-MM>-bootstrap-smoke-test-<HHMMSS>/`
-2. `CLAUDE.md` inside the new project contains the user's `<user.name>` value (literal value, not the `<user.name>` placeholder string)
-3. `memory.md` contains today's date entry
-
-**On PASS:**
-```bash
-rm -rf <path-to-smoke-test-project>
-```
-Print *"✅ Smoke test passed. Placeholder resolution working end-to-end."*
-
-**On FAIL:**
-- DO NOT delete the smoke-test artifact (leave for debugging — surfaces a real bug to fix)
-- Print *"⚠️ Smoke test FAILED — placeholder resolution didn't work. Inspect: `<path>`. Configuration section may need manual review. Proceeding to Step 8 with this caveat."*
-
----
-
-### Step 8: Final summary (T3 invariant — never auto-commit)
-
-**Narrate:** *"All done. Here's the rundown — what was written, what still needs your attention, where to start, and how to commit."*
-
-The closing message has four sections. Every status flag must trace back to a real Step 2 probe.
-
-#### Section 1 — confirmation + smoke test result
-
-One line. Example:
-> ✅ /bootstrap complete. Smoke test passed. 7 files modified, 4 created, workspace skeleton ensured.
-
-Or if smoke test failed:
-> ⚠️ /bootstrap completed with smoke-test failure. 7 files modified, but `/new-project` smoke test left placeholders. Inspect `<path>` and fix Configuration before relying on this setup.
-
-#### Section 2 — "What needs your attention right now"
-
-Filter from `detection_report` — only surface items needing user action:
-- **If `ccv4_install_state == "none"`: surface this FIRST and most prominently** — `❌ ./scripts/install.sh — looks unrun (bloks/tldr/fastedit missing on PATH). /research, /autonomous, and FastEdit MCP will not work until you run it. Exit Claude Code, run the installer, restart.`
-- Skip MCPs marked `✅ connected`
-- Surface `⏳ configured — needs /mcp authorize`, `⚠️ stdio MCP needs env var`, `❌ tool not installed`, `⚠️ CLI auth broken`
-- If nothing needs attention: *"Everything's authed and ready — no MCP or CLI followups."* Skip Section 2's body.
-- Include the per-workspace OAuth disclaimer **once** at the top: *"(MCP OAuth is per-project in Claude Code — even if you've authorized these elsewhere, this workspace needs its own grants.)"*
-
-Example:
-```
-What needs your attention right now:
-
-(MCP OAuth is per-project in Claude Code — even if you've authorized these
-elsewhere, this workspace needs its own grants.)
-
-❌ ./scripts/install.sh appears unrun — bloks/tldr/fastedit missing. Run it
-   before relying on /research or /autonomous.
-⏳ Run /mcp → authorize slack, atlassian, figma, exa for this workspace (~30s each)
-❌ brew install yt-dlp (transcript-extract.sh needs it)
-⚠️ sf org login web -a samba-prod (Salesforce CLI auth broken — only if you use SF)
-```
-
-#### Section 3 — "Day 1 — start here (in this order)"
-
-Numbered walkthrough. Skip steps that aren't relevant (e.g., skip "authorize MCPs" if Section 2 was empty).
+Configuration block template (the exact lines that go into CLAUDE.md):
 
 ```
-Day 1 — start here:
+### user
+- `user.name` = `<value>`
+- `user.full_name` = `<value>`
+- `user.email` = `<value>`
+- `user.timezone` = `<value>`
+- `user.github` = `<value>`
+- `user.email_signature` = `<value>`
+- `user.company` = `<value>`
 
-1. Authorize any MCPs flagged above
-   Run /mcp → walk through the OAuth flow for any ⏳ entries. Standard browser
-   OAuth, no clientId or app registration needed. Skip this step if Section 2
-   was empty.
+### assistant
+- `assistant.name` = `<value>`
+- `assistant.role` = `<value>`
+- `assistant.vibe` = `<value>`
+- `assistant.pronoun` = `<value>`
+- `assistant.emoji` = `<value>`
 
-2. Fill in USER.md
-   Step 6a left <TBD> placeholders for your team, priority signals, Slack channels.
-   /briefing reads these — without them the brief still works but surfaces less.
-   Takes ~5 minutes.
+### workspace
+- `workspace.root` = `<value>`
 
-3. Try /briefing
-   First run will be sparse (empty contacts, empty projects, USER.md half-full)
-   — that's expected on a fresh fork. The point is to see the shape and confirm
-   MCPs are returning data. Writes to
-   <workspace.root>/3-Resources/briefings/morning-briefing-YYYY-MM-DD.md.
-
-4. Scaffold your first project
-   /new-project Q3-strategy (or whatever you're actually working on). Creates
-   <workspace.root>/1-Projects/YYYY-MM-q3-strategy/ with its own CLAUDE.md +
-   memory.md. This is the pattern for every project from here.
-
-5. Add one contact
-   Drop a teammate at <workspace.root>/3-Resources/contacts/<slug>.md following
-   the schema in contacts/README.md. Then /contact <name> should fuzzy-match.
-   Repeat for your inner circle over time.
-
-Day 2+ — natural rhythms:
-
-- /os-guide              when you don't know how something in this OS works (PARA,
-                         Configuration tokens, tools, project lifecycle, etc.) —
-                         reads canonical files live, so it can't drift
-- /find <topic>          when you're not sure if you've already noted something
-- /contact-log <name>    after every meaningful call or 1:1
-- /thinking-partner      when you want to explore before solving
-- /save-resource         to stash a link / doc for later
-- /prune-projects        every Friday to clean up stale work
-- /use-design <brand>    to swap the active design system (72 brands shipped)
-- /os-guide --sync       after adding a new tool, skill, or design brand — refreshes
-                         /os-guide's routing table so it sees the new addition
-
-For everything else, just talk naturally — Claude routes to the right skill via
-the description field. /help for the full skill list if you want to browse.
+### lifecycle
+- `setup_completed` = `<YYYY-MM-DD>`
 ```
 
-#### Section 4 — manifest + commit instructions (T3 — never auto-commit)
+**Show diff, then `AskUserQuestion`:** (a) **Write** / (b) **Show diff again** / (c) **Skip — abort** (blocks smoke test). Append a daily-log entry to `memory/<YYYY-MM-DD>.md` with the config snapshot.
+
+#### 6b: Smoke test via `/new-project`
+
+**Narrate:** *"Running the smoke test — invoking `/new-project` with a throwaway name to verify placeholder substitution. If it fails (literal `<user.name>` still in scaffolded files), I leave the artifact for debugging."*
+
+Invoke `/new-project` (type: `design`, name: `bootstrap-smoke-test-<HHMMSS>`). Verify:
+1. Folder exists under `<workspace.root>/<workspace.projects>/`
+2. `CLAUDE.md` inside contains the resolved `<user.name>` value
+3. `memory.md` has today's date
+
+- **PASS** → `rm -rf <smoke-test-path>`. *"✅ Smoke test passed. Placeholder resolution working end-to-end."*
+- **FAIL** → leave artifact for debugging. *"⚠️ Smoke test FAILED — inspect `<path>`. Configuration may need manual review."*
+
+#### 6c: Closing summary — what to do in the next 10 minutes + files changed + commit cmd (T3)
+
+The closing message has two sections — keep it short. Day 2+ rhythms live in `<workspace.root>/3-Resources/onboarding/day-2-plus.md` (read at leisure).
+
+**Section A — What to do in the next 10 minutes:**
+
+```
+Day 1 — start here (in this order):
+
+1. Authorize MCPs flagged ⏳ in the env panel
+     Run /mcp → walk through the OAuth flow for each.
+     Skip if Section 2 of the env panel was empty.
+
+2. (Optional) Enable per-feature API keys
+     The installer wrote .env.example with 5 optional keys (EXA, NIA, HF,
+     ATLASSIAN, ANTHROPIC). Claude Code itself uses OAuth — none required.
+     cp .env.example .env  &&  edit only what you need.
+
+3. Fill in USER.md (and writing-style.md if you skipped Step 4b)
+     Step 5a left <TBD> placeholders for team / priority signals / Slack
+     channels. /briefing reads these — without them the brief still works
+     but surfaces less. ~5 minutes.
+
+4. Try /briefing
+     First run will be sparse on a fresh fork (empty contacts, half-full
+     USER.md). The point is to see the shape and confirm MCPs return data.
+
+5. Scaffold your first project
+     /new-project <name>  → creates the PARA folder with CLAUDE.md + memory.md.
+```
+
+**Section B — Files changed + commit (T3 — surface as text, NEVER `git add`):**
 
 ```
 Files written or modified:
-- SOUL.md, IDENTITY.md, USER.md, README.md — regenerated from persona templates (or "kept as-is — your edits preserved")
-- TOOLS.md — regenerated from live probes (or "saved to TOOLS.md.bootstrap-suggested" if T1 flagged)
-- CLAUDE.md — Configuration section tokenized with your values
-- DESIGN.md — swapped to <brand> (previous backed up to .DESIGN.md.previous)
-- <workspace.root>/2-Coding/{work,personal,forks,archive}/ — created
+- SOUL.md, IDENTITY.md, USER.md, README.md — regenerated from templates (or kept as-is — your edits preserved)
+- TOOLS.md — regenerated from live probes (or saved to TOOLS.md.bootstrap-suggested if T1 flagged)
+- CLAUDE.md — Configuration section tokenized
+- DESIGN.md — swapped to <brand> (.DESIGN.md.previous backed up)
+- memory/writing-style.md — <created from sample / descriptive / starter TODO>
+- <workspace.root>/<para subdirs> — created (or already-existed)
 - memory/<YYYY-MM-DD>.md — new daily log entry
 
-Active design system: <brand title> — swap anytime with /use-design <brand>
+Your assistant: <assistant.name> <assistant.emoji> (<assistant.role>) — voice: <one-line vibe>
+Active design: <brand> — swap anytime with /use-design <brand>
 
-/bootstrap did NOT auto-commit (T3 invariant). Review the diff and commit when
-you're ready:
+/bootstrap did NOT auto-commit (T3). Review and commit when ready:
 
   git status
   git diff
-  git add SOUL.md IDENTITY.md USER.md README.md TOOLS.md CLAUDE.md DESIGN.md memory/<YYYY-MM-DD>.md <workspace.root>/2-Coding/
+  git add SOUL.md IDENTITY.md USER.md README.md TOOLS.md CLAUDE.md DESIGN.md memory/<YYYY-MM-DD>.md memory/writing-style.md <workspace.root>/
   git commit -m "fork bootstrap: configure as <user.name> / <assistant.name> / <brand>"
 
-To re-run /bootstrap later: delete the `setup_completed: <date>` line in
-CLAUDE.md, then invoke /bootstrap again.
+For Day 2+ natural rhythms (the /find, /contact-log, /thinking-partner, /prune-projects loop), see:
+  <workspace.root>/3-Resources/onboarding/day-2-plus.md
+
+To re-run /bootstrap later: delete the `setup_completed: <date>` line in CLAUDE.md,
+then invoke /bootstrap again.
 
 That's the lay of the land. Where do you want to start?
 ```
 
 ---
 
-## Failure modes
+## Failure modes (consolidated — 10 rows, T-invariants live in canonical section above)
 
 | Symptom | Cause | Fix |
 |---------|-------|-----|
-| Skill runs on already-configured fork | T2 detection failed | Step 1 MUST grep for `setup_completed:` line in CLAUDE.md and refuse if found |
-| Persona files overwritten despite user edits | T1 detection mechanism not concrete | Step 6a uses `git show HEAD:<file>` + `diff -q` — concrete + repeatable. Default to skip on MODIFIED. |
-| Skill auto-committed | T3 violation | NEVER `git add` or `git commit` — explicit invariant. Step 8 surfaces commands as text only. |
-| Skill tried to install gws/gh/yt-dlp | T4 violation | Step 2 is READ-ONLY probes. Step 8 surfaces install hints — never runs them. |
-| Smoke test passed but new project still has placeholder | Step 7b ran before Step 7a | Step order is FIXED: 7a (Configuration write) → 7b (smoke test). |
-| TOOLS.md generated but missing tools detected on the system | Step 2 probe list incomplete | Add to probe list — TOOLS.md is dynamic, regenerable via re-run. |
-| Workspace skeleton clobbered existing content | Step 6b was destructive | `mkdir -p` only — never `rm -rf`, never overwrite existing subfolder contents. |
-| Configuration section edits clobbered each other | Multiple Edit calls without unique anchors | Use `Edit` tool with unique line anchors per field; show diff before writing. |
-| MCP probe failed and skill aborted | Probes treated as fatal | Probes are informational (`2>&1 \|\| true`). Surface ⚠️ in detection panel and continue. |
-| User skipped Step 5 design pick | Skill aborted on missing input | AskUserQuestion always offers "(keep current)" / "(default neutral)" / "(magenta placeholder)" as escape hatches. |
-| User abandoned mid-flow (Ctrl-C between steps) | Partial state | Step 7a's Configuration write is the atomic commit point. If skill exits before Step 7a, no `setup_completed:` line is written, and the next /bootstrap run picks up cleanly. Steps 5–6 are idempotent (re-runnable). Step 6a file overwrites are the riskiest mid-flow cancel — minimize by ordering Step 6a AFTER user approves every persona file individually. |
-| User sees no narration, doesn't know what's happening | Skill ran without surfacing detection panel or step-by-step "about to do X" text | Every step has a "Narrate" block at the top — emit it as text before running probes/writes. Detection panel in Step 2 is the most important transparency moment. |
-| TOOLS.md generated with wrong status flags | Bootstrap fabricated ⏳ for connected MCPs | Status flags MUST trace back to real Step 2 probe results. Honesty rule: write `ℹ️ unverified` rather than guessing. |
+| Skill runs on already-configured fork | T2 detection failed | Step 1 MUST grep for `setup_completed:` and refuse if found |
+| Persona files overwritten despite user edits | T1 detection mechanism not concrete | Step 5a uses `git diff --quiet HEAD -- <file>` — concrete + repeatable. Default to skip on MODIFIED. |
+| Skill auto-committed | T3 violation | NEVER `git add` or `git commit` — Step 6c surfaces commands as text only. |
+| Skill tried to install gws/gh/binaries | T4 violation | Step 2 is READ-ONLY probes; Step 6c surfaces install hints — never runs them. |
+| Bootstrap surfaced a CCv4-missing warning on a minimal-tier fork | W2c regression — tier branch not honored | Step 2 MUST read SBOS_TIER first and skip CCv4 probes when `minimal`. The "skipped, not missing" panel replaces the warning. |
+| Smoke test passed but new project still has placeholder | Step 6b ran before Step 6a | Step order is FIXED: 6a (Configuration write) → 6b (smoke test). |
+| Workspace skeleton clobbered existing content | Step 5b was destructive | `mkdir -p` only — never `rm -rf`. |
+| MCP probe failed and skill aborted | Probes treated as fatal | Probes are informational (`2>&1 \|\| true`). Surface ⚠️ and continue. |
+| TOOLS.md generated with wrong status flags | Fabricated ⏳/✅ for unconnected MCPs | Status MUST trace to a real Step 2 probe. Honesty rule: `ℹ️ unverified` when unsure. |
+| Writing-voice profile fabricated phrases the user never said | Step 4b synthesis hallucinated | Voice synthesis only writes what's in the input. The preview-before-write gate is the catch. |
 
 ## Boundaries
 
-- **NEVER auto-commit** (T3). User reviews diff, user commits.
-- **NEVER install tools** (T4). Surface hints; don't run them.
-- **NEVER overwrite user-edited persona files without explicit confirmation** (T1). Default = skip.
-- **NEVER re-run on already-configured fork without setup_completed: line being deleted first** (T2).
-- **NEVER alter `2-Coding/` repos.** Independent gits with their own state. `/bootstrap` only creates the empty `{work,personal,forks,archive}/` skeleton folders.
-- **NEVER write to `memory/` other than today's daily log.** Append-only by convention.
-- **NEVER call Exa / WebSearch / WebFetch.** Bootstrap is local — no web search.
-- **NEVER fabricate detection results.** Every ✅/⏳/⚠️/❌ in TOOLS.md and the Step 8 summary must trace back to a real Step 2 probe. When unsure, write `ℹ️ unverified` and let the user verify manually.
-- **NEVER skip the narration.** Each step's "Narrate" block is part of the contract — emit it as user-visible text, not internal thinking.
+- **NEVER auto-commit** (T3).
+- **NEVER install tools** (T4) — surface hints, don't run them.
+- **NEVER overwrite user-edited persona files without explicit confirmation** (T1) — default = skip.
+- **NEVER re-run on already-configured fork** without `setup_completed:` being deleted first (T2).
+- **NEVER alter `2-Coding/` repos.** Independent gits.
+- **NEVER write to `memory/`** other than today's daily log. Append-only.
+- **NEVER call Exa / WebSearch / WebFetch.** Bootstrap is local.
+- **NEVER fabricate detection results.** Every ✅/⏳/⚪/⚠️/❌ traces to a real Step 2 probe; when unsure, `ℹ️ unverified`.
+- **NEVER fabricate writing-voice content.** Only what's in the input sample or descriptive answers.
+- **NEVER default the assistant to "Beru"** or any name from the original repo. Step 4a always collects a fresh name (or honors the user's hand-edited persona files).
+- **NEVER skip the narration.** Each step's "Narrate" block is user-visible text, not internal thinking.
 
 ## Re-run mechanism
 
-The skill's re-run gate is the `setup_completed: <date>` line in the `### lifecycle` section of CLAUDE.md's Configuration block. Presence = configured (refuse, point at `/update-config`). Absence = fresh fork (proceed).
+Re-run gate = `setup_completed: <date>` line in CLAUDE.md's `### lifecycle` section. Presence = configured (refuse, point at `/update-config`). Absence = fresh fork (proceed).
 
-To re-run `/bootstrap`:
-1. Edit root `CLAUDE.md`
-2. Delete the `- \`setup_completed\` = \`<date>\`` line
-3. Invoke `/bootstrap` again
+To re-run: edit CLAUDE.md, delete the `setup_completed` line, invoke `/bootstrap`. Steps 2, 5b are idempotent. Step 4b protects `memory/writing-style.md` via T1-style pre-check. Step 5a protects user-edited persona files via T1. Step 6a overwrites the Configuration section with fresh values; Step 6b's smoke test runs again.
 
-Steps 2, 5, 6b are idempotent (won't double-create folders, won't re-prompt for already-set values if user enters the same answers). Step 6a protects user edits via T1. Step 7a overwrites the Configuration section with fresh values. Step 7b's smoke test runs again to verify.
-
-For lighter-weight reconfigs (just changing your name, swapping the brand, updating one persona file) — use `/update-config` instead. It's purpose-built for partial edits, doesn't touch persona files, doesn't run a smoke test.
+For lighter partial edits (just changing your name, swapping the brand, updating one persona file) — use `/update-config` instead.

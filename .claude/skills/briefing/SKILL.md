@@ -1,7 +1,7 @@
 ---
 name: briefing
-description: Morning chief-of-staff briefing — composes available signal sources (email, calendar, messaging, issue-tracking, code-hosting) plus local sources (contacts, active projects, USER.md priorities) into one self-contained HTML brief at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Detects tool availability at runtime in Step 0.5 + auth-health probes each detected tool in Step 0.6, surfacing failures via AskUserQuestion BEFORE composing (so a dead Slack token doesn't get discovered after the brief is written). Fork users with zero MCPs still get a useful brief from local state. Use when <user.name> asks to start the day or surface what needs attention — phrases like "/briefing", "brief me", "what's on my plate today", "what should I work on today". Trigger broadly on day-orientation language. Filters `status: personal` contacts; never auto-sends; never fabricates absent signals; **Slack sweep MUST cover all four channel types — `public_channel`, `private_channel`, `im`, AND `mpim` (group DMs) — narrowing channel_types to a subset has historically hidden high-signal multi-person threads** (see SKILL.md body for invariants T1-T5).
-allowed-tools: Read Write Glob Bash AskUserQuestion Skill mcp__slack__slack_search_public_and_private mcp__slack__slack_search_channels mcp__atlassian__searchJiraIssuesUsingJql
+description: Morning chief-of-staff briefing — composes available signal sources (email, calendar, messaging, issue-tracking, code-hosting) plus local sources (contacts, active projects, USER.md priorities) into one self-contained HTML brief at `<workspace.root>/<workspace.resources>/briefings/morning-briefing-YYYY-MM-DD.html`. Detects tool availability at runtime in Step 0.5 + auth-health probes each detected tool in Step 0.6, surfacing failures via AskUserQuestion BEFORE composing (so a dead Slack token doesn't get discovered after the brief is written). Fork users with zero MCPs still get a useful brief from local state. Use when <user.name> asks to start the day or surface what needs attention — phrases like "/briefing", "brief me", "what's on my plate today", "what should I work on today". Trigger broadly on day-orientation language. Filters `status: personal` contacts; never auto-sends; never fabricates absent signals; **Slack sweep MUST cover all four channel types — `public_channel`, `private_channel`, `im`, AND `mpim` (group DMs) — narrowing channel_types to a subset has historically hidden high-signal multi-person threads; HTML must be Gmail-safe (no grid/sticky/vh/sidebar) since the brief gets pasted into email** (see SKILL.md body for invariants T1-T6).
+allowed-tools: Read(*) Write(*) Glob(*) Bas(*) AskUserQuestion Skill(*) mcp__slack__slack_search_public_and_private mcp__slack__slack_search_channels mcp__atlassian__searchJiraIssuesUsingJql
 ---
 
 # briefing
@@ -93,6 +93,21 @@ Slack has FOUR distinct surfaces: `public_channel`, `private_channel`, `im` (1:1
 **Implementation rule:** for every Slack search query in Step 3, EITHER omit `channel_types` entirely (default = all four), OR set `channel_types: "public_channel,private_channel,mpim,im"`. NEVER narrow to a subset without an explicit reason. The default-omit form is preferred because there are fewer ways to silently break it. See Step 3 #T5 for the full four-pass spec.
 
 **Pre-Write assertion (Step 9):** the assembled brief must include at least one Slack search whose `channel_types` was either omitted or contained `mpim`. If you cannot point to one, the sweep was incomplete — re-run Step 3 before composing.
+
+### T6 — Briefing HTML must render correctly in Gmail
+
+The briefing's primary surface is <user.name>'s inbox. They generate the file with `/briefing`, then paste the HTML into Gmail to read on their phone or desktop client. Gmail's renderer strips `display: grid`, `position: sticky`, `position: fixed`, and viewport units (`vh`, `vw`) — any of which break the layout while leaving background colors orphaned as giant empty blocks above the actual content.
+
+**Origin incident:** the 2026-05-19 morning brief used the design-dashboard sidebar layout (`body { display: grid; grid-template-columns: 240px 1fr; min-height: 100vh; }` + `.sidebar { position: sticky; height: 100vh; }`). Gmail stripped the grid + sticky, the sidebar's beige background became a full-width ~1000px void at the top, and the first KPI didn't appear until well below the fold. <user.name> had to scroll past empty space to find the briefing.
+
+**Implementation rule (enforced by Step 9 Pre-Write assertion):**
+- NO `display: grid` on any layout container. Use `flex` with `flex-wrap` for KPI rows.
+- NO `position: sticky` or `position: fixed`. Period.
+- NO viewport units anywhere — use `px` or `%`.
+- NO `<aside>` sidebar. Navigation lives in a horizontal `.topnav` inside `<main>`.
+- `<main>` is a centered max-width container (`max-width: 960px; margin: 0 auto`).
+
+**Pre-Write assertion (Step 9):** grep the final HTML for `grid-template`, `position: sticky`, `position: fixed`, `100vh`, `100vw`, `<aside` — ZERO matches required. If any match, rewrite before Write.
 
 ## Process
 
@@ -416,15 +431,22 @@ This step is **optional** — if `/find` is unavailable or returns nothing for a
 
 ### Step 9: Compose and write the brief as a self-contained HTML dashboard
 
-Output is a **single self-contained HTML file** styled with the active DESIGN.md tokens (cached in Step 0). Layout follows the `design-dashboard` pattern at `.claude/skills/design-dashboard/SKILL.md` (with `example.html` as the canonical reference), adapted for briefing-specific regions.
+Output is a **single self-contained HTML file** styled with the active DESIGN.md tokens (cached in Step 0). Layout is **email-safe** — briefings get pasted into Gmail and Gmail strips `display: grid`, `position: sticky`, and viewport units, so the template uses a centered max-width container with a horizontal top nav (not a sidebar). The `design-dashboard` skill's sidebar/grid layout is **NOT used here** for this reason — when those patterns reach Gmail, the sidebar's background colors render as a giant empty block above the content (caught 2026-05-19 when a morning brief showed ~1000px of cream void before the first KPI).
 
 **Hard rules for the HTML file:**
 - One file, `<!doctype html>` through `</html>`. All CSS in one inline `<style>` block. NO external links (fonts, CSS, images, JS). NO `<script>`. NO `<img src="http...">`. Inline SVG only for any chart. Briefings must open offline from disk.
 - CSS custom properties at the `:root` seed from DESIGN.md tokens: `--bg`, `--fg`, `--muted`, `--border`, `--accent`, `--surface`, `--good`, `--warn`, `--bad`. If DESIGN.md is missing or omits a token, fall back to the neutral defaults inlined here — never invent hex values.
-- Semantic HTML: `<aside>`, `<header>`, `<main>`, `<section>`, `<nav>`, `<table>`. Every logical region carries `data-od-id="<slug>"` so future parsers can locate sections deterministically.
-- Density follows DS mood — airy DSes get more padding, dense DSes tighten rows. Match the design-dashboard skill's self-check criteria.
-- Accent used at most twice — sidebar active state + one hero-stat highlight. Don't accent every status pill.
+- Semantic HTML: `<header>`, `<main>`, `<section>`, `<nav>`, `<table>`. Every logical region carries `data-od-id="<slug>"` so future parsers can locate sections deterministically.
+- Accent used at most twice — top-nav active state + one hero-stat highlight. Don't accent every status pill.
 - Status indicators 🟢🟡🔴 stay as Unicode emoji inside `<span class="pill">` (per USER.md formatting prefs — OK in briefings).
+
+**Email-safety invariants (T6 — `morning-briefing-*.html` renders correctly in Gmail):**
+- **NO** `display: grid` on `<body>` or any layout container. Use `flex` with `flex-wrap` for KPI rows; use a max-width centered `<main>` wrapper for the body. Gmail support for grid is unreliable; flex-wrap degrades gracefully to a vertical stack.
+- **NO** `position: sticky` or `position: fixed` anywhere. Stripped by Gmail; leaves orphan background colors that render as huge empty blocks above content.
+- **NO** viewport units (`vh`, `vw`, `vmin`, `vmax`) anywhere. Use `px` or `%`. Gmail's renderer can't compute viewport-relative sizes inside its iframe and falls back to weird intrinsic heights.
+- **NO** sidebar layout. Navigation is a horizontal top nav bar above the topbar, inside `<main>`. Sidebars require grid/flex on body, which violates the rules above.
+- KPI row uses `display: flex; flex-wrap: wrap; gap: 14px;` with each `.kpi` set to `flex: 1 1 200px` — gracefully wraps 4-up → 2-up → 1-up at narrow widths and in Gmail.
+- Self-check before Write: grep the final HTML for `grid-template`, `position: sticky`, `100vh`, `100vw` — if any match, fix before writing (Pre-Write assertion below enforces this).
 
 **DOM scaffold (mandatory structure — section order fixed):**
 
@@ -437,14 +459,24 @@ Output is a **single self-contained HTML file** styled with the active DESIGN.md
   <title>Morning brief — <YYYY-MM-DD></title>
   <style>
     :root { --bg: ...; --fg: ...; --muted: ...; --border: ...; --accent: ...; --surface: ...; --good: ...; --warn: ...; --bad: ...; }
-    /* All seeded from DESIGN.md tokens. See design-dashboard/example.html for the full CSS scaffold —
-       same component classes (.sidebar, .nav, .topbar, .kpis, .kpi, .panel, .panels-row, .pill, table). */
+    /* All seeded from DESIGN.md tokens. Email-safe scaffold (no grid on body, no sticky, no vh):
+       body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 ...; }
+       main { max-width: 960px; margin: 0 auto; padding: 28px 32px 56px; }
+       .topnav { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-bottom: 24px;
+                 padding-bottom: 14px; border-bottom: 1px solid var(--border); font-size: 13px; }
+       .topnav .brand { font-weight: 600; font-size: 15px; color: var(--fg); margin-right: 8px; }
+       .topnav a { color: var(--muted); text-decoration: none; padding: 4px 10px; border-radius: 6px; }
+       .topnav a.active { background: rgba(<accent-rgb>,.12); color: var(--accent); font-weight: 500; }
+       .kpis { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 24px; }
+       .kpi { flex: 1 1 200px; background: var(--surface); border: 1px solid var(--border);
+              border-radius: 10px; padding: 16px 18px; }
+       Same component classes for panels, pills, tables, projects-grid (use flex-wrap, not grid). */
   </style>
 </head>
 <body>
-  <aside class="sidebar" data-od-id="sidebar">
-    <div class="brand"><assistant.emoji> <assistant.name></div>
-    <nav class="nav">
+  <main>
+    <nav class="topnav" data-od-id="topnav">
+      <span class="brand"><assistant.emoji> <assistant.name></span>
       <a href="#what-needs-you" class="active">Today's priorities</a>
       <a href="#calendar">Calendar</a>
       <a href="#projects">Projects</a>
@@ -453,11 +485,8 @@ Output is a **single self-contained HTML file** styled with the active DESIGN.md
       <a href="#commitments">Commitments</a>
       <a href="#shipped">Recent shipped</a> <!-- omit anchor if gate false -->
       <a href="#notes">Notes</a>          <!-- omit anchor if Step 8 empty -->
-      <span class="group-label">Brief</span>
       <a href="#tools-used">Tools used</a>
     </nav>
-  </aside>
-  <main>
     <header class="topbar" data-od-id="topbar">
       <div>
         <h1>Morning brief · <YYYY-MM-DD></h1>
@@ -553,7 +582,7 @@ Output is a **single self-contained HTML file** styled with the active DESIGN.md
 - Be opinionated in the projects section's closing synthesis line. "Ship X today because Y." Not "you could consider..."
 
 **Section-omission rules (T4 — preserve order of present sections):**
-- Gated section with detection=false → OMIT the entire `<section>` AND remove its `<a href="#...">` from the sidebar nav. No empty headers, no "⚠️ not configured" body content.
+- Gated section with detection=false → OMIT the entire `<section>` AND remove its `<a href="#...">` from the top nav. No empty headers, no "⚠️ not configured" body content.
 - Gated section with detection=true but runtime error → keep the `<section>` and its `<h3>`, render a single `<p class="warn">⚠️ <Tool> errored — <cause></p>` as the body.
 - Mandatory-floor sections (what-needs-you, projects, commitments, tools-used) are ALWAYS in the DOM. Tools-used is the last `<section>` before `<p class="signoff">`.
 
@@ -563,6 +592,7 @@ Output is a **single self-contained HTML file** styled with the active DESIGN.md
 - Contains the `<section data-od-id="tools-used">` (T4 mandatory footer).
 - Does NOT contain `<script>` or `http://` / `https://` references (self-contained rule).
 - Does NOT contain any `status: personal` contact slug in commitments section (T2 sanity grep).
+- Email-safety (T6): grep for `grid-template`, `position: sticky`, `position: fixed`, `100vh`, `100vw`, `<aside` — ZERO matches. If any match, rewrite the offending block before Write.
 
 **T1 reminder: write to `<workspace.root>/<workspace.resources>/briefings/morning-briefing-${DATE}.html`** (or `-${DATE}-${TIME}.html` if collision). Confirm the path before Write. The Write tool will fail if the parent directory doesn't exist — `<workspace.root>/<workspace.resources>/briefings/` should already exist (created during workflow-defect cleanup 2026-05-06); if not, `mkdir -p` first.
 
@@ -595,7 +625,8 @@ This gives <user.name> the headline + the project synthesis + a prompt for direc
 | Output written to wrong path | T1 violation | Validate path string `<workspace.root>/<workspace.resources>/briefings/morning-briefing-<DATE>.html` BEFORE Write. Add an assertion in Step 9. |
 | Output written as `.md` instead of `.html` | Pre-v0.2.0 muscle memory | The skill is HTML-only as of v0.2.0. Markdown output retired. Reject any path string ending in `.md` in Step 9's pre-Write assertion. |
 | HTML opens to a blank/unstyled page | DESIGN.md not loaded or token names mismatch in CSS | Step 0 caches DESIGN.md content; Step 9's `<style>` block defines `--bg`/`--fg`/`--accent`/etc. CSS custom properties seeded from those tokens. If DESIGN.md is absent, use neutral fallbacks (do NOT skip the `<style>` block). |
-| HTML missing semantic structure (raw `<div>` soup) | Skill wrote freeform HTML instead of using the dashboard scaffold | Use `<aside>`, `<header>`, `<main>`, `<section>` per Step 9. Each region carries a `data-od-id` slug so downstream parsers (future `/weekly-digest`, etc.) can locate sections deterministically. |
+| HTML missing semantic structure (raw `<div>` soup) | Skill wrote freeform HTML instead of using the scaffold | Use `<header>`, `<main>`, `<section>`, `<nav class="topnav">` per Step 9. NO `<aside>` (banned by T6 — sidebars require grid, which Gmail strips). Each region carries a `data-od-id` slug so downstream parsers (future `/weekly-digest`, etc.) can locate sections deterministically. |
+| Brief renders in Gmail with huge empty cream/beige block above content | T6 violation — HTML uses `display: grid` on body and/or `position: sticky` sidebar. Gmail strips both; sidebar's background becomes a full-width orphan block | Rewrite per T6 invariants: no grid on layout containers, no sticky/fixed, no viewport units, no `<aside>` sidebar. Use centered max-width `<main>` + horizontal `.topnav`. Pre-Write grep for `grid-template`/`position: sticky`/`100vh`/`<aside` must return zero matches. |
 | Inline JS or external assets in the HTML | Briefing must be a single self-contained file | NO `<script>` tags, NO external CSS/font links, NO `<img src="http...">` references. Everything inline. Briefings open offline from disk. Inline SVG for any chart. |
 | Same-day re-run overwrites existing brief | T1 violation (date-only filename) | Detect existing file in Step 0, append `-HHMM` to filename. |
 | Personal contact appears in "Open commitments by person" | T2 violation (filter not applied or applied at display time) | Filter `status: personal` at READ time in Step 5. Confirm via grep: output should not contain `[[contacts/faizan]]` or any other `status: personal` slug. |

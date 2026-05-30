@@ -8,7 +8,7 @@ Usage:
 
 Auth: ATLASSIAN_BASIC_AUTH env var (auto-loaded via ~/.zshrc → ~/.second-brain-os.env).
       Must be a CLASSIC API token — scoped/granular tokens cannot upload attachments.
-      See samba-onboarding/README.md → "Power-user — Atlassian API token" for setup.
+      Generate a classic token at https://id.atlassian.com/manage-profile/security/api-tokens
 
 Why this exists: the official Atlassian remote MCP exposes no attachment-upload
 tools (verified by tools list inspection). REST direct is the only path.
@@ -39,7 +39,7 @@ def _resolve_auth() -> str:
         sys.exit(
             "ATLASSIAN_BASIC_AUTH env var not set.\n"
             "Source ~/.second-brain-os.env or run from a fresh shell.\n"
-            "Setup: samba-onboarding/README.md → 'Power-user — Atlassian API token'."
+            "Setup: generate a classic API token at https://id.atlassian.com/manage-profile/security/api-tokens"
         )
     return auth
 

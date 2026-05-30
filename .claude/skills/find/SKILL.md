@@ -1,6 +1,6 @@
 ---
 name: find
-description: Recall layer for the second brain. Searches across `<workspace.root>/<workspace.resources>/`, `<workspace.projects>/`, `<workspace.archive>/`, and `memory/` for a topic — by filename and content — then ranks matches and optionally synthesizes them with file citations. Use whenever the user asks <assistant.name> to recall existing knowledge before generating new content — phrases like "do I have anything on X", "what do I know about Y", "search my notes for Z", "find research on W", "is there a project for V", "/find <topic>". Trigger broadly on recall language even when the user doesn't say "find" explicitly.
+description: Recall layer for the second brain. Searches across `<workspace.root>/<workspace.resources>/`, `<workspace.projects>/`, `<workspace.archive>/`, `hq-*/` (HQ workstations + foundation), and `memory/` for a topic — by filename and content — then ranks matches and optionally synthesizes them with file citations. Use whenever the user asks <assistant.name> to recall existing knowledge before generating new content — phrases like "do I have anything on X", "what do I know about Y", "search my notes for Z", "find research on W", "is there a project for V", "/find <topic>". Trigger broadly on recall language even when the user doesn't say "find" explicitly.
 allowed-tools: Read Bash AskUserQuestion
 ---
 
@@ -59,6 +59,7 @@ Run these searches in parallel via Bash. All paths come from the Configuration s
 find "<workspace.root>/<workspace.resources>" \
      "<workspace.root>/<workspace.projects>" \
      "<workspace.root>/<workspace.archive>" \
+     hq-* \
      -type f \( -iname "*<query>*" -o -iname "*<slug>*" \) 2>/dev/null
 
 find memory -type f -iname "*<query>*" 2>/dev/null
@@ -71,12 +72,14 @@ if command -v rg >/dev/null 2>&1; then
     "<workspace.root>/<workspace.resources>" \
     "<workspace.root>/<workspace.projects>" \
     "<workspace.root>/<workspace.archive>" \
+    hq-* \
     memory 2>/dev/null
 else
   grep -r -l -i --include="*.md" "<query>" \
     "<workspace.root>/<workspace.resources>" \
     "<workspace.root>/<workspace.projects>" \
     "<workspace.root>/<workspace.archive>" \
+    hq-* \
     memory 2>/dev/null
 fi
 ```

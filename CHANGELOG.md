@@ -7,6 +7,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-05-30
+
+### Added — v0.2.2 (persona-template conceptual model + 12-day fork re-sync)
+
+The persona templates lagged the development fork's `CLAUDE.md` / `SOUL.md` by ~12 days. This release brings the public templates current with the OS's organizational philosophy, and re-extracts the full skill/hook surface so all downstream improvements ship.
+
+**`CLAUDE-template.md` gains three generic sections:**
+- **HQ / Active Project model** — the evergreen-workstation (`hq-<name>/`) vs bounded-execution (`<workspace.projects>/<slug>/`) pattern, progressive per-task loading via a `memory.md` routing table, and the completion ritual that promotes durable artifacts from a finished project into its parent HQ (with a freshness check on every file moved). Framed as an optional growth pattern — fresh forks ship with no HQs.
+- **Documentation maintenance (4 rules)** — one canonical filename / no version suffixes, supersede-moves-out-same-day, README pointer at 5+ canonical docs, and the lock ritual that updates the index. Plus the "before citing a doc as canonical" 3-point check.
+- **Naming conventions** — generic file / folder / project naming guide (lowercase-kebab working docs, closed-set UPPERCASE OS files, date-prefix only when load-bearing, `YYYY-MM-<slug>/` project folders, base-3-subdir scaffold, max-3 nesting).
+
+**`SOUL-template.md` gains two traits:**
+- **Hunt for repeatable workflows** (Core Truths) — pattern-spotting for skill / cron / hook candidates, gated by the Eliminate-before-automate filter; plus two workflow-spotting voice cues.
+- **Manage context proactively** (How You Think) — when to suggest `/clear` vs `/compact`, only at natural breakpoints.
+
+### Fixed (PII scrub — v0.2.2 re-extraction)
+
+Six source files carried literal names or private workspace paths introduced during 12 days of fork development; genericized before re-extraction so all three Phase 10 leakage passes stayed clean:
+- `briefing/SKILL.md` — hardcoded user name + gendered pronouns → `<user.name>` + neutral pronouns (3 spots)
+- `sync-indexes/SKILL.md` — "every URL <name> has deployed" / "<name> knows where it came from" → `<user.name>` (2 spots)
+- `archive-project/SKILL.md` — assistant name in a memory-grep hint → `<assistant.name>`
+- `desktop-organizer/SKILL.md` — private repo-folder example + "Don't hardcode `<workspace.root>`'s literal name" + Desktop path → generic phrasing (3 spots)
+- `thinking-partner/SKILL.md` — literal `<workspace.root>/<workspace.projects>/<slug>/` path → token form; dropped a maintainer-specific example doc
+- `.claude/tools/ouros_harness.py` — "<name>'s fork" docstring + "LOCAL MOD (<name>)" comment → neutral "diverges from upstream by design"
+
+**Second pass — company / internal-org markers** (caught by a new extractor gate, see below):
+- `INSTALL.md` — dropped the "Samba employees: gws installed via internal samba-onboarding flow" callout
+- `workspace/3-Resources/contacts/README.md` — removed a maintainer-internal "Locked by decisions #21/#22 in <private-project>/system-design.md" provenance line
+- `workspace/3-Resources/meetings/README.md` — "For Samba employees: Tactiq/Gemini in fixed Drive folders" → generic "record your transcription tool's Drive-folder IDs in TOOLS.md"
+- `thinking-partner/SKILL.md` — worked-example decision tree de-branded: "Champions website" → "internal team portal", "AI Champions only" → "internal team only", `ai-champions.pages.dev` → `team-portal.example.com`
+- `atlassian-attach/` (SKILL.md + scripts/attach.py) — three `samba-onboarding/README.md` token-setup pointers → Atlassian's official API-token page + `ATLASSIAN_BASIC_AUTH` env-var guidance
+
+### Fixed (wiring — dangling hook registrations)
+
+- **`.claude/settings.json` referenced two non-shipped hooks** (`inject-projects.mjs`, `workspace-guards.mjs`) — added on the dev fork after v0.1.18 but never added to the extractor's copy list, so the public bundle registered hooks whose files don't exist (a session-start error for every fork user). Now stripped from the public `settings.json` (same treatment `pii-leak-guard.mjs` already got).
+
+### Changed (extractor hardening — `scripts/extract-template.sh`)
+
+- **Phase 10 gains a pass-4 org-marker gate** — fail-closed grep for `\bSamba\b` / `samba-onboarding` outside the allowed surfaces (samba-publish disclaimer, CHANGELOG, evals). The first three leakage passes only matched PII handles and private workspace paths, so company-name callouts slipped through; pass-4 closes that gap.
+- **settings.json hook-strip generalized** — the jq filter now drops *any* non-shipped hook block (`pii-leak-guard`, `inject-projects`, `workspace-guards`) across all hook event types, preserving sibling shipped hooks that share a matcher (e.g. `session-start-tasks` survives when `inject-projects` is removed from the same SessionStart entry).
+
 ### Added — v0.2.1 (ships 3 skills + 2 hooks that were missing from v0.2.0)
 
 The v0.2.0 release inadvertently shipped without three productivity skills and two SessionStart/PreToolUse hooks that already worked on the development fork. v0.2.1 adds them to the extractor allowlist and ships them publicly. Plus a PII scrub of the new ship surface caught and fixed before the bundle ever left.
@@ -32,7 +73,7 @@ Caught and fixed before the v0.2.1 bundle left the dev repo:
 
 - `session-start-tasks.mjs` — "Beru is always aware" → "the assistant is always aware"; "When Sid says..." → "When the user says..."
 - `pre-slack-draft-contact-check.mjs` — header rewritten to remove the specific 2026-05-18 incident reference (named a real colleague + their location); path reference genericized; closing message "before Sid sees it" → "before the user sees it"
-- `todo/SKILL.md` — "Token authorized against Samba TV workspace" + `siddani09@gmail.com` reference rewritten to generic "work / shared Notion workspace"; "Sid promised X to Y" example → "<user.name> promised X to Y"
+- `todo/SKILL.md` — "Token authorized against Samba workspace" + `siddani09@gmail.com` reference rewritten to generic "work / shared Notion workspace"; "Sid promised X to Y" example → "<user.name> promised X to Y"
 - `todo/lib/ntn.sh` — "Sid's convention from MEMORY" → "PARA-aligned convention"
 - `atlassian-attach/references/usage.md` — all `sambatv.atlassian.net` URLs → `acme.atlassian.net`; "Different Atlassian instance (not sambatv)" → "Different Atlassian instance (override the default)"; "Defaults to `sambatv`" → "Defaults to whatever `ATLASSIAN_INSTANCE` env var is set to"
 - `atlassian-attach/scripts/attach.py` — `__pycache__/*.pyc` stale bytecode removed from skill directory (already gitignored, but a local run had left an artifact)

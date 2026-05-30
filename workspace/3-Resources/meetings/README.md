@@ -48,7 +48,7 @@ If both a Gemini summary AND a Tactiq transcript exist for the same meeting, **p
 
 The Configuration section in root `CLAUDE.md` may have your organization's Drive folder IDs for meeting transcripts and recordings. See `CLAUDE.md` for the canonical IDs.
 
-For Samba employees: Tactiq transcripts and Gemini recordings are in fixed Drive folders documented in TOOLS.md.
+If you use a transcription tool (e.g. Tactiq, Gemini, Otter), record its export Drive-folder IDs in TOOLS.md so meeting skills can find them.
 
 For other organizations: download manually from your meeting tool (Otter, Fireflies, Riverside, etc.) and drop the file here following the naming convention.
 

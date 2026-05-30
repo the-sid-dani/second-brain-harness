@@ -116,7 +116,22 @@ mv <workspace.root>/<workspace.projects>/<slug>/ <workspace.root>/<workspace.arc
 
 `mv` not `cp+rm` — atomic, preserves mtimes (which `/prune-projects` cares about for archived-recency stats later).
 
-### Step 8: Confirm
+### Step 8: Append HQ-audit line to today's daily memory log (if `parent_hq` set)
+
+Before printing the confirm block, read the project's CLAUDE.md frontmatter for `parent_hq:`. If set (and not `none`), append one line to `memory/<YYYY-MM-DD>.md` to leave an audit trail in the HQ-aware daily log:
+
+```markdown
+
+## <YYYY-MM-DD> — Archived <slug> (parent_hq: hq-<name>)
+
+Project moved to archive. Tactical execution complete. Foundation/planning artifacts (if any) live in `hq-<name>/`. Project memory.md preserved at archive location.
+```
+
+Use `>>` append or Edit (file is append-only per CLAUDE.md rule — never rewrite). This gives the HQ owner a discovery hook later (<assistant.name> can grep memory/ for "Archived ... parent_hq: hq-X" to surface what's been wrapped under each HQ).
+
+Skip if `parent_hq: none` or missing — no audit trail needed for standalone projects (root memory.md / daily-log entry covers the move).
+
+### Step 9: Confirm
 
 Print:
 
@@ -125,7 +140,9 @@ Print:
   From: <workspace.root>/<workspace.projects>/<slug>/
   To:   <workspace.root>/<workspace.archive>/<slug>/
   Status: active → done
+  Parent HQ: <hq-name | none>
   Retro: <appended | skipped>
+  HQ audit line: <added to memory/YYYY-MM-DD.md | skipped>
 ```
 
 Stop. Do not auto-commit, do not modify any index file (no INDEX file is maintained — discovery happens via frontmatter queries, with the code-projects.md exception applying only to code repos), do not propose a follow-up project.

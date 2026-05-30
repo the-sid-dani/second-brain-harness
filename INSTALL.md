@@ -291,8 +291,6 @@ gws auth login
 
 Follow the browser prompt to grant: calendar, drive, gmail.modify, documents, spreadsheets, presentations, tasks.
 
-> Samba employees: `gws` is installed via the internal `samba-onboarding` flow, not by this installer.
-
 ---
 
 ## Troubleshooting

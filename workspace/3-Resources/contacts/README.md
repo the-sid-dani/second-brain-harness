@@ -2,8 +2,6 @@
 
 Per-person reference directory. One file per person, slug-named (`jordan-chen.md`, `alex-rivera.md`). No date prefix — people aren't time-bounded.
 
-**Locked by decisions #21 and #22 in `workspace/1-Projects/2026-05-second-brain-design/system-design.md` §7.**
-
 ## Why this exists
 
 For <assistant.name> to track commitments obsessively (per SOUL.md), it needs to know:

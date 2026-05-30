@@ -69,6 +69,54 @@ The skills themselves shouldn't need code changes for a fork — the only hardco
 
 ---
 
+## HQ / Active Project model (optional organizational pattern)
+
+An optional pattern for scaling the OS as your work grows. A fresh fork ships with none of these — adopt it once you have recurring, long-running workstreams.
+
+**HQ = evergreen workstation.** An `hq-<name>/` folder at repo root (peer to this CLAUDE.md) is a workstation that accumulates monotonically — strategy, playbooks, durable artifacts for one long-running area of responsibility. It grows from completed projects, never empties, and is owned indefinitely. Each HQ holds its own `CLAUDE.md` + `memory.md` + `resources/`.
+
+**Active Project = bounded current execution.** Each `<workspace.projects>/<slug>/` is in-flight tactical work — it has a start, an end, and (recommended) a `parent_hq:` it deposits into when it completes. Tactical state lives here while alive (this week's data, drafts, notes). **If it's in `<workspace.projects>/`, it's active. If it's not active, it's not there.**
+
+**Progressive loading.** If you create HQs, don't pre-load them all at session start. Keep a routing table in `memory.md` that maps task type → HQ, and load only the matched HQ's `CLAUDE.md` + `memory.md` for the task in front of you. When no row matches, work from root context alone.
+
+**Completion ritual** (enforced by `/archive-project`):
+1. Promote durable artifacts from the project into the parent HQ — with a freshness check on every file moved (stale-on-promotion pollutes the evergreen OS).
+2. Archive the tactical residue (drafts, raw data) to `<workspace.archive>/<slug>/`.
+3. Flip project frontmatter `status: active` → `done`.
+4. Append a one-line entry to the project's `memory.md` noting what got promoted vs archived.
+
+---
+
+## Documentation maintenance (4 load-bearing rules)
+
+Prevents the stale-doc-graveyard pattern — multiple versions of the same doc coexisting, confusing both you and the assistant.
+
+1. **One canonical filename per artifact. No version suffixes.** Edit `PLAN.md`, never create `PLAN-V2.md`. Git history is the version log. Frozen stakeholder snapshots go to `_snapshots/<doc>-YYYY-MM-DD.md`, named by date, not version number.
+2. **Supersede = move out same day.** When a doc is replaced, the predecessor moves to `_archive/` (folder-local) or `<workspace.archive>/` (workspace-level) in the same commit as the lock. No `status: superseded` files sitting next to current canonical ones.
+3. **Every folder with 5+ canonical docs gets a `README.md` pointer.** Top of README names the canonical files. Everything else in the folder is reference or history.
+4. **The lock ritual updates the index.** Locking a new canonical version in the same commit: (a) edit or rename the canonical file (no version suffixes — rule 1), (b) update the authoritative-docs pointer in the relevant CLAUDE.md/README, (c) move the predecessor per rule 2. If any is missing, the lock isn't done.
+
+**Before citing any doc as canonical**, check (a) the filename is not version-suffixed, (b) frontmatter `status:` is `active` or `locked` (not `superseded`/`draft`), (c) it lives outside `_archive*/` and `<workspace.archive>/`. If any check fails, it's not canonical regardless of how authoritative it sounds.
+
+---
+
+## Naming conventions
+
+Follow these when creating any new file / folder / project — they keep the workspace greppable and prevent drift. Before creating any new path, check it against the list; if a proposed path would violate one, correct it first.
+
+- `lowercase-kebab.md` for working docs, plans, trackers.
+- `UPPERCASE-KEBAB.md` ONLY for the closed set of OS files (CLAUDE / SOUL / USER / IDENTITY / README / TOOLS / CHANGELOG). No additions without versioning this standard.
+- `YYYY-MM-DD-<topic>.md` date-prefix only when the date is load-bearing (meeting notes, briefings, dated snapshots).
+- `YYYY-MM-<slug>/` for project folders in `<workspace.projects>/`.
+- `NN-<topic>.md` numeric prefix only when sequence carries meaning.
+- `lowercase-kebab/` for code repos in `<workspace.coding>/` — no version suffix in repo names.
+- HQ subfolders follow the same rules as the root workspace.
+- `_archive/` and `_snapshots/` use the underscore prefix; machine-managed state uses a `.dot-prefix/`.
+- Max 3 levels of nesting.
+- Projects scaffold with a base 3 subdirs (`inputs/` + `working/` + `outputs/`); type-specific subfolders emerge lazily, not up front.
+
+---
+
 ## Project-Specific Context
 
 For Memory System (dual-folder), Workspace (PARA layout), and Outputs conventions, see **README.md** — that's the canonical source. This file holds only the project-specific deltas below.

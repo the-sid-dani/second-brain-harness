@@ -62,7 +62,7 @@ Open the target in a browser and confirm the attachment shows up. For Jira, atta
 
 Generate at: [id.atlassian.com/manage-profile/security/api-tokens](https://id.atlassian.com/manage-profile/security/api-tokens) → **Create classic API token**. There's no security downside vs scoped — both revoke from the same page.
 
-Setup steps documented in `samba-onboarding/README.md` under "Power-user — Atlassian API token."
+Once generated, export it as `ATLASSIAN_BASIC_AUTH` (base64 of `email:token`) in your shell profile.
 
 ## Endpoints
 

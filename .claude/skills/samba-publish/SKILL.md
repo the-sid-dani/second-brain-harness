@@ -17,6 +17,8 @@ allowed-tools: Bash AskUserQuestion
 
 # Samba Publish
 
+> **⚠️ DEPRECATION NOTICE (2026-05-20):** This Cloudflare-Pages path is being deprecated in favor of `/samba-publish-gcp` (Cloud Run + IAP). New deploys should use `/samba-publish-gcp`. This skill remains functional for existing deploys + content updates to already-deployed pages, but won't receive new feature work. Migration is per-deploy: when a page needs a meaningful update, re-deploy via `/samba-publish-gcp` instead.
+
 Deploy static HTML to a Samba-internal URL with `@samba.com` / `@samba.tv` SSO gating in one command.
 
 ## Overview

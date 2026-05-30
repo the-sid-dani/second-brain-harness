@@ -241,3 +241,29 @@ echo
 
 # To update content later: rerun the same command, URL stays stable
 log "Update later: rerun the same command — same URL, fresh content."
+
+# ---------------- record to shipped manifest ----------------
+# Append/update entry in beru-workspace/3-Resources/shipped/manifest.json.
+# Failure is non-fatal — deploy already succeeded.
+RECORDER="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../../../.." && pwd)}/beru-workspace/3-Resources/shipped/record-deploy.mjs"
+if [[ -f "$RECORDER" ]]; then
+  case "$POLICY" in
+    default)   GATING="@samba.com / @samba.tv SSO" ;;
+    allowlist) GATING="Cloudflare Access allowlist" ;;
+    public)    GATING="public" ;;
+    *)         GATING="unknown" ;;
+  esac
+  SRC="${1:-}"
+  if [[ "$SRC" = /* ]]; then
+    REPO_ROOT="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/../../../.." && pwd)}"
+    SRC="${SRC#$REPO_ROOT/}"
+  fi
+  node "$RECORDER" \
+    --id "$PROJECT_NAME" \
+    --title "$PROJECT_NAME" \
+    --url "$PROD_URL" \
+    --platform "cloudflare-pages" \
+    --source-path "$SRC" \
+    --gating "$GATING" \
+    || echo "⚠ failed to update shipped manifest (deploy still succeeded)"
+fi

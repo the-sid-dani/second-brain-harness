@@ -180,7 +180,20 @@ Read both with the `Read` tool.
 - `created: <today YYYY-MM-DD>`
 - `project-type: <chosen type from Step 2>`
 - `stakeholders: [<user.name>]` (default — user can add more later)
+- `parent_hq: <hq-name | none>` — see "HQ linkage" below
 - `# <project-slug>` heading replaced with actual slug
+
+**HQ linkage (added 2026-05-20):**
+
+Before writing the frontmatter, detect existing HQs by scanning `hq-*/` at repo root. If at least one HQ exists, ask via `AskUserQuestion`:
+
+> *"Which HQ does this project belong under?"*
+
+Options = each HQ found (`ai-task-force`, `email`, `newsletter`, `briefings`, etc) + `none` (standalone). Default to whichever HQ's routing triggers best match the project name/description (e.g., "ai-champions" → `ai-task-force`). Single-select.
+
+Write the chosen value (sans `hq-` prefix) to `parent_hq:`. If user picks "none", write `parent_hq: none`. The HQ's `memory.md` Active projects section should be updated by the user later (manual for now — future: hook).
+
+If no HQs exist (fresh fork), skip the prompt and write `parent_hq: none`.
 
 **Code-repo substitutions:**
 - `status: active`

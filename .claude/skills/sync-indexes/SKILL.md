@@ -197,6 +197,73 @@ Note: K rows have "(needs review)" in Stack / Brief — open <indexes.code_proje
 
 This nudges follow-through without forcing it. The next sync run treats `(needs review)` as a valid value (no diff), so it doesn't keep flagging the same row.
 
+## Phase 2: shipped manifest sync (added 2026-05-20)
+
+After the code-repos diff completes (success or no-op), prompt the user whether to also audit the shipped artifact manifest:
+
+```
+Phase 1 (code repos) complete. Run Phase 2 audit of deployed artifacts?
+```
+
+Use `AskUserQuestion` (yes/no). If yes, run the steps below. Otherwise exit normally.
+
+### Step 9: Diff shipped manifest vs live deploys
+
+The shipped manifest at `<workspace.root>/<workspace.resources>/shipped/manifest.json` tracks every URL <user.name> has deployed. It drifts the same way as the code index — deploys made manually via `wrangler`/`gcloud` don't get appended; retired deploys don't get marked.
+
+Audit Cloudflare Pages first (primary, most common). Cloud Run / GCP IAP audit is future work — flag but don't gate.
+
+```bash
+# Cloudflare Pages live deploys
+wrangler pages project list 2>/dev/null | grep "pages.dev" | awk -F'│' '{print $2}' | tr -d ' '
+```
+
+Each value is a `<project>` whose live URL is `https://<project>.pages.dev`.
+
+Parse `manifest.json` (use `node -e` or `jq` if available) to extract entries where `platform == "cloudflare-pages"`. Build a map keyed by `id` (which by convention matches the Cloudflare project name).
+
+Three buckets, same shape as Phase 1:
+- **ADD candidates** — Cloudflare projects not in manifest → propose new entry with `needs-review` defaults
+- **STALE candidates** — manifest entries with `platform: cloudflare-pages` whose Cloudflare project no longer exists → propose marking `status: retired`
+- **MATCH** — both sides agree
+
+For ADD candidates, enrich:
+- Inspect the latest deploy via `wrangler pages deployment list --project-name <p>` to get deploy date
+- Source path stays `needs-review` (<user.name> knows where it came from, the skill doesn't)
+
+If all three buckets are empty except MATCH:
+```
+✨ Shipped manifest in sync. <N> live deploys tracked.
+```
+
+### Step 10: Approve shipped changes
+
+Same `AskUserQuestion multiSelect: true` flow as Step 5. Each option = one ADD or STALE-mark.
+
+Mutate the manifest via the recorder:
+```bash
+node <workspace.root>/<workspace.resources>/shipped/record-deploy.mjs \
+  --id <project> --title <project> \
+  --url https://<project>.pages.dev \
+  --platform cloudflare-pages
+```
+
+For STALE: edit `manifest.json` directly (Edit tool) to flip `status: live` → `status: retired`. The recorder doesn't support status mutation since the common case is "I just deployed" → live.
+
+### Step 11: Shipped summary
+
+```
+Phase 2 — shipped/ manifest sync:
+  ADDED: <list>
+  MARKED RETIRED: <list>
+  Now tracked: T entries (L live, R retired)
+```
+
+If user wants to also audit Cloud Run IAP deploys later, defer to future skill version. Flag with:
+```
+Note: GCP Cloud Run IAP audit not yet implemented in this skill. To audit GCP deploys, run `gcloud run services list --project ai-workflows-459123` manually and reconcile against manifest entries with `platform: cloud-run-iap`.
+```
+
 ## Failure modes
 
 | Symptom | Cause | Fix |

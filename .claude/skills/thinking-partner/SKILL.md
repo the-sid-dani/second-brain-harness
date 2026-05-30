@@ -1,7 +1,7 @@
 ---
 name: thinking-partner
-description: Flips <assistant.name> from "try to solve" into "ask questions first" mode — asks 3-5 clarifying questions, searches the vault via `/find` for context, stays in Q&A mode until the user says "ok, solve it" / "I'm ready" / "let's go". Use when the user wants to think out loud, explore an idea, or work through a problem before committing — phrases like "let's think through X", "help me explore Y", "be a thinking partner", "talk me through this", "I want to noodle on V", "let's brainstorm". Do NOT trigger on clear factual questions or code-generation requests.
-allowed-tools: Read Edit Skill AskUserQuestion
+description: Flips <assistant.name> from "try to solve" into "ask questions first" mode — actively reads project files / memory / vault BEFORE asking, then uses AskUserQuestion (structured multi-choice with previews + a Recommended option) as the default question surface, with free-text only when options would constrain the user inappropriately. Runs in one of two modes auto-detected from trigger phrasing: PROBLEM MODE (open exploration, 5 abstract dimensions, 3-5 questions, periodic synthesis) when the user is wrestling with a half-formed PROBLEM; PLAN MODE (design-tree walk, branch-by-branch dependency resolution, no question cap, tree-state recap) when the user has a half-formed PLAN that needs decision-tree resolution. Stays in Q&A mode until the user says "ok, solve it" / "I'm ready" / "let's go" / "enough". Triggers — PROBLEM: "let's think through X", "help me explore Y", "I'm stuck", "noodle on V", "talk me through this", "let's brainstorm" · PLAN: "/grill-me", "interrogate this", "stress-test my plan", "walk the design tree", "I haven't thought through X". Do NOT trigger on clear factual questions or code-generation requests.
+allowed-tools: Read Edit Skill AskUserQuestion Bash Grep Glob
 ---
 
 # thinking-partner
@@ -43,45 +43,113 @@ Boundary heuristic: if the user gives ambiguity signals ("not sure", "stuck", "d
 
 The skill is conversational. Subagent runs (no `AskUserQuestion`, no chat back-and-forth) should treat the invocation prompt as the entire context and produce a single structured exploration response.
 
-### Step 1: Acknowledge mode + announce the rules
+### Step 1: Acknowledge mode + announce the rules — detect Problem vs Plan
 
-Brief, one-line:
+Two sub-modes auto-detected from the user's framing:
 
-> *"Let's think through it. I'll ask first, solve later — say 'ok solve it' / 'I'm ready' when you want me to switch."*
+**PROBLEM MODE** — the user has a half-formed *problem*. They're trying to figure out what they're actually wrestling with. Triggers: "stuck", "not sure", "noodle", "explore", "think through". Use Steps 3a (5 abstract dimensions) below.
 
-This is the contract. The user knows we're in exploration mode and knows how to exit.
+**PLAN MODE** — the user has a half-formed *plan*. The shape exists but decisions are unresolved or dependencies aren't walked. Triggers: "interrogate this", "stress-test", "walk the design tree", "/grill-me", "I haven't thought through X". Use Steps 3b (design-tree walk) below.
 
-### Step 2: Vault context check (compose `/find`)
+Open with a one-liner that names the mode:
 
-Before asking questions, gather vault context. Two equally valid ways to do this:
+- **Problem mode:** *"Let's think through it. I'll ask first, solve later — say 'ok solve it' when you want me to switch."*
+- **Plan mode:** *"Grill mode. I'll walk every branch of the design tree, you resolve each dependency. Say 'enough' to exit early."*
 
-**Option A — explicitly invoke `/find`** when the topic is unfamiliar or you want a definitive search. Extract 1-2 keywords from the user's framing and invoke `/find` via the `Skill` tool:
+This is the contract. The user knows which mode we're in and how to exit.
+
+### Step 2: Active context gathering (read first, then ask)
+
+**This is the load-bearing step.** A "thinking partner" that asks abstract questions when the data is sitting one Read away is just an interview bot. Before any question goes to the user, pull the relevant raw material. Default to MORE tool use, not less.
+
+Sources to actively read (in priority order):
+
+1. **Project files in scope** — if the topic names a project (`/contact`, `/find`, the conversation already references `<workspace.root>/<workspace.projects>/<slug>/`), Read its `CLAUDE.md`, `memory.md`, and any obvious deliverable docs (`system-design.md`, etc.). Don't skim — actually pull the relevant section into the question.
+2. **Notion / external state** — if the topic is task/commitment-shaped, query the live source (`/todo`, the Action Items DB) via Bash + curl before asking "what's outstanding". Never ask the user to enumerate what a tool can fetch in 2 seconds.
+3. **Vault search via `/find`** — only when the topic is unfamiliar or cross-project. Skip when files in scope already cover it.
+4. **Memory files** — `memory/MEMORY.md` index + day logs from the last week, check for prior decisions on this topic before re-litigating.
+5. **Calendar / meetings / Slack** — if the topic is people/meeting-shaped, probe via `gws` / Slack MCP before asking "who's involved".
+
+**The rule**: every question you ask should reference SPECIFIC content you just read. Bad: *"What's the time commitment?"* Good: *"Q1 playbook says 2hrs/wk per champion (line 47). Has the offsite changed that?"* The user's brain shouldn't have to retrieve what your tools can.
+
+If no relevant data exists, say so explicitly: *"I checked `1-Projects/`, Notion, and last week's memory — no prior notes on this. Fresh thinking."* Never fabricate context.
+
+Don't dump raw tool output. Synthesize into the *next question*.
+
+### Step 3: Ask via AskUserQuestion (default) — free-text only by exception · PROBLEM MODE branch
+*(Skip to Step 3-PLAN below if Step 1 detected Plan Mode.)*
+
+**Default surface: `AskUserQuestion` with 2-4 concrete options per question, one option marked Recommended.** Plain free-text questions are a *fallback*, not the norm. Why: typing a paragraph reply is friction; clicking an option that already exists is momentum. The user came here to think, not to draft essays.
+
+**Construct each question with real material from Step 2.** Every option should be a hypothesis grounded in what you just read — not abstract framing. The user's job is to confirm / reject / branch, not to invent the option set.
+
+Question dimensions to pick from (pick 3-5, adapt to topic):
+
+1. **Anchor the problem** — what are we solving? Options = 3-4 concrete problem framings drawn from Step 2 data.
+2. **Identify the constraint** — what's the real bottleneck? Options = candidates you spotted (e.g., "Time", "Budget sign-off", "Stakeholder buy-in", "Tooling gap").
+3. **Surface the user** — who decides? Options = named people from contacts/USER.md.
+4. **Probe assumptions** — what are we taking for granted? Options = 2-3 assumptions you can list (with "All hold" / "None hold" as escape valves).
+5. **Imagine success** — what does "done" look like? Options = success-signal scenarios (e.g., "X people signed up", "Y approved the plan", "Z artifact shipped").
+6. **Branch the direction** — when 2-3 viable paths exist, ask which. Options = the paths themselves with preview text showing what each entails.
+
+**When to use free-text instead** (genuine exceptions, not defaults):
+- The question is genuinely open-ended ("what landed at the offsite?") and any 4 options would constrain the answer wrong.
+- You need a specific datum (a name, a date, a number).
+- The user has already started typing context-rich replies — match their cadence.
+
+**Use `preview` field aggressively.** When options carry concrete artifacts (a plan shape, a date sequence, an outreach list), put the literal content in `preview` so the user reads side-by-side instead of imagining. Side-by-side comparison is the highest-leverage feature this tool has.
+
+**Multi-question batches** — `AskUserQuestion` accepts up to 4 questions per turn. Use 2-3 when they're tightly coupled (e.g., "approach" + "timeline" + "scope"). Single-question turns are fine for surgical decisions.
+
+**Anti-patterns**:
+- Asking a question the user has already answered in the framing — Read carefully first.
+- Free-text where options would work — the default lazy move; resist.
+- Generic options ("Yes / No / Maybe") — option text should carry the actual hypothesis content.
+- Asking before reading — Step 2 is non-optional. Even a 30-second `Read` on the relevant `memory.md` beats a blank question.
+
+### Step 3-PLAN: Design-tree walk · PLAN MODE branch
+*(Skip if Step 1 detected Problem Mode.)*
+
+The contract for Plan Mode (preserved verbatim from Matt Pocock's grill-me skill):
+
+> *"Interview me relentlessly about every aspect of this plan until we reach a shared understanding. Walk down each branch of the design tree, resolving dependencies between decisions one by one. And finally, if a question can be answered by exploring the codebase, explore the codebase instead."*
+
+**3-PLAN.a — Build the tree privately:**
+Read the user's plan. Identify:
+- **Root node:** the top-level decision (e.g., "build an internal team portal")
+- **Branches:** each major sub-decision that depends on the root (e.g., "single-page vs multi-page", "what sections", "auth-gated or public", "where it lives", "who owns it")
+- **Sub-branches:** decisions that depend on each branch
+
+Don't show the full tree upfront — overwhelming. Walk it one branch at a time.
+
+**3-PLAN.b — Walk each branch:**
+1. **Check the codebase first.** If the answer is already in code/memory/contacts/project docs, READ it: *"Looking at X.md line 47, I see Y — does that still apply?"*
+2. **If codebase doesn't answer, ask the user** via AskUserQuestion with 2-4 options grounded in context.
+3. **Wait for the answer.** Don't proceed down the branch until this node resolves.
+4. **Surface dependencies.** *"OK, you picked X — that means we now need to decide Y, because Y depends on X."*
+5. **Move to the next branch.**
+
+**3-PLAN.c — No question cap.**
+Plan Mode walks until the tree converges. Don't artificially cap at 5 questions like Problem Mode does. The tree decides the length.
+
+**3-PLAN.d — Tree-state recap (instead of Step 6 synthesis):**
+After 4-5 resolved branches, show the tree-state:
 
 ```
-/find <keyword>
+Decisions locked:
+- Site type: multi-page docs site
+- Audience: internal team only (auth-gated)
+- Hosting: team-portal.example.com (new repo)
+
+Branches still to walk:
+- [ ] Page structure (home / what-you-get / curriculum / apply)
+- [ ] Application form integration (embed vs link out)
+- [ ] Update cadence
+
+Continue, or done?
 ```
 
-**Option B — reference what's already in context.** If active project files (`CLAUDE.md`, `memory.md`, design notes, etc.) are auto-loaded and contain relevant material, cite them directly without a separate `/find` call. Subagent contexts that lack the `Skill` tool MUST use this fallback. Phrasing examples that work for both options:
-- *"Quick context from the vault: a recent design decision locked Slack into v1 just today…"*
-- *"Pulling up the tool inventory mentally — covering the main MCPs and CLIs…"*
-
-`/find`'s default mode is ranked-list (fast). If matches exist (via either option), hold them in working memory for Step 3 — they shape the questions ("I see you already have notes on this — do those still apply, or is this a fresh angle?"). If no matches, acknowledge cold-start explicitly: *"I don't see prior notes on this — fresh thinking."* Never fabricate vault context that doesn't exist.
-
-Don't **show** the user the raw `/find` output unless they ask. The point is informed questioning, not a file dump.
-
-### Step 3: Ask 3-5 clarifying questions
-
-Plain chat, one question at a time (or 2-3 if tightly related). The questions should:
-
-1. **Anchor the problem** — what are we actually trying to solve? What changes if we don't solve it?
-2. **Identify the constraint** — what's the real bottleneck? What have you tried? What didn't work?
-3. **Surface the user** — who's affected? Who decides? Whose problem is this really?
-4. **Probe assumptions** — what are we taking for granted that might be wrong? What if X weren't true?
-5. **Imagine success** — what does "this is solved" actually look like? What's the success signal?
-
-Pick 3-5 from this list (or adapt) based on the topic. Don't ask all 5 mechanically — pick the ones that fit. If the vault context (Step 2) revealed something specific, frame the question around it.
-
-**Anti-pattern:** asking questions that the user has clearly already answered in the framing. Read carefully first.
+If user says "continue", walk next branches. If "done", remaining branches become "open questions for later" — don't pretend they resolved.
 
 ### Step 4: Track insights as we go
 

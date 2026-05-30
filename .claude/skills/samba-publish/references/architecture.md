@@ -16,7 +16,7 @@
                                  │  + (org mode) CF API for Access
                                  ↓
 ┌────────────────────────────────────────────────────────────────────┐
-│                  CLOUDFLARE ORG ACCOUNT (Samba TV)                 │
+│                  CLOUDFLARE ORG ACCOUNT (Samba)                 │
 │  ┌──────────────────────────┐  ┌─────────────────────────────┐     │
 │  │ Cloudflare Pages         │  │ Cloudflare Access (Zero     │     │
 │  │ Project: samba-publish   │  │ Trust)                       │    │
@@ -82,7 +82,7 @@ fi
 ## IT setup checklist (one-time, ~45 min)
 
 ### Step 1: Cloudflare account
-1. Create Cloudflare account for Samba TV (or use existing)
+1. Create Cloudflare account for Samba (or use existing)
 2. Note the Account ID — needed for `SAMBA_CF_ACCOUNT_ID`
 
 ### Step 2: DNS delegation
@@ -114,7 +114,7 @@ wrangler pages project create samba-publish --production-branch main
 2. Permissions:
    - Account → Cloudflare Pages → Edit
    - Account → Access: Apps and Policies → Edit
-3. Account Resources: include the Samba TV account
+3. Account Resources: include the Samba account
 4. TTL: 1 year, rotate annually
 5. Distribute via secure secret manager (1Password, AWS Secrets Manager, or env var in plugin config)
 
